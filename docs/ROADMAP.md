@@ -4,8 +4,8 @@
 ## Phase 0 — Foundation (sedang berlangsung)
 - [x] Inisialisasi repo GitHub private dan README.
 - [x] Draft PRD, arsitektur, database, aturan bisnis, roadmap, dan log keputusan.
-- [ ] Validasi seluruh alur bisnis dengan operator/pemilik (pengiriman per item sudah dikonfirmasi, refund dan harga tambahan belum).
-- [x] Buat rancangan ERD 8 tabel dan baseline integritas pembayaran (v0.3, pengiriman per item).
+- [ ] Validasi seluruh alur bisnis dengan operator/pemilik (pengiriman per item dan ongkir termasuk/terpisah sudah dikonfirmasi; refund, diskon, dan pajak belum).
+- [x] Buat rancangan ERD 8 tabel dan baseline integritas pembayaran (v0.4, pengiriman dan ongkir per item).
 - [ ] Konfirmasi kebijakan pembatalan/refund; belum final.
 - [x] Susun acceptance criteria dan test scenarios versi pertama (draft).
 - [ ] Review/sahkan acceptance criteria bersama operator.
@@ -24,10 +24,10 @@
 
 ## Phase 2 — Orders & Customers
 - [ ] CRUD pelanggan.
-- [ ] CRUD pesanan dan multi-item dengan **tanggal dan tujuan kirim per item**.
+- [ ] CRUD pesanan dan multi-item dengan **tanggal, tujuan, serta ongkir INCLUDED/SEPARATE per item**.
 - [ ] Nomor order unik, validasi input, filter/pencarian.
 - [ ] Status pengerjaan per item dan ringkasan otomatis status order.
-- [ ] Pengujian transaksi multi-item dan pengubahan data.
+- [ ] Pengujian transaksi multi-item, perhitungan ongkir, dan perubahan harga setelah DP.
 
 **Exit gate:** pesanan dapat dibuat, dicari, diedit sesuai aturan, dan bertahan setelah restart.
 
@@ -60,7 +60,7 @@
 
 **Exit gate:** aplikasi layak untuk uji operasional lokal dan batasan yang tersisa terdokumentasi.
 
-Dokumentasi rancangan: [DATABASE](DATABASE.md), [BUSINESS_RULES](BUSINESS_RULES.md), [WORKFLOWS](WORKFLOWS.md), [TEST_PLAN](TEST_PLAN.md).
+Dokumentasi rancangan: [DATABASE](DATABASE.md), [BUSINESS_RULES](BUSINESS_RULES.md), [PRICING_AND_SHIPPING](PRICING_AND_SHIPPING.md), [WORKFLOWS](WORKFLOWS.md), [TEST_PLAN](TEST_PLAN.md).
 
 ## Aturan bekerja
 1. Setiap perubahan fitur memperbarui PRD/aturan jika mengubah perilaku yang disepakati.
