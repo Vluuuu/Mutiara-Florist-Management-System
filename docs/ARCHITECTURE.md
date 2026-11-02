@@ -1,5 +1,5 @@
 # Arsitektur Sistem
-**Status:** Rancangan awal, belum diimplementasikan.
+**Status:** Baseline arsitektur v0.2, belum diimplementasikan.
 
 ## 1. Pilihan arsitektur
 **Laravel monolith dengan pola MVC**, Blade untuk server-rendered UI, Tailwind CSS + Alpine.js untuk komponen, MySQL lokal sebagai sumber data utama. Tidak ada layanan Next.js terpisah dan tidak membutuhkan API publik pada tahap awal.
@@ -37,15 +37,15 @@ Lampiran (jika digunakan) disimpan di Laravel storage dengan akses terkontrol, b
 1. Identity: akun admin dan sesi lokal.
 2. Customers: profil dan pencarian pelanggan.
 3. Orders: header pesanan, item bunga, alur pengerjaan.
-4. Payments: catatan penerimaan, status, piutang.
+4. Payments: catatan penerimaan POSTED/VOIDED, idempotency key, kalkulasi status bayar/piutang; belum menangani refund uang nyata.
 5. Expenses: pengeluaran dan kategori.
-6. Reports: agregasi transaksi berdasarkan periode dan ekspor.
-7. Backup: dump terverifikasi, enkripsi, restore aman.
+6. Reports: penjualan menurut order_date, penerimaan menurut payment_date, pengeluaran menurut expense_date, piutang snapshot saat ini, ekspor Excel.
+7. Backup: dump terverifikasi, enkripsi, restore aman.\n8. Audit: append-only log untuk tindakan keuangan penting, tanpa rahasia atau PII berlebihan.
 
 ## 4. Operasi yang harus atomik
 - Saat menyimpan pesanan: simpan header dan item dalam satu transaksi database.
-- Saat mencatat pembayaran: validasi saldo, tulis transaksi, hitung status; gunakan transaksi database dan perlindungan terhadap submit ganda.
-- Saat pembatalan/koreksi: jangan menghapus jejak penerimaan uang; aturan refund harus ditetapkan dahulu.
+- Saat mencatat pembayaran: lock baris order di MySQL transaction, hitung outstanding, validasi amount, simpan POSTED payment, gunakan idempotency key unik untuk aksi. Dua request paralel tidak boleh mencatat uang melebihi tagihan.
+- Saat pembatalan/koreksi: jangan menghapus jejak penerimaan uang. Pada MVP, hanya order tanpa pembayaran yang dapat dibatalkan; void berarti koreksi input dengan audit, bukan refund. Order berbayar tidak dapat dibatalkan sampai kebijakan refund disepakati.
 
 ## 5. Struktur kode usulan
 ```text
@@ -84,4 +84,4 @@ CSRF bawaan Laravel, validasi input di server, session cookie aman, akses dokume
 ## 8. Referensi internal
 - [PRD](PRD.md)
 - [Rancangan database](DATABASE.md)
-- [Aturan bisnis](BUSINESS_RULES.md)
+- [Aturan bisnis](BUSINESS_RULES.md)\n- [Use cases & workflows](WORKFLOWS.md)\n- [Test plan](TEST_PLAN.md)\n- [Decision log](DECISIONS.md)
