@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests;
 
-use App\Models\Customer;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -23,6 +22,7 @@ class OrderRequest extends FormRequest
             ],
             'order_date' => ['required', 'date_format:Y-m-d'],
             'notes' => ['nullable', 'string', 'max:2000'],
+            'change_reason' => ['nullable', 'string', 'max:500'],
             'items' => ['required', 'array', 'min:1', 'max:20'],
             'items.*.id' => ['nullable', 'integer', 'distinct', 'min:1'],
             'items.*.flower_type' => ['required', 'string', 'max:255'],

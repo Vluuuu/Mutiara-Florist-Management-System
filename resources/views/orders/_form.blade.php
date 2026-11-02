@@ -148,6 +148,14 @@
         </template>
     </div>
 
+    @if ($order)
+        <section class="rounded-xl border border-stone-200 bg-white p-5 sm:p-7">
+            <label for="change_reason" class="mb-1.5 block text-sm font-semibold text-stone-800">Alasan perubahan (jika ada)</label>
+            <textarea id="change_reason" name="change_reason" maxlength="500" rows="2" class="w-full rounded-lg border border-stone-300 px-3 py-3 text-sm focus:border-emerald-800 focus:outline-none" placeholder="Contoh: pelanggan meminta penggantian bunga">{{ old('change_reason') }}</textarea>
+            <p class="mt-2 text-xs text-stone-500">Wajib diisi jika harga, ongkir, jumlah, atau daftar bunga diubah setelah pembayaran diterima.</p>
+        </section>
+    @endif
+
     <section class="rounded-xl border border-stone-200 bg-white p-5 sm:p-7">
         <h2 class="text-base font-semibold text-emerald-950">Ringkasan tagihan</h2>
         <div class="mt-5 space-y-3 text-sm">

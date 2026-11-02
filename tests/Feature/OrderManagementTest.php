@@ -54,7 +54,7 @@ class OrderManagementTest extends TestCase
         $this->actingAs($user)->post(route('orders.store'), $this->payload($customer->id))
             ->assertRedirect();
 
-        return Order::query()->with('items')->firstOrFail();
+        return Order::query()->with('items')->orderByDesc('id')->firstOrFail();
     }
 
     private function editPayload(Order $order): array

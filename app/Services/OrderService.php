@@ -109,6 +109,25 @@ class OrderService
                 throw ValidationException::withMessages(['customer_id' => 'Pelanggan tidak dapat diganti setelah pembayaran tercatat.']);
             }
 
+            // A paid order requires a reason for any repricing, item addition or removal.
+            $financialChanged = $added > 0 || $removed->isNotEmpty();
+            foreach ($data['items'] as $item) {
+                $id = isset($item['id']) ? (int) $item['id'] : null;
+                $previous = $id === null ? null : $oldItems->get($id);
+                if ($previous && (
+                    (int) $previous->quantity !== (int) $item['quantity']
+                    || (int) $previous->unit_price !== (int) $item['unit_price']
+                    || $previous->shipping_mode !== $item['shipping_mode']
+                    || (int) $previous->shipping_fee !== (int) $item['shipping_fee']
+                )) {
+                    $financialChanged = true;
+                }
+            }
+
+            if ($received > 0 && $financialChanged && trim((string) ($data['change_reason'] ?? '')) === '') {
+                throw ValidationException::withMessages(['change_reason' => 'Alasan perubahan harga wajib diisi karena sudah ada pembayaran.']);
+            }
+
             $totalBefore = (int) $locked->total_amount;
             $locked->forceFill([
                 'customer_id' => (int) $data['customer_id'],
@@ -134,6 +153,7 @@ class OrderService
                 'items_added' => $added,
                 'items_removed' => $removed->count(),
                 'status_after' => $locked->status,
+                'change_reason' => $data['change_reason'] ?? null,
             ]);
 
             return $locked;
