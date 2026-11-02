@@ -1,6 +1,6 @@
 # Database Design & ERD — MFMS
 
-**Versi rancangan:** v0.4 (2 November 2026) — ongkir INCLUDED/SEPARATE per item  
+**Versi rancangan:** v0.5 (2 November 2026) — ongkir per item, tanpa diskon/pajak pada MVP  
 **Status:** Core schema siap menjadi acuan implementasi setelah keputusan bisnis terbuka disahkan. **Belum ada migration ataupun data nyata di repo.**
 
 ## 1. Konteks dan prinsip
@@ -150,6 +150,7 @@ product_subtotal(item) = quantity * unit_price
 shipping_charge(item)  = 0 jika INCLUDED; shipping_fee jika SEPARATE
 item_billable_total    = product_subtotal(item) + shipping_charge(item)
 orders.total_amount    = SUM(item_billable_total)    (materialisasi, hanya backend yang menulis)
+# Tidak ada pengurangan diskon atau penambahan pajak pada MVP
 paid_amount       = SUM(payments.amount WHERE status='POSTED' AND order_id = ?)
 outstanding       = orders.total_amount - paid_amount
 payment_status    = UNPAID jika paid_amount = 0 dan total > 0
@@ -192,7 +193,7 @@ Angka penjualan di sini adalah nilai order tercatat, **bukan laporan laba/rugi a
 - **Telah dikonfirmasi operator:** satu order bisa berisi beberapa item dengan tanggal dan lokasi kirim berbeda. `delivery_date` dan `delivery_location` disimpan pada setiap `order_items`. Bila satu jenis bunga yang sama dikirim ke tanggal/lokasi berbeda, catat sebagai **item terpisah**.
 - Waktu kirim spesifik (jam), jasa kurir, dan bukti serah terima belum menjadi scope MVP; dapat ditambahkan nanti.
 - **Ongkir telah disepakati:** tergantung pesanan, bisa sudah termasuk harga bunga atau ditagihkan terpisah. Implementasi menggunakan mode dan biaya ongkir pada **setiap item** supaya beberapa tujuan/tanggal dalam satu pesanan tidak kehilangan rincian. Lihat [PRICING_AND_SHIPPING.md](PRICING_AND_SHIPPING.md).
-- **Diskon, pajak dan biaya lainnya belum diputuskan**, sehingga belum termasuk rumus.
+- **Diskon dan pajak secara eksplisit di luar cakupan MVP (keputusan operator).** Tidak menambahkan kolom `discount_amount`, `tax_amount`, tarif pajak, tabel diskon, atau kalkulasi terkait. Jika diperlukan di masa depan, rancang melalui perubahan skema dan keputusan bisnis baru.
 - Pengembalian DP, biaya pembatalan, refund, serta void yang melibatkan dana nyata membutuhkan kebijakan terpisah.
 - Koreksi pembayaran yang salah input boleh di-void dengan alasan dan audit; **bukan** refund uang yang sudah dikembalikan ke pelanggan.
 - Syarat nomor pesanan, metode pembayaran, serta privasi/retensi lampiran belum dipastikan.
