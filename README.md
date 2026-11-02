@@ -32,7 +32,9 @@ Sistem administrasi internal **Mutiara Indah Florist** untuk mengelola pesanan b
 - [Rancangan database](docs/DATABASE.md)
 - [Aturan bisnis](docs/BUSINESS_RULES.md)
 - [Roadmap](docs/ROADMAP.md)
-- [Log keputusan](docs/DECISIONS.md)\n- [Alur kerja dan use cases](docs/WORKFLOWS.md)\n- [Rancangan pengujian](docs/TEST_PLAN.md)
+- [Log keputusan](docs/DECISIONS.md)
+- [Alur kerja dan use cases](docs/WORKFLOWS.md)
+- [Rancangan pengujian](docs/TEST_PLAN.md)
 
 ## Alur pengembangan
 
