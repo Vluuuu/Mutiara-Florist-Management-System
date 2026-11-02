@@ -18,13 +18,16 @@ class CustomerController extends Controller
         ]);
 
         $search = trim((string) ($input['q'] ?? ''));
+        // Treat % and _ as literal customer input, not SQL LIKE wildcards.
+        $escapedSearch = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $search);
+        $pattern = '%'.$escapedSearch.'%';
 
         $customers = Customer::query()
             ->withCount('orders')
-            ->when($search !== '', function ($query) use ($search): void {
-                $query->where(function ($query) use ($search): void {
-                    $query->where('name', 'like', '%'.$search.'%')
-                        ->orWhere('phone', 'like', '%'.$search.'%');
+            ->when($search !== '', function ($query) use ($pattern): void {
+                $query->where(function ($query) use ($pattern): void {
+                    $query->whereRaw("name LIKE ? ESCAPE '!'", [$pattern])
+                        ->orWhereRaw("phone LIKE ? ESCAPE '!'", [$pattern]);
                 });
             })
             ->orderByDesc('id')
