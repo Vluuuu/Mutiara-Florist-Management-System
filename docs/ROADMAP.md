@@ -1,5 +1,5 @@
 # Roadmap Pengembangan
-**Status:** Phase 1 sudah berjalan dan tes otomatis dasar **7 PASS / 23 assertions** (2 November 2026). Keempat migrasi berstatus Ran. QA visual browser, rollback pada database uji terpisah, dan commit lockfiles masih tersisa sebelum exit gate dinyatakan penuh.
+**Status:** Phase 2 — kode CRUD Pelanggan dan tes feature baru telah ditambahkan pada 2 November 2026, **belum dijalankan pada laptop**. Phase 1 memiliki 7 PASS / 23 assertions, keempat migrasi dasar Ran; QA visual dan rollback pada DB uji masih tersisa.
 
 ## Phase 0 — Foundation (sedang berlangsung)
 - [x] Inisialisasi repo GitHub private dan README.
@@ -26,10 +26,12 @@
 - [ ] QA manual tampilan browser dan logout serta uji migrasi rollback pada database uji terpisah.
 - [x] `composer.lock` dan `package-lock.json` sudah di-commit dan di-push ke `main` oleh operator (`37fdaa2`); `git status --short` kosong.
 
-**Exit gate:** proyek bisa dibuka di browser lokal, tes setup lulus, dan migration bisa dijalankan ulang dari nol. **Tes setup sudah lulus**; QA manual browser, uji rollback database uji, dan commit lockfiles belum terverifikasi. Implementasi Phase 2 dapat disiapkan dengan data sintetis, namun Phase 1 belum ditutup secara formal. Lihat [panduan setup Windows](LOCAL_SETUP.md).
+**Exit gate:** proyek bisa dibuka di browser lokal, tes setup lulus, dan migration bisa dijalankan ulang dari nol. **Tes dasar setup sudah lulus**; QA manual browser dan uji rollback database uji belum terverifikasi. Lockfiles telah di-commit. Implementasi Phase 2 dapat disiapkan dengan data sintetis, namun Phase 1 belum ditutup secara formal. Lihat [panduan setup Windows](LOCAL_SETUP.md).
 
 ## Phase 2 — Orders & Customers
-- [ ] CRUD pelanggan.
+- [x] **Implementasi kode** CRUD pelanggan: daftar, cari nama/telepon, tambah, detail, edit, arsip (soft delete hanya jika tidak ada order), audit perubahan.
+- [x] Tulis tes fitur pelanggan (akses, validasi, pencarian, duplikasi telepon, pagination, HTML escaping, audit, perlindungan relasi order).
+- [ ] Jalankan **migrasi soft delete** pelanggan dan `php artisan test` pada laptop; QA manual browser dengan data sintetis. Lihat [CUSTOMERS_PHASE2.md](CUSTOMERS_PHASE2.md).
 - [ ] CRUD pesanan dan multi-item dengan **tanggal, tujuan, serta ongkir INCLUDED/SEPARATE per item**.
 - [ ] Nomor order unik, validasi input, filter/pencarian.
 - [ ] Status pengerjaan per item dan ringkasan otomatis status order.

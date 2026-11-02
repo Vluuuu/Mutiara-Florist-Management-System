@@ -1,5 +1,5 @@
 # Acceptance & Test Plan — MFMS
-**Status:** Pada 2 November 2026, `php artisan test` dijalankan di laptop operator dan menghasilkan **7 PASS (23 assertions, durasi 1,88 detik)**. Empat migrasi dasar berstatus Ran di MariaDB. Hasil ini terbatas pada tes yang sudah diimplementasikan; sebagian besar skenario T-01 s.d. T-38 masih belum diuji.
+**Status:** Baseline Phase 1: `php artisan test` **7 PASS / 23 assertions** pada 2 November 2026, empat migrasi Ran. **Tes baru CustomerManagementTest (10 skenario) sudah ditulis tetapi belum dieksekusi pada laptop.** Tidak ada klaim PASS untuk tes baru sampai hasil diberikan operator.
 
 ## Pendekatan
 Unit test untuk kalkulasi nominal/status; feature test Laravel untuk controller, autentikasi, form validation, MySQL transactions dan laporan. Tambahkan tes concurrency ber-DATABASE nyata untuk pembayaran.
@@ -46,6 +46,13 @@ Unit test untuk kalkulasi nominal/status; feature test Laravel untuk controller,
 | T-36 | Order & Payments | Order seluruh item DELIVERED tetapi belum menerima uang | Progres order COMPLETED, payment status UNPAID, sisa tagihan tetap ada |
 | T-37 | Order & Payments | Order selesai dikirim, pembayaran penuh baru diterima kemudian | Payment berubah PAID dan sisa 0; progres delivery tetap COMPLETED |
 | T-38 | Order & Payments | Pencatatan DP dilakukan pada order tertentu, tidak pada order lain | DP bersifat opsional dan status PARTIAL hanya pada order yang benar-benar dibayar sebagian |
+
+## Tes CRUD Pelanggan (Phase 2, belum dijalankan)
+- Akses halaman/aksi tanpa login ditolak; nama wajib dan ukuran input dibatasi.
+- Tambah/edit pelanggan menulis audit. Nomor telepon sama boleh digunakan oleh pelanggan berbeda.
+- Pencarian nama/telepon, pagination 10 baris, dan HTML escaping.
+- Pengarsipan pelanggan tanpa pesanan memakai soft delete; pelanggan dengan pesanan ditolak dan riwayat tetap utuh.
+- Jalankan setelah `php artisan migrate` lokal. Uji memakai database SQLite in-memory terpisah dari data operasional.
 
 ## Implementasi tes awal
 - `tests/Feature/ExampleTest.php` — redirect dari / ke /login.

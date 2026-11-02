@@ -1,7 +1,7 @@
 # Database Design & ERD — MFMS
 
 **Versi rancangan:** v0.6 (2 November 2026) — ongkir per item, DP opsional, pembatalan ditunda  
-**Status:** Core schema siap menjadi acuan implementasi setelah keputusan bisnis terbuka disahkan. **Belum ada migration ataupun data nyata di repo.**
+**Status:** Migrasi 8 tabel inti sudah ada dan berhasil dijalankan di MariaDB lokal. Phase 2 menambahkan migrasi `deleted_at` untuk pelanggan, **belum dijalankan pada laptop operator**. Tidak ada data pelanggan asli di repo.
 
 ## 1. Konteks dan prinsip
 
@@ -12,6 +12,7 @@
 - **Status pesanan** dan **status bayar** terpisah. Status bayar dihitung dari nilai tagihan dan pembayaran POSTED, bukan dua checkbox. Order boleh disimpan **tanpa pembayaran**; bisa langsung lunas saat pesan, lunas kemudian, atau DP opsional. Order COMPLETED tidak otomatis lunas.
 - **Delete:** jangan menghapus permanen pesanan yang memiliki riwayat pembayaran; jangan menghapus permanen pembayaran atau pengeluaran. Void/koreksi wajib memiliki alasan dan jejak audit.
 - **Data contoh:** seed sintetis saja, tidak memasukkan identitas asli pelanggan ke repository.
+- **CRUD pelanggan:** nama wajib, telepon/catatan opsional. Pengarsipan hanya diizinkan bila `orders` tidak ada. Gunakan `deleted_at` (soft delete), bukan hard delete, supaya ada jejak pemulihan jika diperlukan. Catat create/update/archive di `audit_logs` tanpa menyalin nomor telepon atau catatan ke log.
 
 ## 2. ERD
 
@@ -39,6 +40,7 @@ erDiagram
     varchar name
     varchar phone "nullable, not unique"
     text notes "nullable"
+    datetime deleted_at "nullable; soft delete"
     datetime created_at
     datetime updated_at
   }
@@ -124,7 +126,7 @@ erDiagram
 | Tabel | Fungsi | Kunci dan aturan |
 | --- | --- | --- |
 | `users` | Operator login | email unik; password di-hash |
-| `customers` | Data nama/kontak pemesan | telepon boleh kosong dan tidak diasumsikan unik |
+| `customers` | Data nama/kontak pemesan | telepon boleh kosong/tidak unik; `deleted_at` nullable ditambahkan lewat migration terpisah untuk arsip aman |
 | `orders` | Header pesanan dan ringkasan status pengerjaan | order_number unik; customer_id wajib; total_amount dihitung backend; **tidak mempunyai tanggal kirim tunggal** |
 | `order_items` | Rangkaian bunga dan pengiriman masing-masing | quantity > 0; unit_price >= 0; **delivery_date, delivery_location, shipping_mode dan shipping_fee per item**; pengirim/penerima dan fulfillment_status per item |
 | `payments` | Penerimaan uang **opsional**: lunas awal, lunas kemudian, atau DP jika ada | 0..N per order; amount > 0; POSTED/VOIDED; idempotency_key unik per submit |

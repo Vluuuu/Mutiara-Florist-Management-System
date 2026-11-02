@@ -1,6 +1,6 @@
 # Phase 1 — Menjalankan MFMS di Laptop Windows
 
-**Status:** Setup awal telah dibuktikan operator pada 2 November 2026: Laravel 12 terinstal, MariaDB 10.4.32 port 3307 terhubung, 4 migration DONE, admin lokal dibuat, server menerima request `/login` dan `/dashboard`. QA browser/tes otomatis belum dilakukan.
+**Status:** Setup awal telah dibuktikan operator pada 2 November 2026: Laravel 12 terinstal, MariaDB 10.4.32 port 3307 terhubung, 4 migration DONE, admin lokal dibuat, server menerima request `/login` dan `/dashboard`. 7 tes dasar PHPUnit telah PASS; QA visual browser dan pengujian CRUD Pelanggan Phase 2 belum dilakukan.
 
 ## 1. Prasyarat
 
@@ -105,6 +105,17 @@ Cek manual:
 - Tidak ada halaman `/register`.
 - Dashboard menampilkan total pesanan, nilai order, uang diterima, piutang, pengeluaran, dan selisih kas.
 - Delapan tabel bisnis termasuk `users` dan `audit_logs` tersedia sesuai desain; Laravel juga bisa membuat tabel infrastruktur sendiri.
+
+## Pengembangan Phase 2 — Pelanggan
+
+Jika Phase 1 sudah terpasang, jalankan pada terminal baru yang tidak dipakai `artisan serve`:
+```powershell
+git pull --ff-only origin main
+php artisan migrate
+php artisan test
+php artisan route:list --path=customers
+```
+Migration baru **hanya menambahkan** kolom `deleted_at` ke `customers`; tidak menghapus tabel atau akun admin. Buka `http://127.0.0.1:8000/customers` setelah login. Gunakan **pelanggan sintetis** untuk QA, bukan pelanggan nyata. Lihat [CUSTOMERS_PHASE2.md](CUSTOMERS_PHASE2.md).
 
 ## 7. Batas Phase 1
 

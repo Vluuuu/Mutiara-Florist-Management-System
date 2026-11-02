@@ -5,6 +5,8 @@
 
 ## A. Alur pesanan
 
+**Aturan pelanggan (Phase 2):** nama pelanggan wajib; telepon dan catatan opsional, nomor telepon **tidak** harus unik. Operator dapat mencari nama/telepon, menambah, melihat, dan mengedit. Pelanggan tanpa riwayat pesanan boleh diarsipkan (`deleted_at`); pelanggan yang memiliki pesanan tidak boleh diarsipkan. Data tidak di-hard-delete, perubahan dicatat di audit log. Tidak ada impor pelanggan asli pada fase pengujian awal.
+
 1. Operator memilih pelanggan yang sudah ada atau membuat pelanggan baru.
 2. Pesanan harus memiliki paling sedikit satu item bunga dengan jenis, penerima ("Untuk"), pengirim ucapan ("Dari"), kuantitas, dan harga satuan.
 3. Detail **penerima, pengirim ucapan, tanggal kirim, dan lokasi tujuan** ditentukan untuk setiap item karena satu pemesan dapat memilih tanggal/alamat berbeda dalam satu order (dikonfirmasi operator).
