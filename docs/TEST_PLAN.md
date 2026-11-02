@@ -28,14 +28,18 @@ Unit test untuk kalkulasi nominal/status; feature test Laravel untuk controller,
 | T-18 | Reports | Ekspor Excel | Nilai sesuai tampilan dan format Rupiah terbaca |
 | T-19 | Data safety | File .env, SQL, data pelanggan asli | Tidak ikut commit |
 | T-20 | Restore | Backup terenkripsi diverifikasi | Restore sukses pada DB uji, row counts/checksum sesuai |
+| T-21 | Order Items | Dua bunga satu order, tanggal dan tujuan berbeda | Jadwal/tujuan setiap item tetap benar setelah edit, refresh, dan restore |
+| T-22 | Order Items | Satu bunga jenis sama dikirim dua tanggal berbeda | Dua baris item terpisah, bukan digabung otomatis |
+| T-23 | Fulfillment | Item A DELIVERED, item B belum DELIVERED | Status order bukan COMPLETED |
+| T-24 | Fulfillment | Seluruh item DELIVERED | Status order menjadi COMPLETED |
 
 ## Exit gate Phase 0
 - Rancangan ERD, aturan pembayaran dan kriteria penerimaan konsisten.
-- Aturan pembatalan/refund, ongkir/diskon, pengiriman ganda telah ditanyakan ke pengguna.
+- Pengiriman berbeda tanggal/tujuan per item telah disetujui pengguna; aturan pembatalan/refund serta ongkir/diskon tetap terbuka.
 - Hal yang belum disetujui tetap diberi label OPEN; tidak diam-diam ditambahkan ke MVP.
 
 ## Exit gate sebelum data usaha nyata dimasukkan
-- Semua T-01 s.d. T-20 yang relevan pada scope rilis lulus.
+- Semua T-01 s.d. T-24 yang relevan pada scope rilis lulus.
 - Restore teruji, rahasia tidak ada di Git, migrasi dari nol berhasil, UI divalidasi operator.
 - SOP backup dan penanganan kesalahan input tersedia.
 
