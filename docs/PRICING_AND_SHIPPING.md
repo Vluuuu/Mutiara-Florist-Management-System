@@ -1,6 +1,6 @@
 # Harga dan Ongkos Kirim — MFMS
 
-**Rancangan:** v0.4 · 2 November 2026  
+**Rancangan:** v0.5 · 2 November 2026  
 **Keputusan pengguna yang dikonfirmasi:** ongkos kirim **kadang sudah termasuk harga bunga**, kadang **ditagihkan terpisah**. Item bunga dalam satu pesanan dapat memiliki tanggal dan tujuan kirim berbeda.
 
 ## 1. Keputusan desain
@@ -41,7 +41,7 @@ outstanding             = orders.total_amount - payments_received
 - `shipping_fee` adalah ongkir **yang ditagihkan pelanggan** pada baris pengiriman itu, bukan ongkos aktual yang dibayarkan kepada kurir.
 - `orders.total_amount` menjadi nilai materialisasi/cache dari detail item; tidak boleh diinput bebas di frontend.
 - Jangan gunakan FLOAT/DOUBLE; gunakan integer Rupiah dan validasi nilai serta overflow di server.
-- **Diskon, pajak, dan biaya lain** belum punya aturan yang disetujui; belum ditambahkan dalam rumus.
+- **Diskon dan pajak tidak diperlukan pada MVP**, sesuai keputusan operator. Tidak ada input diskon, perhitungan PPN, maupun kolom diskon/pajak dalam database awal. Jika kelak dibutuhkan, itu adalah perubahan fitur dan skema tersendiri.
 
 ## 3. Contoh perhitungan
 
@@ -91,10 +91,10 @@ Tidak ada perhitungan tarif otomatis pada MVP. Operator memasukkan ongkir berdas
 
 ## 7. Keputusan yang belum final
 
-- **Discount/potongan harga:** apakah dibutuhkan per item/order dan bagaimana syaratnya?
+- **Diskon dan pajak:** telah diputuskan **tidak diperlukan pada MVP**, jadi bukan pertanyaan terbuka pada tahap ini.
 - **Pengiriman pihak ketiga:** apakah pelanggan pernah membayar ongkir langsung ke kurir di luar pembayaran florist?
 - **Refund/pembatalan:** bagaimana pengembalian DP atau ongkir yang sudah diterima bila pengiriman dibatalkan?
-- **Pajak:** jika memang dibutuhkan, aturan harus disepakati dahulu.
+- **Perluasan fitur masa depan:** penambahan diskon atau pajak hanya setelah ada permintaan baru dan perancangan ulang rumus tagihan.
 - **Harga bunga termasuk ongkir:** tidak ada breakdown nominal ongkir tersembunyi tanpa data tambahan yang memang dicatat.
 
 Rujukan: [DATABASE](DATABASE.md), [BUSINESS_RULES](BUSINESS_RULES.md), [TEST_PLAN](TEST_PLAN.md), dan [DECISIONS](DECISIONS.md).
