@@ -2,7 +2,7 @@
 
 Sistem administrasi internal **Mutiara Indah Florist** untuk mengelola pesanan bunga dan pembukuan keuangan dalam satu aplikasi web.
 
-> **Status:** **Phase 1 — Laravel Foundation (berjalan di laptop, QA belum lengkap).** Laravel 12 terinstal di XAMPP; migrasi MariaDB lokal dan pembuatan akun admin berhasil 2 November 2026. Server menerima request login/dashboard. Tes otomatis/QA browser dan CRUD belum selesai. Baseline bisnis v0.6: pengiriman/ongkir per item, DP opsional, tanpa cancel/refund/diskon/pajak MVP.
+> **Status:** **Phase 1 — Laravel Foundation (berjalan, tes otomatis dasar PASS, QA lanjutan belum lengkap).** Laravel 12 terinstal di XAMPP; migrasi MariaDB dan admin berhasil pada 2 November 2026. `php artisan test`: **7 PASS / 23 assertions**. QA visual, uji rollback database uji, dan CRUD belum selesai. Baseline bisnis v0.6: pengiriman/ongkir per item, DP opsional, tanpa cancel/refund/diskon/pajak MVP.
 
 ## Tujuan
 
@@ -29,7 +29,7 @@ Sistem administrasi internal **Mutiara Indah Florist** untuk mengelola pesanan b
 
 Lihat **[panduan setup lokal](docs/LOCAL_SETUP.md)**. Ringkasnya: clone repo, `composer install`, buat `.env`, jalankan MySQL dan buat database `mutiara_florist`, `php artisan key:generate`, `php artisan migrate`, `php artisan mfms:create-admin`, `npm install && npm run build`, lalu `php artisan serve`. PHP harus **>=8.2**.
 
-Setup lokal sudah menghasilkan migration DONE dan akun admin pertama; halaman `/login` serta `/dashboard` telah diakses. **Tes otomatis, tampilan dashboard secara manual, dan backup/restore masih perlu diverifikasi. Jangan masukkan data pelanggan asli** sampai validasi dan backup berfungsi.
+Setup lokal sudah menghasilkan 4 migrasi Ran, satu akun admin, akses `/login` serta `/dashboard`, dan **7 tes otomatis PASS**. File `composer.lock` dan `package-lock.json` baru dibuat di laptop dan masih perlu di-commit. **QA manual browser, rollback database uji, dan backup/restore tetap perlu diverifikasi. Jangan masukkan data pelanggan asli** sampai validasi dan backup berfungsi.
 
 ## Dokumentasi
 
