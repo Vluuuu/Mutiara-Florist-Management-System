@@ -1,5 +1,5 @@
 # Workflow & Use Cases — MFMS
-**Versi:** v0.3 · **Status:** pengiriman dan ongkir per item disepakati, implementasi belum diuji.
+**Versi:** v0.4 · **Status:** pembayaran opsional, pelunasan awal/akhir; pembatalan bukan fitur MVP, implementasi belum diuji.
 
 ## Aktor
 **Operator/admin tunggal** menggunakan laptop lokal. Tidak ada akun pelanggan, supplier, atau pemilik terpisah pada MVP.
@@ -12,7 +12,7 @@
 | UC-02 | Tambah/cari pelanggan | Operator login | Data customer tersedia |
 | UC-03 | Catat pesanan multi-item, jadwal/tujuan, mode ongkir dan fee per item | Pelanggan dipilih | Order + jadwal/tujuan/harga/ongkir masing-masing item + total tersimpan atomik |
 | UC-04 | Ubah status pengerjaan per item | Order aktif | Status item diperbarui, ringkasan order dihitung ulang |
-| UC-05 | Terima DP/pelunasan | Saldo terutang > 0 | Payment POSTED dan sisa tagihan baru |
+| UC-05 | Catat pembayaran opsional (lunas awal, lunas belakangan atau DP jika ada) | Saldo terutang > 0 | Payment POSTED, status bayar & sisa tagihan terkini |
 | UC-06 | Koreksi input pembayaran | Payment salah | Payment VOIDED dengan alasan/audit |
 | UC-07 | Catat/koreksi pengeluaran | Kategori tersedia | Expense POSTED/VOIDED |
 | UC-08 | Lihat dashboard & laporan | Data tersedia | Agregat penjualan, kas, piutang |
@@ -33,6 +33,8 @@ flowchart TD
     G --> H[Commit transaction]
     H --> I[Daftar/detail pesanan tampil]
 ```
+
+**Saat membuat pesanan:** pembayaran boleh dilewati tanpa membuat baris `payments`; status otomatis UNPAID. Jika pelanggan sudah membayar penuh di awal, buat satu pembayaran POSTED senilai total tagihan. Jika pembayaran diberikan di akhir, order tetap dapat berjalan hingga COMPLETED sementara status bayar UNPAID.
 
 ## Alur pembayaran (target)
 
@@ -61,15 +63,15 @@ Item B: tanggal 13, lokasi B: NEW -> PROCESSING -> READY -> DELIVERED
 Order: COMPLETED hanya setelah SEMUA item DELIVERED
 ```
 
-Jika sebagian item sudah terkirim, ringkasan order tetap **PROCESSING** sampai seluruh item memenuhi kondisi penyelesaian. Pembatalan order hanya untuk order tanpa pembayaran pada MVP; pembatalan per item dan refund belum tersedia. Koreksi status manual perlu audit.
+Jika sebagian item sudah terkirim, ringkasan order tetap **PROCESSING** sampai seluruh item memenuhi kondisi penyelesaian. **Order berstatus COMPLETED bisa masih UNPAID/PARTIAL**; keduanya independen. **Tidak tersedia pembatalan order/item atau refund pada MVP**, karena tidak ada kebutuhan yang dilaporkan. Koreksi status manual perlu audit.
 
 ## Alur laporan
 
 1. Operator memilih periode.
-2. Penjualan: agregasi order non-cancel menurut tanggal order.
+2. Penjualan: agregasi seluruh order pada MVP menurut tanggal order; tidak ada status CANCELLED di MVP.
 3. Uang masuk: pembayaran POSTED menurut tanggal pembayaran.
 4. Uang keluar: pengeluaran POSTED menurut tanggal pengeluaran. Jika florist membayar kurir, biaya pengiriman nyata masuk expenses dan tidak otomatis sama dengan ongkir yang ditagih.
-5. Piutang: **saldo saat ini** untuk order aktif, diberi label sesuai.
+5. Piutang: **saldo saat ini** seluruh order yang belum lunas (termasuk item yang sudah dikirim), diberi label sesuai.
 6. Tampilkan dashboard atau ekspor data berdasarkan definisi yang sama.
 
 **Larangan perhitungan ganda:** pembayaran tidak juga dibuat sebagai row pemasukan yang dijumlahkan ulang. Ongkir SEPARATE hanya menjadi bagian tagihan, **bukan** pembayaran tunai tambahan di luar payments. Total pesanan bukan penerimaan kas.
