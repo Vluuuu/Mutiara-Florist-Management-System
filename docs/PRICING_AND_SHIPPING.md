@@ -51,7 +51,7 @@ outstanding             = orders.total_amount - payments_received
 | Buket untuk 7 Nov di Tangerang | 2 × Rp250.000 | SEPARATE | Rp75.000 | Rp575.000 |
 | **Total** | **Rp1.300.000** | | **Rp75.000** | **Rp1.375.000** |
 
-Jika pelanggan bayar DP Rp375.000, total sudah dibayar Rp375.000 dan sisa tagihan Rp1.000.000. Saat pelunasan Rp1.000.000, status menjadi PAID.
+**DP hanya contoh opsional.** Untuk tagihan Rp1.375.000: tanpa pembayaran status UNPAID; jika langsung membayar Rp1.375.000 saat pesan status PAID; jika membayar penuh belakangan status UNPAID hingga uang diterima; jika DP Rp375.000 maka sisa Rp1.000.000 sampai dilunasi.
 
 Untuk 2 buket pada satu tanggal/lokasi, ongkir Rp75.000 **hanya dikenakan sekali untuk item tersebut**, bukan dua kali. Jika pengiriman dibagi menjadi dua tujuan/tanggal, buat dua item agar ongkir per pengiriman tidak rancu.
 
@@ -93,7 +93,7 @@ Tidak ada perhitungan tarif otomatis pada MVP. Operator memasukkan ongkir berdas
 
 - **Diskon dan pajak:** telah diputuskan **tidak diperlukan pada MVP**, jadi bukan pertanyaan terbuka pada tahap ini.
 - **Pengiriman pihak ketiga:** apakah pelanggan pernah membayar ongkir langsung ke kurir di luar pembayaran florist?
-- **Refund/pembatalan:** bagaimana pengembalian DP atau ongkir yang sudah diterima bila pengiriman dibatalkan?
+- **Refund/pembatalan:** tidak tersedia pada MVP; kebijakan pengembalian DP/ongkir dibahas kembali jika kasus nyata muncul.
 - **Perluasan fitur masa depan:** penambahan diskon atau pajak hanya setelah ada permintaan baru dan perancangan ulang rumus tagihan.
 - **Harga bunga termasuk ongkir:** tidak ada breakdown nominal ongkir tersembunyi tanpa data tambahan yang memang dicatat.
 
