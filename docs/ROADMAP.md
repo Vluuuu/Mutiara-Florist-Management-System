@@ -1,5 +1,5 @@
 # Roadmap Pengembangan
-**Status:** Phase 1 sedang berjalan. Kerangka Laravel 13, login, dashboard, dan migrasi telah di-commit ke GitHub; setup runtime lokal belum diverifikasi.
+**Status:** Phase 1 sedang berjalan. Kerangka Laravel 12, login, dashboard, dan migrasi telah di-commit ke GitHub; setup runtime lokal belum diverifikasi.
 
 ## Phase 0 — Foundation (sedang berlangsung)
 - [x] Inisialisasi repo GitHub private dan README.
@@ -13,7 +13,7 @@
 **Exit gate:** core schema & aturan pembayaran (tanpa DP wajib) cukup sebagai baseline untuk memulai Laravel. Pembatalan/refund sengaja di luar MVP dan bukan blocker setup/migration core. Keputusan lain yang memengaruhi model harus dicatat sebelum perubahan migrasi.
 
 ## Phase 1 — Laravel Foundation
-- [x] Import kerangka resmi **Laravel 13** (butuh PHP >=8.3) ke repository.
+- [x] Import kerangka resmi **Laravel 12** (butuh PHP >=8.2) ke repository.
 - [ ] Konfigurasi MySQL lokal via `.env`; pastikan tidak masuk Git.
 - [x] Tambahkan layout Blade, Tailwind 4, dan Alpine.js (build lokal masih perlu diverifikasi).
 - [x] Implementasi awal layout dashboard dan navigasi responsif; modul lain masih placeholder nonaktif.
