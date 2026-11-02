@@ -18,11 +18,14 @@
                 </div>
             </div>
             <nav aria-label="Navigasi utama" class="px-4 pb-5">
-                <a href="{{ route('dashboard') }}" aria-current="page" class="flex items-center rounded-lg bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900">
+                <a href="{{ route('dashboard') }}" @if(request()->routeIs('dashboard')) aria-current="page" @endif class="flex items-center rounded-lg px-4 py-3 text-sm font-semibold {{ request()->routeIs('dashboard') ? 'bg-emerald-50 text-emerald-900' : 'text-stone-600 hover:bg-stone-50' }}">
                     <span class="mr-3">◫</span> Dashboard
                 </a>
+                <a href="{{ route('customers.index') }}" @if(request()->routeIs('customers.*')) aria-current="page" @endif class="mt-1 flex items-center rounded-lg px-4 py-3 text-sm font-semibold {{ request()->routeIs('customers.*') ? 'bg-emerald-50 text-emerald-900' : 'text-stone-600 hover:bg-stone-50' }}">
+                    <span class="mr-3">♧</span> Pelanggan
+                </a>
                 <p class="px-4 pb-2 pt-7 text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-400">Dalam pengembangan</p>
-                @foreach (['Pesanan', 'Pelanggan', 'Pembayaran', 'Pengeluaran', 'Laporan'] as $item)
+                @foreach (['Pesanan', 'Pembayaran', 'Pengeluaran', 'Laporan'] as $item)
                     <p class="cursor-default rounded-lg px-4 py-2.5 text-sm text-stone-400" aria-disabled="true">{{ $item }}</p>
                 @endforeach
             </nav>
@@ -39,9 +42,12 @@
                 </div>
             </header>
             <main class="w-full max-w-7xl flex-1 px-5 py-9 md:px-9">
+                @if (session('success'))
+                    <div role="status" class="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-950">{{ session('success') }}</div>
+                @endif
                 @yield('content')
             </main>
-            <footer class="px-5 pb-6 text-xs text-stone-400 md:px-9">MFMS · Sistem lokal · Phase 1</footer>
+            <footer class="px-5 pb-6 text-xs text-stone-400 md:px-9">MFMS · Sistem lokal · Phase 2</footer>
         </div>
     </div>
 </body>
