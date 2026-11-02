@@ -83,4 +83,5 @@
     </dl>
     <p class="mt-4 text-xs leading-5 text-stone-500">Pembayaran hanya dihitung jika status POSTED. Koreksi pencatatan (VOIDED) tidak berarti uang dikembalikan.</p>
 </section>
+@include('orders._payments')
 @endsection
