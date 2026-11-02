@@ -2,7 +2,7 @@
 
 Sistem administrasi internal **Mutiara Indah Florist** untuk mengelola pesanan bunga dan pembukuan keuangan dalam satu aplikasi web.
 
-> **Status:** **Phase 2.2 — Pesanan Multi-Item berjalan di XAMPP dan suite tes 34 PASS / 193 assertions** (2 November 2026). Operator melaporkan uji web berhasil; build Vite lulus. QA lintas-skenario dan backup/restore belum selesai. Baseline bisnis v0.6: pengiriman/ongkir per item, DP opsional, tanpa cancel/refund/diskon/pajak MVP.
+> **Status:** **Phase 3.1 — kode Pembayaran & Piutang sudah ditambahkan ke GitHub, belum dites pada laptop** (2 November 2026). Baseline terakhir yang sudah lulus: Phase 2.2 **34 PASS / 193 assertions**. 16 tes pembayaran baru, QA browser keuangan dan concurrency MariaDB menunggu verifikasi. Baseline bisnis v0.6: pengiriman/ongkir per item, DP opsional, tanpa cancel/refund/diskon/pajak MVP.
 
 ## Tujuan
 
@@ -29,7 +29,7 @@ Sistem administrasi internal **Mutiara Indah Florist** untuk mengelola pesanan b
 
 Lihat **[panduan setup lokal](docs/LOCAL_SETUP.md)**. Ringkasnya: clone repo, `composer install`, buat `.env`, jalankan MySQL dan buat database `mutiara_florist`, `php artisan key:generate`, `php artisan migrate`, `php artisan mfms:create-admin`, `npm install && npm run build`, lalu `php artisan serve`. PHP harus **>=8.2**.
 
-Setup lokal sudah menjalankan lima migrasi, membuat akun admin, dan **34 tes otomatis PASS (193 assertions)** termasuk seluruh tes Pesanan Phase 2.2; operator juga telah mencoba modul di browser. `composer.lock` dan `package-lock.json` tersimpan di GitHub. **Backup/restore, QA lengkap, serta modul pembayaran belum selesai**; jangan memasukkan data pelanggan nyata dulu.
+Setup lokal sudah menjalankan lima migrasi, membuat akun admin, dan **34 tes otomatis Phase 2.2 PASS (193 assertions)**. Kode Pembayaran & Piutang Phase 3.1 menambah form pembayaran, void dan daftar piutang tanpa migrasi baru; **belum ada bukti tes Phase 3.1 di laptop**. `composer.lock` dan `package-lock.json` tersimpan di GitHub. Backup/restore dan uji paralel MariaDB masih pending; jangan memasukkan data pelanggan nyata dulu.
 
 ## Dokumentasi
 
@@ -41,6 +41,7 @@ Setup lokal sudah menjalankan lima migrasi, membuat akun admin, dan **34 tes oto
 - [Roadmap](docs/ROADMAP.md)
 - [Uji fitur pelanggan Phase 2](docs/CUSTOMERS_PHASE2.md)
 - [Uji pesanan multi-item Phase 2.2](docs/ORDERS_PHASE2.md)
+- [Uji pembayaran & piutang Phase 3.1](docs/PAYMENTS_PHASE3.md)
 - [Log keputusan](docs/DECISIONS.md)
 - [Alur kerja dan use cases](docs/WORKFLOWS.md)
 - [Rancangan pengujian](docs/TEST_PLAN.md)

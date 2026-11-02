@@ -42,6 +42,6 @@ Tidak ada migrasi baru pada Phase 2.2. Untuk berjaga-jaga, `php artisan migrate:
 Hasil `php artisan test` terbaru telah dikonfirmasi **34 PASS / 193 assertions**. Jika ada bug pada QA browser berikutnya, simpan output error tanpa password dan jangan gunakan pelanggan nyata dulu.
 
 ## Batasan dan langkah berikutnya
-- Pencatatan pembayaran/DP **belum tersedia di UI**. Pesanan yang dibuat sekarang tidak otomatis dianggap lunas. Status pembayaran dihitung dari data pembayaran POSTED yang ada.
+- Pembayaran/DP **sudah tersedia di detail order melalui Phase 3.1** (kode belum diuji di laptop). Pesanan baru tidak otomatis dianggap lunas. Operator bisa mencatat pembayaran setelah order disimpan. Status pembayaran dihitung dari data POSTED.
 - Kuitansi, pembatalan/refund, ekspor, dan backup belum tersedia.
 - Gunakan data simulasi sampai QA, backup, dan restore dipastikan berhasil. Pengembangan berikutnya adalah modul **Pembayaran dan Piutang**.

@@ -35,6 +35,8 @@ Status pengerjaan **setiap item**: `NEW` → `PROCESSING` → `READY` → `DELIV
 - Pencatatan penerimaan uang adalah **event pembayaran**; satu pesanan dapat memiliki nol, satu atau banyak event. Tidak ada `dp_amount` wajib pada `orders` atau jadwal cicilan wajib.
 - Satu event memiliki nilai positif, tanggal pembayaran, metode, referensi opsional, dan siapa yang mencatat.
 - Event dengan `status = POSTED` dihitung sebagai penerimaan. `VOIDED` berarti pencatatan salah yang dibatalkan dengan alasan dan audit; **bukan** bukti pengembalian uang kepada pelanggan.
+- Implementasi Phase 3.1: catatan penerimaan bisa dibuat segera **setelah** order disimpan, atau kemudian. Setiap pembayaran memakai kunci UUID unik untuk mencegah satu request yang dikirim ulang mencatat uang dua kali. Saldo dicek dalam transaksi yang mengunci order. Belum ada input pembayaran langsung dalam satu request atomik bersama pembuatan order.
+- Untuk memperbaiki pembayaran salah, beri alasan void (minimal 10 karakter). Event asli tetap tersimpan sebagai VOIDED; kemudian buat payment POSTED baru dengan UUID baru jika memang uang telah diterima.
 - Status bayar **turunan**, bukan dua checkbox seperti di Sheets:
   - `UNPAID` jika jumlah POSTED = 0.
   - `PARTIAL` jika 0 < jumlah POSTED < total tagihan.

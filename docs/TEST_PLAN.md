@@ -1,5 +1,5 @@
 # Acceptance & Test Plan — MFMS
-**Status:** `php artisan test` pada 2 November 2026: **34 PASS / 193 assertions (3,00 detik)**, termasuk 17 tes baru `OrderManagementTest` untuk Phase 2.2. Vite build lulus dan operator menyatakan aplikasi telah diuji di browser; belum ada bukti rinci seluruh skenario QA manual dan uji transaksi paralel MariaDB.
+**Status:** Terakhir terverifikasi pada laptop 2 November 2026: **34 PASS / 193 assertions** dari Phase 2.2. Phase 3.1 menambahkan **16 skenario PaymentManagementTest**, belum dijalankan pada laptop. Jangan mengklaim 50 PASS sebelum hasil baru dilaporkan. Tes paralel MySQL/MariaDB tetap terpisah dari PHPUnit SQLite in-memory.
 
 ## Pendekatan
 Unit test untuk kalkulasi nominal/status; feature test Laravel untuk controller, autentikasi, form validation, MySQL transactions dan laporan. Tambahkan tes concurrency ber-DATABASE nyata untuk pembayaran.
@@ -57,6 +57,11 @@ Unit test untuk kalkulasi nominal/status; feature test Laravel untuk controller,
 ## Tes Pesanan Multi-Item (Phase 2.2, 17 tes PASS di laptop)
 - 17 skenario di `tests/Feature/OrderManagementTest.php`: proteksi akses dan tanpa route delete; dua bunga beda tanggal/lokasi; total Rp1.375.000 dengan ongkir hanya satu kali; rollback form tidak valid; biaya kirim INCLUDED/SEPARATE; nilai positif dan batas input; pelanggan arsip ditolak; edit menjaga ID item; piutang dan alasan revisi harga setelah DP; pelanggan berbayar tidak dapat dipindahkan; ID item lintas order ditolak; status bertahap dan COMPLETED hanya setelah semua item terkirim; penghapusan item diproses ditolak; filter daftar; ULID; ID item duplikat.
 - PHPUnit menggunakan SQLite in-memory sesuai `phpunit.xml`; seluruh 17 tes pesanan PASS di laptop, total suite 34 PASS / 193 assertions. Operator juga melaporkan halaman pesanan berfungsi di browser dengan MariaDB lokal, tetapi belum ada verifikasi lengkap concurrency pembayaran pada MariaDB.
+
+## Tes Pembayaran & Piutang (Phase 3.1, belum dijalankan)
+- 16 skenario pada `tests/Feature/PaymentManagementTest.php`: otorisasi, DP lalu pelunasan, bayar penuh langsung setelah order tersimpan, pembayaran setelah delivery, penolakan overpay/nominal negatif, penolakan pembayaran pada order lunas, retry identik satu event, key sama dengan payload berbeda/order lain ditolak, cicilan berbeda key, void dengan alasan, void ganda, key void tidak dapat dihidupkan lagi, payment order lain 404, penggantian entri sesudah void, filter piutang, validasi metode/key.
+- Pemeriksaan saldo menggunakan lock baris order yang sama dengan `OrderService::update` dan constraint unik pada `payments.idempotency_key`. **Tes SQLite tidak membuktikan serialisasi nyata MariaDB**; skenario T-11 concurrency dengan proses/request terpisah dan database MariaDB khusus uji masih OPEN.
+- T-35 (payment saat satu request create order secara atomik) belum diimplementasikan: pengguna dapat menyimpan order lalu langsung membuka detail dan membayarnya sebagai dua langkah.
 
 ## Implementasi tes awal
 - `tests/Feature/ExampleTest.php` — redirect dari / ke /login.

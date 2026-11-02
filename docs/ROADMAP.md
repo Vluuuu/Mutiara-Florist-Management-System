@@ -1,5 +1,5 @@
 # Roadmap Pengembangan
-**Status:** Phase 2.2 pesanan multi-item sudah dijalankan di XAMPP pada 2 November 2026: `npm run build` PASS, **34 tests PASS / 193 assertions**, dan operator mengonfirmasi halaman pesanan berhasil diuji di browser. Detail cakupan QA manual dan rollback pada DB uji masih perlu diverifikasi.
+**Status:** Phase 3.1 Pembayaran & Piutang sudah diimplementasikan di GitHub (2 November 2026), dengan 16 tes fitur baru **belum dijalankan di laptop**. Baseline yang terbukti: Phase 2.2, **34 PASS / 193 assertions**, build Vite dan QA browser oleh operator. Tes integrasi paralel MariaDB dan backup/restore masih diperlukan.
 
 ## Phase 0 — Foundation (sedang berlangsung)
 - [x] Inisialisasi repo GitHub private dan README.
@@ -44,11 +44,14 @@
 **Exit gate:** pesanan dapat dibuat, dicari, diedit sesuai aturan, dan bertahan setelah restart.
 
 ## Phase 3 — Payments & Expenses
-- [ ] Riwayat pembayaran fleksibel: tanpa DP, langsung lunas saat pesan, bayar penuh kemudian, dan DP opsional.
-- [ ] Status bayar dan piutang hasil perhitungan.
-- [ ] CRUD kategori serta pencatatan pengeluaran.
-- [ ] Void kesalahan input pembayaran/pengeluaran dengan alasan dan audit; **bukan** implementasi cancel/refund. Fitur cancel/refund masuk backlog pasca-MVP bila diperlukan.
-- [ ] Tes nominal, pembayaran berlebih, submit ganda, dan konsistensi transaksi.
+- [x] **Kode Phase 3.1:** catat pembayaran POSTED dalam urutan DP/cicilan/pelunasan opsional, baik sesaat setelah order dibuat maupun belakangan. Form pembayaran berada di detail order; belum ada pembayaran gabungan atomik dalam satu request pembuatan order.
+- [x] **Kode Phase 3.1:** status UNPAID/PARTIAL/PAID dan jumlah piutang dihitung dari nilai order minus pembayaran POSTED, tampil di detail order, dashboard, dan daftar Piutang.
+- [x] **Kode Phase 3.1:** guard pembayaran berlebih, lock baris order yang sama dengan OrderService, idempotency UUID unik, input dengan CSRF/auth, audit per pembayaran.
+- [x] **Kode Phase 3.1:** void pencatatan salah dengan alasan, timestamp dan audit, tanpa menghapus payment asli. **Bukan refund.**
+- [x] Tulis 16 tes baru PaymentManagementTest: DP, pelunasan, overpay, replay idempotency, status piutang, void, akses dan referensi lintas order. **Belum dieksekusi pada laptop.**
+- [ ] Jalankan PHPUnit, QA browser dengan data sintetis dan uji simultan riil pada MariaDB untuk mengonfirmasi race prevention.
+- [ ] Dukungan pembayaran penuh/DP **bersamaan dengan submit pembuatan order dalam satu transaksi atomik** (T-35); saat ini pembayaran dicatat dari detail setelah order tersimpan.
+- [ ] CRUD kategori serta pencatatan pengeluaran, void kesalahan input pengeluaran dan pengujian. Lihat [PAYMENTS_PHASE3.md](PAYMENTS_PHASE3.md).
 
 **Exit gate:** seluruh angka pembayaran/piutang konsisten dan dapat ditelusuri.
 
