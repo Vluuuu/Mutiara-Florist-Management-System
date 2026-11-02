@@ -1,5 +1,5 @@
 # Roadmap Pengembangan
-**Status:** Phase 2.2 kode pesanan multi-item dan 17 skenario tes baru telah di-commit (2 November 2026), namun **belum dijalankan di laptop operator**. Baseline terakhir: Phase 2.1 **17 PASS / 83 assertions**; QA browser dan rollback DB uji belum terverifikasi.
+**Status:** Phase 2.2 pesanan multi-item sudah dijalankan di XAMPP pada 2 November 2026: `npm run build` PASS, **34 tests PASS / 193 assertions**, dan operator mengonfirmasi halaman pesanan berhasil diuji di browser. Detail cakupan QA manual dan rollback pada DB uji masih perlu diverifikasi.
 
 ## Phase 0 — Foundation (sedang berlangsung)
 - [x] Inisialisasi repo GitHub private dan README.
@@ -33,12 +33,13 @@
 - [x] Tulis tes fitur pelanggan (akses, validasi, pencarian, duplikasi telepon, pagination, HTML escaping, audit, perlindungan relasi order).
 - [x] Jalankan **migrasi soft delete** pelanggan dan `php artisan test` di laptop: 17 PASS / 83 assertions; Vite build berhasil.
 - [ ] QA manual browser menggunakan pelanggan sintetis. Lihat [CUSTOMERS_PHASE2.md](CUSTOMERS_PHASE2.md).
-- [x] **Kode Phase 2.2:** buat, daftar, detail, edit pesanan multi-item dengan **tanggal/tujuan/penerima/pengirim dan ongkir INCLUDED/SEPARATE per item**. Belum diverifikasi pada runtime lokal.
+- [x] **Kode Phase 2.2:** buat, daftar, detail, edit pesanan multi-item dengan **tanggal/tujuan/penerima/pengirim dan ongkir INCLUDED/SEPARATE per item**. Operator mengonfirmasi pengujian di browser lokal.
 - [x] Nomor pesanan unik ULID di backend, validasi server, pencarian nomor/pelanggan, filter status dan pagination.
 - [x] Alur status item bertahap NEW → PROCESSING → READY → DELIVERED, ringkasan status order otomatis; item yang sudah diproses tidak boleh dihapus.
 - [x] Service transaksi database: jumlah ongkir terpisah dihitung sekali per item; perubahan setelah DP tidak boleh lebih rendah dari pembayaran POSTED, dan repricing berbayar wajib alasan + audit.
-- [x] Tulis 17 tes otomatis baru untuk perhitungan, keamanan, validasi, pembayaran tercatat, perubahan item/status, dan audit; **belum dijalankan**.
-- [ ] Jalankan `php artisan test`, build Vite, serta QA manual daftar, buat/edit, pengiriman dan filter menggunakan data sintetis. Lihat [ORDERS_PHASE2.md](ORDERS_PHASE2.md).
+- [x] Tulis dan jalankan 17 tes otomatis baru untuk perhitungan, keamanan, validasi, pembayaran tercatat, perubahan item/status, dan audit; **34/34 PASS, 193 assertions** untuk seluruh suite.
+- [x] `npm run build` berhasil dan operator melaporkan pengujian browser halaman Pesanan berhasil; route `/orders`, `/orders/create`, dan `/orders/{order}` tampak di log server.
+- [ ] Verifikasi kelengkapan QA manual seluruh alur (edit status, filter, logout, refresh), termasuk interaksi order dengan pelanggan yang diarsipkan. Lihat [ORDERS_PHASE2.md](ORDERS_PHASE2.md).
 
 **Exit gate:** pesanan dapat dibuat, dicari, diedit sesuai aturan, dan bertahan setelah restart.
 
