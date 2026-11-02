@@ -5,17 +5,17 @@
 - [x] Inisialisasi repo GitHub private dan README.
 - [x] Draft PRD, arsitektur, database, aturan bisnis, roadmap, dan log keputusan.
 - [ ] Validasi alur bisnis dengan operator/pemilik.
-- [ ] Finalisasi ERD dan keputusan pembatalan/refund.
-- [ ] Tetapkan acceptance criteria untuk versi pertama.
+- [x] Buat rancangan ERD 8 tabel dan baseline integritas pembayaran (v0.2).\n- [ ] Konfirmasi kebijakan pembatalan/refund; belum final.
+- [x] Susun acceptance criteria dan test scenarios versi pertama (draft).\n- [ ] Review/sahkan acceptance criteria bersama operator.
 
-**Exit gate:** scope dan aturan uang jelas sebelum membuat migration final.
+**Exit gate:** scope dan aturan uang disetujui sebelum membuat migration final. Setup Laravel dapat dimulai sementara kebijakan refund tetap terbuka, asalkan fungsi refund/pembatalan berbayar belum diimplementasikan.
 
 ## Phase 1 — Laravel Foundation
 - [ ] Bootstrap Laravel sesuai versi PHP yang dipakai.
 - [ ] Konfigurasi MySQL lokal via `.env`; pastikan tidak masuk Git.
 - [ ] Setup Blade, Tailwind, dan Alpine.js.
 - [ ] Layout dashboard dan navigasi responsif.
-- [ ] Migration awal dan seed data sintetis.
+- [ ] Migration core (8 tabel) setelah validasi ERD; seed data sintetis.
 - [ ] Login satu akun operator dan tes autentikasi.
 
 **Exit gate:** proyek bisa dibuka di browser lokal, tes setup lulus, dan migration bisa dijalankan ulang dari nol.
@@ -58,7 +58,7 @@
 
 **Exit gate:** aplikasi layak untuk uji operasional lokal dan batasan yang tersisa terdokumentasi.
 
-## Aturan bekerja
+Dokumentasi rancangan: [DATABASE](DATABASE.md), [BUSINESS_RULES](BUSINESS_RULES.md), [WORKFLOWS](WORKFLOWS.md), [TEST_PLAN](TEST_PLAN.md).\n\n## Aturan bekerja
 1. Setiap perubahan fitur memperbarui PRD/aturan jika mengubah perilaku yang disepakati.
 2. Gunakan issue/PR untuk pekerjaan substantif setelah foundation.
 3. Jangan mencampur data asli pelanggan dengan repo.
