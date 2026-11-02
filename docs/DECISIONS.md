@@ -22,15 +22,18 @@ Status:
 | D-012 | Design baseline | Penjualan berdasar order_date, penerimaan payment_date, pengeluaran expense_date | Cegah laporan kas dan penjualan tercampur |
 | D-013 | Design baseline | Piutang yang ditampilkan adalah snapshot saat ini, bukan histori as-of | Belum ada historical ledger/snapshot |
 | D-014 | Open | Refund, DP hangus, biaya pembatalan dan koreksi pembayaran berimplikasi uang nyata | Belum ada persetujuan kebijakan |
-| D-015 | Accepted (ongkir) / Open (diskon, pajak) | Ongkir bisa termasuk harga bunga atau ditagihkan terpisah; diskon/pajak belum ditentukan | Jawaban operator 2 Nov 2026; desain per-item pada [PRICING_AND_SHIPPING.md](PRICING_AND_SHIPPING.md) |
+| D-015 | Accepted | Ongkir bisa termasuk harga bunga atau ditagihkan terpisah | Jawaban operator 2 Nov 2026; rincian di [PRICING_AND_SHIPPING.md](PRICING_AND_SHIPPING.md) |
 | D-016 | Accepted | Satu pesanan dapat berisi banyak item dengan tanggal **dan** lokasi pengiriman berbeda | Jawaban operator: tiap bunga mengikuti permintaan tanggal/tujuan pembeli; model per item |
 | D-017 | Open | Metode bayar dan kategori biaya yang umum digunakan | Butuh daftar awal |
 | D-018 | Open | Lingkungan pengembangan Windows yang dipakai; backup Drive manual/otomatis | Perlu cek perangkat & preferensi |
 | D-019 | Open | Impor Excel/Sheets masuk MVP atau fase berikutnya | Perlu prioritas/estimasi |
 | D-020 | Open | Penanganan pesanan gratis, revisi status completed, dan retensi lampiran | Kasus pinggir belum ditetapkan |
+| D-021 | Open | Diskon/potongan harga dan pajak | Belum boleh dimasukkan ke rumus tagihan |
+| D-022 | Open | Ongkir dibayar pelanggan langsung ke kurir di luar florist | Perlu aturan agar tidak dicatat sebagai kas florist |
+| D-023 | Design baseline | Mode dan ongkir ditagihkan per item pengiriman, dapat campur dalam satu order | Mendukung multi-tujuan dan tidak menduplikasi ongkir per quantity |
 
 ## Rencana tindak lanjut
-1. Konfirmasi keputusan **Open** (refund D-014; diskon/pajak pada D-015; dan D-017 s.d. D-020) dengan operator atau pemilik.
+1. Konfirmasi keputusan **Open** (refund D-014, D-017 s.d. D-022 yang masih terbuka) dengan operator atau pemilik.
 2. Finalisasi aturan ini **sebelum mengimplementasikan pembatalan berbayar**.
 3. Core Laravel setup boleh dimulai tanpa seluruh kebijakan lanjutan, sepanjang tidak membuat fitur yang bertentangan dengan status Open.
 4. Jika sebuah keputusan mengubah tabel, perbarui [DATABASE](DATABASE.md), [BUSINESS_RULES](BUSINESS_RULES.md), [PRD](PRD.md) dan tes terkait.
