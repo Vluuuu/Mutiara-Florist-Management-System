@@ -32,15 +32,24 @@ Unit test untuk kalkulasi nominal/status; feature test Laravel untuk controller,
 | T-22 | Order Items | Satu bunga jenis sama dikirim dua tanggal berbeda | Dua baris item terpisah, bukan digabung otomatis |
 | T-23 | Fulfillment | Item A DELIVERED, item B belum DELIVERED | Status order bukan COMPLETED |
 | T-24 | Fulfillment | Seluruh item DELIVERED | Status order menjadi COMPLETED |
+| T-25 | Pricing | Bunga Rp800k mode INCLUDED dengan shipping_fee 0 | Total item tetap Rp800k |
+| T-26 | Pricing | 2 bunga @250k, shipping_fee 75k mode SEPARATE | Total item Rp575k; fee tidak dikalikan qty |
+| T-27 | Pricing | Order gabungan item INCLUDED 800k dan SEPARATE 575k | Total Rp1.375.000; nilai bunga Rp1.300.000; ongkir tambahan Rp75.000 |
+| T-28 | Validation | Mode INCLUDED dengan fee >0 atau SEPARATE dengan fee 0 | Input ditolak server, tidak ada penulisan parsial |
+| T-29 | Pricing | Ubah ongkir setelah DP sehingga total baru < payment POSTED | Ditolak atomik dan perubahan diaudit bila sah |
+| T-30 | Reports | Ongkir terpisah ditagihkan Rp75k; kurir dibayar Rp55k | Tagihan memuat 75k, expense 55k, uang masuk hanya dari POSTED payments |
+| T-31 | Pricing | Item sama jenis tetapi tanggal/lokasi berbeda | Masing-masing ongkir dicatat dan dihitung sekali per pengiriman |
 
 ## Exit gate Phase 0
 - Rancangan ERD, aturan pembayaran dan kriteria penerimaan konsisten.
-- Pengiriman berbeda tanggal/tujuan per item telah disetujui pengguna; aturan pembatalan/refund serta ongkir/diskon tetap terbuka.
+- Pengiriman berbeda tanggal/tujuan dan ongkir termasuk/terpisah per item telah disetujui pengguna. Aturan pembatalan/refund, diskon, dan pajak tetap terbuka.
 - Hal yang belum disetujui tetap diberi label OPEN; tidak diam-diam ditambahkan ke MVP.
 
 ## Exit gate sebelum data usaha nyata dimasukkan
-- Semua T-01 s.d. T-24 yang relevan pada scope rilis lulus.
+- Semua T-01 s.d. T-31 yang relevan pada scope rilis lulus.
 - Restore teruji, rahasia tidak ada di Git, migrasi dari nol berhasil, UI divalidasi operator.
 - SOP backup dan penanganan kesalahan input tersedia.
+
+Rincian contoh dan invariant ongkir lihat [PRICING_AND_SHIPPING.md](PRICING_AND_SHIPPING.md).
 
 Tidak ada hitungan tes PASS sebelum tes benar-benar dibuat dan dijalankan.
