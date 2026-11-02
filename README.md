@@ -2,7 +2,7 @@
 
 Sistem administrasi internal **Mutiara Indah Florist** untuk mengelola pesanan bunga dan pembukuan keuangan dalam satu aplikasi web.
 
-> **Status:** Phase 0 — perencanaan dan dokumentasi (baseline skema v0.2, kebijakan refund belum final). Belum ada implementasi aplikasi. Rencana pengembangan: full-stack Laravel dan MySQL lokal, satu operator utama dari laptop.
+> **Status:** Phase 0 — perencanaan dan dokumentasi (baseline skema v0.4: pengiriman dan ongkir per item; refund/diskon belum final). Belum ada implementasi aplikasi. Rencana pengembangan: full-stack Laravel dan MySQL lokal, satu operator utama dari laptop.
 
 ## Tujuan
 
@@ -31,6 +31,7 @@ Sistem administrasi internal **Mutiara Indah Florist** untuk mengelola pesanan b
 - [Arsitektur sistem](docs/ARCHITECTURE.md)
 - [Rancangan database](docs/DATABASE.md)
 - [Aturan bisnis](docs/BUSINESS_RULES.md)
+- [Aturan harga dan ongkos kirim](docs/PRICING_AND_SHIPPING.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Log keputusan](docs/DECISIONS.md)
 - [Alur kerja dan use cases](docs/WORKFLOWS.md)
