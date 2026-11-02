@@ -39,14 +39,16 @@ Unit test untuk kalkulasi nominal/status; feature test Laravel untuk controller,
 | T-29 | Pricing | Ubah ongkir setelah DP sehingga total baru < payment POSTED | Ditolak atomik dan perubahan diaudit bila sah |
 | T-30 | Reports | Ongkir terpisah ditagihkan Rp75k; kurir dibayar Rp55k | Tagihan memuat 75k, expense 55k, uang masuk hanya dari POSTED payments |
 | T-31 | Pricing | Item sama jenis tetapi tanggal/lokasi berbeda | Masing-masing ongkir dicatat dan dihitung sekali per pengiriman |
+| T-32 | Pricing | Input pesanan normal dengan bunga dan ongkir terpisah | Total = Σ(qty × unit_price + ongkir SEPARATE), tidak ada diskon/pajak |
+| T-33 | Scope | Form dan database awal | Tidak mempunyai field diskon/pajak maupun perhitungan otomatisnya |
 
 ## Exit gate Phase 0
 - Rancangan ERD, aturan pembayaran dan kriteria penerimaan konsisten.
-- Pengiriman berbeda tanggal/tujuan dan ongkir termasuk/terpisah per item telah disetujui pengguna. Aturan pembatalan/refund, diskon, dan pajak tetap terbuka.
+- Pengiriman berbeda tanggal/tujuan dan ongkir termasuk/terpisah per item telah disetujui pengguna. Diskon dan pajak dinyatakan di luar cakupan MVP; aturan pembatalan/refund tetap terbuka.
 - Hal yang belum disetujui tetap diberi label OPEN; tidak diam-diam ditambahkan ke MVP.
 
 ## Exit gate sebelum data usaha nyata dimasukkan
-- Semua T-01 s.d. T-31 yang relevan pada scope rilis lulus.
+- Semua T-01 s.d. T-33 yang relevan pada scope rilis lulus.
 - Restore teruji, rahasia tidak ada di Git, migrasi dari nol berhasil, UI divalidasi operator.
 - SOP backup dan penanganan kesalahan input tersedia.
 
