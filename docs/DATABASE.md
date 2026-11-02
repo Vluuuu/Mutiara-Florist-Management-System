@@ -1,14 +1,14 @@
 # Database Design & ERD — MFMS
 
-**Versi rancangan:** v0.2 (2 November 2026)  
+**Versi rancangan:** v0.3 (2 November 2026) — tanggal dan tujuan pengiriman per item  
 **Status:** Core schema siap menjadi acuan implementasi setelah keputusan bisnis terbuka disahkan. **Belum ada migration ataupun data nyata di repo.**
 
 ## 1. Konteks dan prinsip
 
 - **Database:** MySQL lokal, Laravel migrations + Eloquent ORM.
-- **Grain:** satu pelanggan memiliki banyak pesanan; satu pesanan memiliki satu atau banyak item bunga; satu pesanan memiliki nol atau banyak transaksi pembayaran.
+- **Grain:** satu pelanggan memiliki banyak pesanan; satu pesanan memiliki satu atau banyak item bunga; **setiap item memiliki tanggal dan lokasi pengiriman sendiri**; satu pesanan memiliki nol atau banyak transaksi pembayaran.
 - **Nominal:** semua uang disimpan dalam **Rupiah bulat** memakai BIGINT non-negatif. Dilarang menggunakan FLOAT/DOUBLE untuk nominal uang. Validasi batas perkalian untuk mencegah overflow.
-- **Tanggal:** bedakan `order_date`, `delivery_date`, `payment_date`, dan `expense_date`; timezone aplikasi Asia/Jakarta. Simpan `created_at` dan `updated_at` untuk jejak sistem.
+- **Tanggal:** `orders.order_date` adalah tanggal transaksi; `order_items.delivery_date` adalah tanggal kirim tiap rangkaian; `payments.payment_date` dan `expenses.expense_date` adalah tanggal arus kas. Timezone aplikasi Asia/Jakarta. Simpan `created_at` dan `updated_at` untuk jejak sistem.
 - **Status pesanan** dan **status bayar** terpisah. Status bayar dihitung dari nilai tagihan dan pembayaran POSTED, bukan dua checkbox.
 - **Delete:** jangan menghapus permanen pesanan yang memiliki riwayat pembayaran; jangan menghapus permanen pembayaran atau pengeluaran. Void/koreksi wajib memiliki alasan dan jejak audit.
 - **Data contoh:** seed sintetis saja, tidak memasukkan identitas asli pelanggan ke repository.
@@ -48,7 +48,6 @@ erDiagram
     bigint customer_id FK
     bigint created_by FK
     date order_date
-    date delivery_date "nullable"
     varchar status
     bigint total_amount
     text notes "nullable"
@@ -61,7 +60,9 @@ erDiagram
     varchar flower_type
     varchar recipient
     varchar sender_name
-    text delivery_address "nullable"
+    date delivery_date
+    text delivery_location
+    varchar fulfillment_status
     int quantity
     bigint unit_price
     text notes "nullable"
@@ -122,8 +123,8 @@ erDiagram
 | --- | --- | --- |
 | `users` | Operator login | email unik; password di-hash |
 | `customers` | Data nama/kontak pemesan | telepon boleh kosong dan tidak diasumsikan unik |
-| `orders` | Header pesanan, status pengerjaan | order_number unik; customer_id wajib; total_amount dihitung backend |
-| `order_items` | Detail masing-masing papan/buket | quantity > 0; unit_price >= 0; pengirim dan penerima per item |
+| `orders` | Header pesanan dan ringkasan status pengerjaan | order_number unik; customer_id wajib; total_amount dihitung backend; **tidak mempunyai tanggal kirim tunggal** |
+| `order_items` | Rangkaian bunga dan pengiriman masing-masing | quantity > 0; unit_price >= 0; **delivery_date dan delivery_location per item**; pengirim/penerima dan fulfillment_status per item |
 | `payments` | Riwayat penerimaan DP/pelunasan | amount > 0; POSTED/VOIDED; idempotency_key unik per submit |
 | `expense_categories` | Kelompok biaya | nama unik; nonaktifkan alih-alih hapus jika sudah dipakai |
 | `expenses` | Pengeluaran kas usaha | amount > 0; POSTED/VOIDED; category FK |
@@ -133,7 +134,8 @@ Model awal menggunakan **8 tabel bisnis/pendukung** (di luar tabel framework Lar
 
 ## 4. Enumerasi yang disarankan
 
-- `orders.status`: `NEW` → `PROCESSING` → `READY` → `COMPLETED`; `CANCELLED` untuk pembatalan **tanpa pembayaran** pada MVP, dengan alasan pembatalan dicatat di audit.
+- `order_items.fulfillment_status`: `NEW` → `PROCESSING` → `READY` → `DELIVERED`. Tidak ada pembatalan parsial item pada MVP sebelum aturan refund/pembayaran disepakati.
+- `orders.status`: ringkasan turunan dari status item (`NEW` jika semua NEW; `READY` jika semua READY; `COMPLETED` jika semua DELIVERED; selain itu `PROCESSING`), dapat dimaterialisasi dan dihitung ulang atomik. `CANCELLED` hanya pembatalan **seluruh order tanpa pembayaran** pada MVP, dengan alasan pada audit. Jangan menandai order selesai bila baru sebagian item DELIVERED.
 - `payments.status` dan `expenses.status`: `POSTED` / `VOIDED`.
 - **Payment status** bukan field input/tabel terpisah: `UNPAID`, `PARTIAL`, `PAID` dihitung, dengan status khusus `CANCELLED` ditampilkan terpisah bila order dibatalkan.
 
@@ -154,7 +156,7 @@ payment_status    = UNPAID jika paid_amount = 0 dan total > 0
 - Pesanan baru harus memiliki total > 0 pada MVP. Pesanan gratis/kompensasi perlu aturan tersendiri.
 - `orders.total_amount` dan item diperbarui dalam **satu database transaction**. Perubahan total setelah ada pembayaran dibatasi: jangan izinkan total baru < sudah dibayar.
 - Validasi pembayaran dilakukan di transaction yang mengunci baris order (`SELECT ... FOR UPDATE` melalui Eloquent `lockForUpdate`), supaya dua submit simultan tidak melebihi tagihan. Unik `idempotency_key` membatasi pengulangan satu aksi; bukan melarang dua pembayaran sah dengan jumlah sama.
-- DB index: `orders(order_date, status)`, `orders(customer_id)`, `payments(order_id, payment_date, status)`, `expenses(expense_date, status)`. FK dan indeks ditentukan secara konsisten di migration.
+- DB index: `orders(order_date, status)`, `orders(customer_id)`, **`order_items(delivery_date, fulfillment_status)`**, `payments(order_id, payment_date, status)`, `expenses(expense_date, status)`. FK dan indeks ditentukan secara konsisten di migration.
 
 ## 6. Batas definisi laporan
 
@@ -177,7 +179,8 @@ Angka penjualan di sini adalah nilai order tercatat, **bukan laporan laba/rugi a
 
 ## 8. Keputusan bisnis belum final (jangan asumsi)
 
-- Pesanan dikirim ke banyak lokasi/tanggal dalam satu order atau dipisah? **Usulan sementara:** satu `delivery_date` di header, alamat/penerima per item; perlu dikonfirmasi.
+- **Telah dikonfirmasi operator:** satu order bisa berisi beberapa item dengan tanggal dan lokasi kirim berbeda. `delivery_date` dan `delivery_location` disimpan pada setiap `order_items`. Bila satu jenis bunga yang sama dikirim ke tanggal/lokasi berbeda, catat sebagai **item terpisah**.
+- Waktu kirim spesifik (jam), jasa kurir, dan bukti serah terima belum menjadi scope MVP; dapat ditambahkan nanti.
 - Ongkir, diskon, dan pajak belum dimasukkan ke perhitungan; dibutuhkan keputusan sebelum fitur tersebut dibuat.
 - Pengembalian DP, biaya pembatalan, refund, serta void yang melibatkan dana nyata membutuhkan kebijakan terpisah.
 - Koreksi pembayaran yang salah input boleh di-void dengan alasan dan audit; **bukan** refund uang yang sudah dikembalikan ke pelanggan.
