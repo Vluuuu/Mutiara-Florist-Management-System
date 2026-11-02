@@ -1,12 +1,12 @@
 # Database Design & ERD — MFMS
 
-**Versi rancangan:** v0.3 (2 November 2026) — tanggal dan tujuan pengiriman per item  
+**Versi rancangan:** v0.4 (2 November 2026) — ongkir INCLUDED/SEPARATE per item  
 **Status:** Core schema siap menjadi acuan implementasi setelah keputusan bisnis terbuka disahkan. **Belum ada migration ataupun data nyata di repo.**
 
 ## 1. Konteks dan prinsip
 
 - **Database:** MySQL lokal, Laravel migrations + Eloquent ORM.
-- **Grain:** satu pelanggan memiliki banyak pesanan; satu pesanan memiliki satu atau banyak item bunga; **setiap item memiliki tanggal dan lokasi pengiriman sendiri**; satu pesanan memiliki nol atau banyak transaksi pembayaran.
+- **Grain:** satu pelanggan memiliki banyak pesanan; satu pesanan memiliki satu atau banyak item bunga; **setiap item memiliki tanggal, lokasi pengiriman, serta mode dan biaya ongkir sendiri**; satu pesanan memiliki nol atau banyak transaksi pembayaran.
 - **Nominal:** semua uang disimpan dalam **Rupiah bulat** memakai BIGINT non-negatif. Dilarang menggunakan FLOAT/DOUBLE untuk nominal uang. Validasi batas perkalian untuk mencegah overflow.
 - **Tanggal:** `orders.order_date` adalah tanggal transaksi; `order_items.delivery_date` adalah tanggal kirim tiap rangkaian; `payments.payment_date` dan `expenses.expense_date` adalah tanggal arus kas. Timezone aplikasi Asia/Jakarta. Simpan `created_at` dan `updated_at` untuk jejak sistem.
 - **Status pesanan** dan **status bayar** terpisah. Status bayar dihitung dari nilai tagihan dan pembayaran POSTED, bukan dua checkbox.
@@ -65,6 +65,8 @@ erDiagram
     varchar fulfillment_status
     int quantity
     bigint unit_price
+    varchar shipping_mode "INCLUDED or SEPARATE"
+    bigint shipping_fee "zero if INCLUDED"
     text notes "nullable"
     datetime created_at
     datetime updated_at
@@ -124,7 +126,7 @@ erDiagram
 | `users` | Operator login | email unik; password di-hash |
 | `customers` | Data nama/kontak pemesan | telepon boleh kosong dan tidak diasumsikan unik |
 | `orders` | Header pesanan dan ringkasan status pengerjaan | order_number unik; customer_id wajib; total_amount dihitung backend; **tidak mempunyai tanggal kirim tunggal** |
-| `order_items` | Rangkaian bunga dan pengiriman masing-masing | quantity > 0; unit_price >= 0; **delivery_date dan delivery_location per item**; pengirim/penerima dan fulfillment_status per item |
+| `order_items` | Rangkaian bunga dan pengiriman masing-masing | quantity > 0; unit_price >= 0; **delivery_date, delivery_location, shipping_mode dan shipping_fee per item**; pengirim/penerima dan fulfillment_status per item |
 | `payments` | Riwayat penerimaan DP/pelunasan | amount > 0; POSTED/VOIDED; idempotency_key unik per submit |
 | `expense_categories` | Kelompok biaya | nama unik; nonaktifkan alih-alih hapus jika sudah dipakai |
 | `expenses` | Pengeluaran kas usaha | amount > 0; POSTED/VOIDED; category FK |
@@ -144,8 +146,10 @@ Pada tahap pertama, perubahan dari COMPLETED/CANCELLED kembali menjadi aktif ser
 ## 5. Sumber kebenaran dan konsistensi total
 
 ```text
-line_total        = quantity * unit_price           (derived, tidak perlu disimpan)
-orders.total_amount = SUM(line_total)              (cache/materialisasi, hanya backend yang menulis)
+product_subtotal(item) = quantity * unit_price
+shipping_charge(item)  = 0 jika INCLUDED; shipping_fee jika SEPARATE
+item_billable_total    = product_subtotal(item) + shipping_charge(item)
+orders.total_amount    = SUM(item_billable_total)    (materialisasi, hanya backend yang menulis)
 paid_amount       = SUM(payments.amount WHERE status='POSTED' AND order_id = ?)
 outstanding       = orders.total_amount - paid_amount
 payment_status    = UNPAID jika paid_amount = 0 dan total > 0
@@ -154,7 +158,11 @@ payment_status    = UNPAID jika paid_amount = 0 dan total > 0
 ```
 
 - Pesanan baru harus memiliki total > 0 pada MVP. Pesanan gratis/kompensasi perlu aturan tersendiri.
-- `orders.total_amount` dan item diperbarui dalam **satu database transaction**. Perubahan total setelah ada pembayaran dibatasi: jangan izinkan total baru < sudah dibayar.
+- `shipping_mode` wajib `INCLUDED` atau `SEPARATE`; `shipping_fee` bernilai **0 untuk INCLUDED** dan **> 0 untuk SEPARATE**. Ongkir adalah **sekali per baris pengiriman**, tidak dikalikan quantity. Per baris item memiliki satu tanggal/lokasi; beda tanggal/lokasi berarti item berbeda.
+- `shipping_fee` adalah ongkir **yang ditagihkan kepada pelanggan** (bukan ongkos aktual yang dibayarkan florist kepada kurir). Ongkos aktual yang dibayar dicatat tersendiri di `expenses` jika ada.
+- Untuk `INCLUDED`, ongkir diasumsikan sudah terserap dalam harga produk yang dimasukkan operator. Jangan menambah ongkir kedua kali.
+- Mode campuran diizinkan dalam satu order karena tanggal/tujuan kirim dapat berbeda.
+- `orders.total_amount` dan item (termasuk ongkir) diperbarui dalam **satu database transaction**. Perubahan total setelah ada pembayaran dibatasi: jangan izinkan total baru < sudah dibayar. Perubahan nominal penting harus masuk audit.
 - Validasi pembayaran dilakukan di transaction yang mengunci baris order (`SELECT ... FOR UPDATE` melalui Eloquent `lockForUpdate`), supaya dua submit simultan tidak melebihi tagihan. Unik `idempotency_key` membatasi pengulangan satu aksi; bukan melarang dua pembayaran sah dengan jumlah sama.
 - DB index: `orders(order_date, status)`, `orders(customer_id)`, **`order_items(delivery_date, fulfillment_status)`**, `payments(order_id, payment_date, status)`, `expenses(expense_date, status)`. FK dan indeks ditentukan secara konsisten di migration.
 
@@ -162,7 +170,9 @@ payment_status    = UNPAID jika paid_amount = 0 dan total > 0
 
 | Metrik | Sumber | Basis tanggal |
 | --- | --- | --- |
-| Penjualan bruto aktif (operasional) | SUM total_amount orders non-CANCELLED | order_date |
+| Total nilai pesanan aktif (termasuk ongkir tambahan) | SUM total_amount orders non-CANCELLED | order_date |
+| Nilai bunga tercatat | SUM(quantity * unit_price) item dari orders non-CANCELLED | order_date |
+| Ongkir ditagihkan | SUM(shipping_fee) item SEPARATE dari orders non-CANCELLED | order_date |
 | Uang masuk | SUM payments POSTED | payment_date |
 | Uang keluar | SUM expenses POSTED | expense_date |
 | Selisih arus kas sederhana | uang masuk - uang keluar | periode pembayaran/pengeluaran |
@@ -181,9 +191,10 @@ Angka penjualan di sini adalah nilai order tercatat, **bukan laporan laba/rugi a
 
 - **Telah dikonfirmasi operator:** satu order bisa berisi beberapa item dengan tanggal dan lokasi kirim berbeda. `delivery_date` dan `delivery_location` disimpan pada setiap `order_items`. Bila satu jenis bunga yang sama dikirim ke tanggal/lokasi berbeda, catat sebagai **item terpisah**.
 - Waktu kirim spesifik (jam), jasa kurir, dan bukti serah terima belum menjadi scope MVP; dapat ditambahkan nanti.
-- Ongkir, diskon, dan pajak belum dimasukkan ke perhitungan; dibutuhkan keputusan sebelum fitur tersebut dibuat.
+- **Ongkir telah disepakati:** tergantung pesanan, bisa sudah termasuk harga bunga atau ditagihkan terpisah. Implementasi menggunakan mode dan biaya ongkir pada **setiap item** supaya beberapa tujuan/tanggal dalam satu pesanan tidak kehilangan rincian. Lihat [PRICING_AND_SHIPPING.md](PRICING_AND_SHIPPING.md).
+- **Diskon, pajak dan biaya lainnya belum diputuskan**, sehingga belum termasuk rumus.
 - Pengembalian DP, biaya pembatalan, refund, serta void yang melibatkan dana nyata membutuhkan kebijakan terpisah.
 - Koreksi pembayaran yang salah input boleh di-void dengan alasan dan audit; **bukan** refund uang yang sudah dikembalikan ke pelanggan.
 - Syarat nomor pesanan, metode pembayaran, serta privasi/retensi lampiran belum dipastikan.
 
-Lihat [BUSINESS_RULES.md](BUSINESS_RULES.md), [WORKFLOWS.md](WORKFLOWS.md), dan [DECISIONS.md](DECISIONS.md).
+Lihat [BUSINESS_RULES.md](BUSINESS_RULES.md), [PRICING_AND_SHIPPING.md](PRICING_AND_SHIPPING.md), [WORKFLOWS.md](WORKFLOWS.md), dan [DECISIONS.md](DECISIONS.md).
