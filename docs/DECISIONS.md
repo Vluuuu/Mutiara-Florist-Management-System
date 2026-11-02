@@ -28,16 +28,16 @@ Status:
 | D-018 | Open | Lingkungan pengembangan Windows yang dipakai; backup Drive manual/otomatis | Perlu cek perangkat & preferensi |
 | D-019 | Open | Impor Excel/Sheets masuk MVP atau fase berikutnya | Perlu prioritas/estimasi |
 | D-020 | Open | Penanganan pesanan gratis, revisi status completed, dan retensi lampiran | Kasus pinggir belum ditetapkan |
-| D-021 | Open | Diskon/potongan harga dan pajak | Belum boleh dimasukkan ke rumus tagihan |
+| D-021 | Accepted | Diskon/potongan harga dan pajak **tidak diperlukan pada MVP** | Dikonfirmasi operator 2 Nov 2026; tidak membuat kolom atau fitur awal |
 | D-022 | Open | Ongkir dibayar pelanggan langsung ke kurir di luar florist | Perlu aturan agar tidak dicatat sebagai kas florist |
 | D-023 | Design baseline | Mode dan ongkir ditagihkan per item pengiriman, dapat campur dalam satu order | Mendukung multi-tujuan dan tidak menduplikasi ongkir per quantity |
 
 ## Rencana tindak lanjut
-1. Konfirmasi keputusan **Open** (refund D-014, D-017 s.d. D-022 yang masih terbuka) dengan operator atau pemilik.
+1. Konfirmasi keputusan **Open** (refund D-014, D-017 s.d. D-020, dan pembayaran kurir langsung D-022) dengan operator atau pemilik. D-021 telah ditetapkan di luar MVP.
 2. Finalisasi aturan ini **sebelum mengimplementasikan pembatalan berbayar**.
 3. Core Laravel setup boleh dimulai tanpa seluruh kebijakan lanjutan, sepanjang tidak membuat fitur yang bertentangan dengan status Open.
 4. Jika sebuah keputusan mengubah tabel, perbarui [DATABASE](DATABASE.md), [BUSINESS_RULES](BUSINESS_RULES.md), [PRD](PRD.md) dan tes terkait.
 
-**Design baseline ongkir:** `order_items.shipping_mode` (`INCLUDED`/`SEPARATE`) dan `order_items.shipping_fee` (Rupiah bulat). Mode ini boleh berbeda antar-item dalam satu pesanan. Biaya aktual pengiriman tidak dianggap sama dengan ongkir yang ditagihkan.
+**Design baseline ongkir:** `order_items.shipping_mode` (`INCLUDED`/`SEPARATE`) dan `order_items.shipping_fee` (Rupiah bulat). Mode ini boleh berbeda antar-item dalam satu pesanan. Biaya aktual pengiriman tidak dianggap sama dengan ongkir yang ditagihkan. **Tidak ada discount/tax fields atau kalkulasi diskon/pajak pada MVP.**
 
 Tidak ada migrasi atau aplikasi berjalan yang dibuat pada tahap dokumentasi ini.
