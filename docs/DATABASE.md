@@ -1,6 +1,6 @@
 # Database Design & ERD — MFMS
 
-**Versi rancangan:** v0.5 (2 November 2026) — ongkir per item, tanpa diskon/pajak pada MVP  
+**Versi rancangan:** v0.6 (2 November 2026) — ongkir per item, DP opsional, pembatalan ditunda  
 **Status:** Core schema siap menjadi acuan implementasi setelah keputusan bisnis terbuka disahkan. **Belum ada migration ataupun data nyata di repo.**
 
 ## 1. Konteks dan prinsip
@@ -9,7 +9,7 @@
 - **Grain:** satu pelanggan memiliki banyak pesanan; satu pesanan memiliki satu atau banyak item bunga; **setiap item memiliki tanggal, lokasi pengiriman, serta mode dan biaya ongkir sendiri**; satu pesanan memiliki nol atau banyak transaksi pembayaran.
 - **Nominal:** semua uang disimpan dalam **Rupiah bulat** memakai BIGINT non-negatif. Dilarang menggunakan FLOAT/DOUBLE untuk nominal uang. Validasi batas perkalian untuk mencegah overflow.
 - **Tanggal:** `orders.order_date` adalah tanggal transaksi; `order_items.delivery_date` adalah tanggal kirim tiap rangkaian; `payments.payment_date` dan `expenses.expense_date` adalah tanggal arus kas. Timezone aplikasi Asia/Jakarta. Simpan `created_at` dan `updated_at` untuk jejak sistem.
-- **Status pesanan** dan **status bayar** terpisah. Status bayar dihitung dari nilai tagihan dan pembayaran POSTED, bukan dua checkbox.
+- **Status pesanan** dan **status bayar** terpisah. Status bayar dihitung dari nilai tagihan dan pembayaran POSTED, bukan dua checkbox. Order boleh disimpan **tanpa pembayaran**; bisa langsung lunas saat pesan, lunas kemudian, atau DP opsional. Order COMPLETED tidak otomatis lunas.
 - **Delete:** jangan menghapus permanen pesanan yang memiliki riwayat pembayaran; jangan menghapus permanen pembayaran atau pengeluaran. Void/koreksi wajib memiliki alasan dan jejak audit.
 - **Data contoh:** seed sintetis saja, tidak memasukkan identitas asli pelanggan ke repository.
 
@@ -127,7 +127,7 @@ erDiagram
 | `customers` | Data nama/kontak pemesan | telepon boleh kosong dan tidak diasumsikan unik |
 | `orders` | Header pesanan dan ringkasan status pengerjaan | order_number unik; customer_id wajib; total_amount dihitung backend; **tidak mempunyai tanggal kirim tunggal** |
 | `order_items` | Rangkaian bunga dan pengiriman masing-masing | quantity > 0; unit_price >= 0; **delivery_date, delivery_location, shipping_mode dan shipping_fee per item**; pengirim/penerima dan fulfillment_status per item |
-| `payments` | Riwayat penerimaan DP/pelunasan | amount > 0; POSTED/VOIDED; idempotency_key unik per submit |
+| `payments` | Penerimaan uang **opsional**: lunas awal, lunas kemudian, atau DP jika ada | 0..N per order; amount > 0; POSTED/VOIDED; idempotency_key unik per submit |
 | `expense_categories` | Kelompok biaya | nama unik; nonaktifkan alih-alih hapus jika sudah dipakai |
 | `expenses` | Pengeluaran kas usaha | amount > 0; POSTED/VOIDED; category FK |
 | `audit_logs` | Riwayat aksi kritis | append-only, actor dan waktu; tidak simpan password atau data sensitif berlebihan |
@@ -137,11 +137,11 @@ Model awal menggunakan **8 tabel bisnis/pendukung** (di luar tabel framework Lar
 ## 4. Enumerasi yang disarankan
 
 - `order_items.fulfillment_status`: `NEW` → `PROCESSING` → `READY` → `DELIVERED`. Tidak ada pembatalan parsial item pada MVP sebelum aturan refund/pembayaran disepakati.
-- `orders.status`: ringkasan turunan dari status item (`NEW` jika semua NEW; `READY` jika semua READY; `COMPLETED` jika semua DELIVERED; selain itu `PROCESSING`), dapat dimaterialisasi dan dihitung ulang atomik. `CANCELLED` hanya pembatalan **seluruh order tanpa pembayaran** pada MVP, dengan alasan pada audit. Jangan menandai order selesai bila baru sebagian item DELIVERED.
+- `orders.status`: ringkasan turunan dari status item (`NEW` jika semua NEW; `READY` jika semua READY; `COMPLETED` jika semua DELIVERED; selain itu `PROCESSING`), dapat dimaterialisasi dan dihitung ulang atomik. **Tidak ada status/fitur `CANCELLED` pada MVP**. Jangan menandai order selesai bila baru sebagian item DELIVERED.
 - `payments.status` dan `expenses.status`: `POSTED` / `VOIDED`.
-- **Payment status** bukan field input/tabel terpisah: `UNPAID`, `PARTIAL`, `PAID` dihitung, dengan status khusus `CANCELLED` ditampilkan terpisah bila order dibatalkan.
+- **Payment status** bukan field input/tabel terpisah: `UNPAID`, `PARTIAL`, `PAID` dihitung dari pembayaran POSTED. **Tidak perlu DP atau payment awal saat membuat order.**
 
-Pada tahap pertama, perubahan dari COMPLETED/CANCELLED kembali menjadi aktif serta pembatalan order dengan pembayaran POSTED **tidak diizinkan** sampai aturan refund disepakati.
+Pada MVP, pembatalan/refund tidak diimplementasikan **baik untuk order berbayar maupun belum dibayar**; `CANCELLED` ditunda. Perubahan dari COMPLETED ke tahap sebelumnya tetap harus ditangani sebagai koreksi terkontrol dan diaudit, bukan pembatalan.
 
 ## 5. Sumber kebenaran dan konsistensi total
 
@@ -158,7 +158,7 @@ payment_status    = UNPAID jika paid_amount = 0 dan total > 0
                     PAID jika paid_amount = total dan total > 0
 ```
 
-- Pesanan baru harus memiliki total > 0 pada MVP. Pesanan gratis/kompensasi perlu aturan tersendiri.
+- Pesanan baru harus memiliki total > 0 pada MVP. Pesanan gratis/kompensasi perlu aturan tersendiri. **Penyimpanan pesanan tidak mensyaratkan pembayaran atau DP**; relasi payments adalah 0..N. Pembayaran dapat terjadi sebelum atau setelah seluruh item dikirim.
 - `shipping_mode` wajib `INCLUDED` atau `SEPARATE`; `shipping_fee` bernilai **0 untuk INCLUDED** dan **> 0 untuk SEPARATE**. Ongkir adalah **sekali per baris pengiriman**, tidak dikalikan quantity. Per baris item memiliki satu tanggal/lokasi; beda tanggal/lokasi berarti item berbeda.
 - `shipping_fee` adalah ongkir **yang ditagihkan kepada pelanggan** (bukan ongkos aktual yang dibayarkan florist kepada kurir). Ongkos aktual yang dibayar dicatat tersendiri di `expenses` jika ada.
 - Untuk `INCLUDED`, ongkir diasumsikan sudah terserap dalam harga produk yang dimasukkan operator. Jangan menambah ongkir kedua kali.
@@ -171,13 +171,13 @@ payment_status    = UNPAID jika paid_amount = 0 dan total > 0
 
 | Metrik | Sumber | Basis tanggal |
 | --- | --- | --- |
-| Total nilai pesanan aktif (termasuk ongkir tambahan) | SUM total_amount orders non-CANCELLED | order_date |
-| Nilai bunga tercatat | SUM(quantity * unit_price) item dari orders non-CANCELLED | order_date |
-| Ongkir ditagihkan | SUM(shipping_fee) item SEPARATE dari orders non-CANCELLED | order_date |
+| Total nilai pesanan (termasuk ongkir tambahan) | SUM total_amount semua orders MVP | order_date |
+| Nilai bunga tercatat | SUM(quantity * unit_price) dari order_items | order_date |
+| Ongkir ditagihkan | SUM(shipping_fee) item SEPARATE | order_date |
 | Uang masuk | SUM payments POSTED | payment_date |
 | Uang keluar | SUM expenses POSTED | expense_date |
 | Selisih arus kas sederhana | uang masuk - uang keluar | periode pembayaran/pengeluaran |
-| Piutang saat ini | SUM outstanding dari orders non-CANCELLED | **snapshot saat laporan dibuka**, bukan otomatis piutang historis akhir bulan |
+| Piutang saat ini | SUM outstanding semua orders MVP termasuk COMPLETED belum dibayar | **snapshot saat laporan dibuka**, bukan otomatis piutang historis akhir bulan |
 
 Angka penjualan di sini adalah nilai order tercatat, **bukan laporan laba/rugi akuntansi**. Void/koreksi mengubah tampilan laporan periode asal; jejak pembetulannya harus tersedia di audit log. Bila membutuhkan laporan historis *as-of*, diperlukan ledger/snapshot terpisah dan keputusan produk baru.
 
@@ -194,7 +194,7 @@ Angka penjualan di sini adalah nilai order tercatat, **bukan laporan laba/rugi a
 - Waktu kirim spesifik (jam), jasa kurir, dan bukti serah terima belum menjadi scope MVP; dapat ditambahkan nanti.
 - **Ongkir telah disepakati:** tergantung pesanan, bisa sudah termasuk harga bunga atau ditagihkan terpisah. Implementasi menggunakan mode dan biaya ongkir pada **setiap item** supaya beberapa tujuan/tanggal dalam satu pesanan tidak kehilangan rincian. Lihat [PRICING_AND_SHIPPING.md](PRICING_AND_SHIPPING.md).
 - **Diskon dan pajak secara eksplisit di luar cakupan MVP (keputusan operator).** Tidak menambahkan kolom `discount_amount`, `tax_amount`, tarif pajak, tabel diskon, atau kalkulasi terkait. Jika diperlukan di masa depan, rancang melalui perubahan skema dan keputusan bisnis baru.
-- Pengembalian DP, biaya pembatalan, refund, serta void yang melibatkan dana nyata membutuhkan kebijakan terpisah.
+- Belum ada kebutuhan pembatalan dalam praktik yang dilaporkan; **pembatalan/refund dan kebijakan DP hangus ditunda ke versi selanjutnya**. Jangan membuat tombol, endpoint atau penghapusan order sebagai jalan pintas. Tidak memblokir migrasi inti.
 - Koreksi pembayaran yang salah input boleh di-void dengan alasan dan audit; **bukan** refund uang yang sudah dikembalikan ke pelanggan.
 - Syarat nomor pesanan, metode pembayaran, serta privasi/retensi lampiran belum dipastikan.
 
