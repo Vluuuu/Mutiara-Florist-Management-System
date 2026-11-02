@@ -1,5 +1,5 @@
 # Acceptance & Test Plan — MFMS
-**Status:** Baseline terverifikasi pada 2 November 2026: **17 PASS / 83 assertions** untuk Phase 2.1 (pelanggan). **17 tes baru OrderManagementTest ditulis untuk Phase 2.2 tetapi belum dijalankan pada laptop operator**; klaim PASS hanya untuk baseline. QA manual browser juga belum terverifikasi.
+**Status:** `php artisan test` pada 2 November 2026: **34 PASS / 193 assertions (3,00 detik)**, termasuk 17 tes baru `OrderManagementTest` untuk Phase 2.2. Vite build lulus dan operator menyatakan aplikasi telah diuji di browser; belum ada bukti rinci seluruh skenario QA manual dan uji transaksi paralel MariaDB.
 
 ## Pendekatan
 Unit test untuk kalkulasi nominal/status; feature test Laravel untuk controller, autentikasi, form validation, MySQL transactions dan laporan. Tambahkan tes concurrency ber-DATABASE nyata untuk pembayaran.
@@ -54,9 +54,9 @@ Unit test untuk kalkulasi nominal/status; feature test Laravel untuk controller,
 - Pengarsipan pelanggan tanpa pesanan memakai soft delete; pelanggan dengan pesanan ditolak dan riwayat tetap utuh.
 - Jalankan setelah `php artisan migrate` lokal. Uji memakai database SQLite in-memory terpisah dari data operasional.
 
-## Tes Pesanan Multi-Item (Phase 2.2, belum dijalankan)
+## Tes Pesanan Multi-Item (Phase 2.2, 17 tes PASS di laptop)
 - 17 skenario di `tests/Feature/OrderManagementTest.php`: proteksi akses dan tanpa route delete; dua bunga beda tanggal/lokasi; total Rp1.375.000 dengan ongkir hanya satu kali; rollback form tidak valid; biaya kirim INCLUDED/SEPARATE; nilai positif dan batas input; pelanggan arsip ditolak; edit menjaga ID item; piutang dan alasan revisi harga setelah DP; pelanggan berbayar tidak dapat dipindahkan; ID item lintas order ditolak; status bertahap dan COMPLETED hanya setelah semua item terkirim; penghapusan item diproses ditolak; filter daftar; ULID; ID item duplikat.
-- PHPUnit menggunakan SQLite in-memory sesuai `phpunit.xml`; hasil integrasi MariaDB dan QA browser perlu diverifikasi terpisah. Jangan klaim PASS sebelum menerima output tes dari laptop operator.
+- PHPUnit menggunakan SQLite in-memory sesuai `phpunit.xml`; seluruh 17 tes pesanan PASS di laptop, total suite 34 PASS / 193 assertions. Operator juga melaporkan halaman pesanan berfungsi di browser dengan MariaDB lokal, tetapi belum ada verifikasi lengkap concurrency pembayaran pada MariaDB.
 
 ## Implementasi tes awal
 - `tests/Feature/ExampleTest.php` — redirect dari / ke /login.
