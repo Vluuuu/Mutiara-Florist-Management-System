@@ -335,4 +335,66 @@ class OrderManagementTest extends TestCase
         $this->put(route('orders.update', $order), $data)->assertSessionHasErrors('items');
         $this->assertSame(2, $order->fresh()->items()->count());
     }
+
+    public function test_paid_order_repricing_requires_reason_and_records_it(): void
+    {
+        $user = User::factory()->create();
+        $customer = Customer::query()->create(['name' => 'Contoh']);
+        $order = $this->createOrder($user, $customer);
+
+        DB::table('payments')->insert([
+            'order_id' => $order->id,
+            'recorded_by' => $user->id,
+            'payment_date' => '2026-11-02',
+            'amount' => 200000,
+            'method' => 'CASH',
+            'idempotency_key' => (string) Str::uuid(),
+            'status' => 'POSTED',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $data = $this->editPayload($order);
+        $data['items'][1]['unit_price'] = 260000;
+        $this->put(route('orders.update', $order), $data)->assertSessionHasErrors('change_reason');
+        $this->assertSame(1375000, (int) $order->fresh()->total_amount);
+
+        $data['change_reason'] = 'Harga buket disepakati ulang oleh pelanggan';
+        $this->put(route('orders.update', $order), $data)->assertRedirect(route('orders.show', $order));
+        $this->assertSame(1395000, (int) $order->fresh()->total_amount);
+
+        $audit = DB::table('audit_logs')->where('action', 'order.updated')->first();
+        $this->assertNotNull($audit);
+        $summary = json_decode($audit->change_summary, true, 512, JSON_THROW_ON_ERROR);
+        $this->assertSame('Harga buket disepakati ulang oleh pelanggan', $summary['change_reason']);
+    }
+
+    public function test_order_number_is_unique_and_generated_on_server(): void
+    {
+        $user = User::factory()->create();
+        $customer = Customer::query()->create(['name' => 'Contoh']);
+        $data = $this->payload($customer->id);
+        $data['order_number'] = 'CUSTOM-FORGED-NUMBER';
+
+        $this->actingAs($user)->post(route('orders.store'), $data)->assertRedirect();
+        $this->post(route('orders.store'), $data)->assertRedirect();
+
+        $orders = Order::query()->orderBy('id')->get();
+        $this->assertCount(2, $orders);
+        $this->assertNotSame($orders[0]->order_number, $orders[1]->order_number);
+        $this->assertStringStartsWith('MF-', $orders[0]->order_number);
+        $this->assertNotSame('CUSTOM-FORGED-NUMBER', $orders[0]->order_number);
+    }
+
+    public function test_duplicate_item_ids_are_rejected_on_edit(): void
+    {
+        $user = User::factory()->create();
+        $customer = Customer::query()->create(['name' => 'Contoh']);
+        $order = $this->createOrder($user, $customer);
+        $data = $this->editPayload($order);
+        $data['items'][1]['id'] = $data['items'][0]['id'];
+
+        $this->put(route('orders.update', $order), $data)->assertSessionHasErrors('items.1.id');
+        $this->assertSame(2, $order->fresh()->items()->count());
+    }
 }
