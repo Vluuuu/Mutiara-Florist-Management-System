@@ -2,12 +2,12 @@
 
 Sistem administrasi internal **Mutiara Indah Florist** untuk mengelola pesanan bunga dan pembukuan keuangan dalam satu aplikasi web.
 
-> **Status:** Phase 0 — perencanaan dan dokumentasi (baseline skema v0.5: pengiriman dan ongkir per item; tanpa diskon/pajak pada MVP; refund belum final). Belum ada implementasi aplikasi. Rencana pengembangan: full-stack Laravel dan MySQL lokal, satu operator utama dari laptop.
+> **Status:** Phase 0 — perencanaan dan dokumentasi (baseline skema v0.6: pengiriman/ongkir per item, DP opsional, bayar penuh awal/akhir; tanpa cancel/refund/diskon/pajak pada MVP). Belum ada implementasi aplikasi. Rencana pengembangan: full-stack Laravel dan MySQL lokal, satu operator utama dari laptop.
 
 ## Tujuan
 
 - Memindahkan proses pencatatan pesanan manual dari Google Sheets ke aplikasi terstruktur.
-- Mencatat pelanggan, pesanan dan detail bunga, pembayaran (DP/pelunasan), pengeluaran, serta piutang.
+- Mencatat pelanggan, pesanan dan detail bunga, pembayaran **opsional** (lunas langsung, lunas kemudian, atau DP jika terjadi), pengeluaran, serta piutang.
 - Menyediakan dashboard dan laporan berdasarkan data transaksi yang benar.
 - Mengekspor laporan ke Excel dan menyiapkan backup database di luar laptop.
 
@@ -42,7 +42,7 @@ Sistem administrasi internal **Mutiara Indah Florist** untuk mengelola pesanan b
 1. **Phase 0 — Foundation:** validasi kebutuhan, diagram, aturan keuangan, dokumentasi.
 2. **Phase 1 — Setup:** Laravel, tampilan dasar, MySQL, migrasi, login satu pengguna.
 3. **Phase 2 — Orders:** CRUD pelanggan, pesanan, dan item bunga.
-4. **Phase 3 — Finance:** pembayaran, piutang, pengeluaran, aturan pembatalan.
+4. **Phase 3 — Finance:** pembayaran fleksibel (tanpa DP wajib), piutang, pengeluaran dan audit koreksi; cancel/refund di luar MVP.
 5. **Phase 4 — Reporting & Backup:** dashboard, laporan, ekspor, backup/pemulihan.
 6. **Phase 5 — QA:** pengujian fungsional, data, keamanan dasar, dan UX.
 
