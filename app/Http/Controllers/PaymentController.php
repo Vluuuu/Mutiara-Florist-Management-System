@@ -43,9 +43,10 @@ class PaymentController extends Controller
                 });
             });
 
-        $outstanding = (int) (clone $base)
+        $totals = (clone $base)
             ->selectRaw('COALESCE(SUM(orders.total_amount - COALESCE(received.paid_amount, 0)), 0) AS outstanding')
-            ->value('outstanding');
+            ->first();
+        $outstanding = (int) ($totals->outstanding ?? 0);
 
         $orders = $base
             ->select([

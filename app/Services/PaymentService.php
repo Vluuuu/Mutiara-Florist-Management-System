@@ -24,7 +24,7 @@ class PaymentService
 
             if ($existing !== null) {
                 // A retry of an already voided event must not turn it into a new receipt.
-                $same = $existing->order_id === $locked->id
+                $same = (int) $existing->order_id === (int) $locked->id
                     && $existing->status === 'POSTED'
                     && $existing->payment_date->format('Y-m-d') === $data['payment_date']
                     && (int) $existing->amount === (int) $data['amount']
