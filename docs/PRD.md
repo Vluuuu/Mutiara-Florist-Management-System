@@ -1,6 +1,6 @@
 # Product Requirements Document (PRD)
 **Produk:** Mutiara Florist Management System (MFMS)  
-**Status:** Draft v0.1 — bahan validasi sebelum coding
+**Status:** Draft v0.2 — kebutuhan inti telah diperinci; kebijakan refund/ongkir/pengiriman masih Open
 
 ## 1. Konteks dan masalah
 Mutiara Indah Florist saat ini mencatat pemesanan secara manual di Google Sheets. Kolom acuan: tanggal, pemesan, untuk/penerima, dari/pengirim ucapan, jenis bunga, quantity, penanda pembayaran, keterangan, dan harga. Terdapat tab bulanan (contoh Mei dan Juni 2025). Struktur ini menjadi referensi kebutuhan, **bukan** data yang harus langsung dipindahkan ke repository.
@@ -31,7 +31,7 @@ Aplikasi administrasi internal yang berjalan di laptop operator dan mengintegras
 | FR-08 | CRUD pengeluaran dengan kategori dan tanggal | P0 |
 | FR-09 | Dashboard penjualan, penerimaan, pengeluaran, piutang | P0 |
 | FR-10 | Laporan bulanan dan ekspor Excel | P0 |
-| FR-11 | Backup lokal, salinan off-device, dan alur restore | P0, menjelang pemakaian nyata |
+| FR-11 | Backup lokal, salinan off-device, dan alur restore | P0, wajib sebelum memakai data nyata |
 | FR-12 | Bukti pembayaran/foto pesanan sebagai lampiran | P1 |
 | FR-13 | Impor data Google Sheets/Excel dengan pratinjau | P1 |
 | FR-14 | Invoice PDF | P1 |
@@ -39,11 +39,11 @@ Aplikasi administrasi internal yang berjalan di laptop operator dan mengintegras
 
 ## 5. Kebutuhan nonfungsional
 - **Local-first:** halaman dan database lokal tidak memerlukan internet untuk proses utama.
-- **Integritas:** nominal uang menggunakan nilai eksak, perubahan keuangan memiliki riwayat, operasi multi-tabel atomik.
+- **Integritas:** nominal uang integer Rupiah; perubahan keuangan memiliki audit; operasi multi-tabel atomik, penguncian saldo dan idempotency untuk pembayaran.
 - **Keamanan:** login, validasi server, CSRF, escape output, larangan commit data sensitif.
 - **Kegunaan:** antarmuka bahasa Indonesia, Rupiah, tabel yang bisa dicari, mobile responsive meskipun laptop prioritas.
 - **Keandalan:** backup database beserta lampiran dan uji pemulihan berkala.
-- **Audit:** jejak pencatatan/pembatalan transaksi keuangan; detailnya perlu diputuskan.
+- **Audit:** tabel audit_logs untuk pencatatan koreksi keuangan; void input salah tidak disamakan dengan refund uang nyata.
 
 ## 6. Struktur halaman
 Dashboard; Pesanan (daftar, buat, detail, edit); Pelanggan; Pembayaran/Piutang; Keuangan (pengeluaran); Laporan; Pengaturan/Backup.
@@ -53,9 +53,9 @@ Website pemesanan publik, payment gateway, POS multi-cabang, inventory bunga, HR
 
 ## 8. Kriteria penerimaan awal
 - Pesanan dengan beberapa item tersimpan dan totalnya benar.
-- DP dan pelunasan menghasilkan saldo dan status yang benar; pembayaran berlebih ditolak.
+- DP dan pelunasan menghasilkan saldo dan status yang benar; pembayaran berlebih dan submit ganda ditolak.
 - Transaksi pembayaran tidak dihitung ganda sebagai pemasukan.
-- Pengeluaran memengaruhi ringkasan kas, bukan nilai penjualan.
+- Pengeluaran memengaruhi ringkasan kas, bukan nilai penjualan. Order berbayar tidak dapat dibatalkan hingga kebijakan refund disetujui.
 - Filter tanggal laporan konsisten dengan tanggal peristiwa tiap metrik.
 - Data tetap ada setelah aplikasi direstart.
 - Backup dapat dipulihkan pada basis data uji dan hasilnya diverifikasi.
@@ -68,4 +68,4 @@ Website pemesanan publik, payment gateway, POS multi-cabang, inventory bunga, HR
 - Apakah pengeluaran mencakup utang pemasok, atau hanya uang yang sudah keluar?
 - Jadwal backup yang sesuai pola pemakaian laptop.
 
-Lihat [BUSINESS_RULES.md](BUSINESS_RULES.md) untuk aturan yang masih diusulkan.
+**Baseline teknis:** 8 tabel termasuk audit_logs; status pesanan dan bayar terpisah; piutang historis as-of belum tersedia. Lihat [DATABASE](DATABASE.md), [BUSINESS_RULES](BUSINESS_RULES.md), [WORKFLOWS](WORKFLOWS.md), [TEST_PLAN](TEST_PLAN.md), dan [DECISIONS](DECISIONS.md).
