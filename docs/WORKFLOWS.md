@@ -1,5 +1,5 @@
 # Workflow & Use Cases — MFMS
-**Versi:** v0.1 · **Status:** rancangan untuk implementasi, belum diuji.
+**Versi:** v0.2 · **Status:** pengiriman per item disepakati, implementasi belum diuji.
 
 ## Aktor
 **Operator/admin tunggal** menggunakan laptop lokal. Tidak ada akun pelanggan, supplier, atau pemilik terpisah pada MVP.
@@ -10,8 +10,8 @@
 | --- | --- | --- | --- |
 | UC-01 | Login | Akun operator ada | Sesi terautentikasi |
 | UC-02 | Tambah/cari pelanggan | Operator login | Data customer tersedia |
-| UC-03 | Catat pesanan multi-item | Pelanggan dipilih | Order + item + total tersimpan atomik |
-| UC-04 | Ubah status pengerjaan | Order aktif | Tahap operasional diperbarui |
+| UC-03 | Catat pesanan multi-item dengan tanggal dan tujuan kirim berbeda per item | Pelanggan dipilih | Order + jadwal/tujuan setiap item + total tersimpan atomik |
+| UC-04 | Ubah status pengerjaan per item | Order aktif | Status item diperbarui, ringkasan order dihitung ulang |
 | UC-05 | Terima DP/pelunasan | Saldo terutang > 0 | Payment POSTED dan sisa tagihan baru |
 | UC-06 | Koreksi input pembayaran | Payment salah | Payment VOIDED dengan alasan/audit |
 | UC-07 | Catat/koreksi pengeluaran | Kategori tersedia | Expense POSTED/VOIDED |
@@ -24,8 +24,8 @@
 ```mermaid
 flowchart TD
     A[Operator buka form pesanan] --> B[Cari atau tambah pelanggan]
-    B --> C[Isi 1 atau lebih item bunga]
-    C --> D[Validasi dan hitung total di server]
+    B --> C[Isi item beserta tanggal dan lokasi kirim masing-masing]
+    C --> D[Validasi tiap item dan hitung total di server]
     D --> E{Valid?}
     E -- Tidak --> C
     E -- Ya --> F[Mulai transaction database]
@@ -51,15 +51,15 @@ flowchart TD
 
 Koreksi input payment: tindakan void terpisah, memerlukan alasan, mencatat siapa dan kapan; **refund dana nyata belum diimplementasikan**.
 
-## Aturan state pengerjaan
+## Aturan status dan pengiriman per item
 
 ```text
-NEW -> PROCESSING -> READY -> COMPLETED
-  \       \          \
-   CANCELLED (hanya order tanpa pembayaran, sementara)
+Item A: tanggal 10, lokasi A: NEW -> PROCESSING -> READY -> DELIVERED
+Item B: tanggal 13, lokasi B: NEW -> PROCESSING -> READY -> DELIVERED
+Order: COMPLETED hanya setelah SEMUA item DELIVERED
 ```
 
-Diagram state ini adalah ringkasan konsep. Aplikasi tidak boleh membatalkan order berbayar sampai kebijakan pembatalan/refund final. Koreksi status manual lain belum ditentukan.
+Jika sebagian item sudah terkirim, ringkasan order tetap **PROCESSING** sampai seluruh item memenuhi kondisi penyelesaian. Pembatalan order hanya untuk order tanpa pembayaran pada MVP; pembatalan per item dan refund belum tersedia. Koreksi status manual perlu audit.
 
 ## Alur laporan
 
