@@ -1,7 +1,7 @@
 # Business Rules — Mutiara Florist Management System
 
-**Versi:** v0.4 (2 November 2026) — pengiriman dan ongkir per item  
-**Status:** Ongkir termasuk/terpisah **telah dikonfirmasi**. Perincian mode dan biaya per item adalah baseline desain teknis. Kebijakan refund, diskon, pajak, dan beberapa skenario pembatalan **belum disetujui**.
+**Versi:** v0.5 (2 November 2026) — pengiriman, ongkir per item, tanpa diskon/pajak pada MVP  
+**Status:** Ongkir termasuk/terpisah telah dikonfirmasi; **diskon dan pajak tidak diperlukan pada MVP**. Perincian ongkir per item adalah baseline desain teknis. Kebijakan refund dan beberapa skenario pembatalan masih terbuka.
 
 ## A. Alur pesanan
 
@@ -24,7 +24,7 @@ Status pengerjaan **setiap item**: `NEW` → `PROCESSING` → `READY` → `DELIV
 - Ongkir yang dibayar florist ke kurir merupakan **biaya nyata** di `expenses`, bukan pengurangan otomatis pada tagihan dan bukan selalu sama dengan ongkir yang ditagihkan pelanggan.
 - Kolom `orders.total_amount` hanya boleh diperbarui oleh service dalam transaksi MySQL yang sama dengan perubahan item.
 - Setelah DP diterima, perubahan harga/jumlah/**ongkir** tidak boleh membuat total pesanan lebih kecil daripada jumlah uang yang sudah tercatat. Revisi harus terdata di audit.
-- **Diskon, pajak, dan transaksi barang gratis belum diputuskan.** Jangan menambahkan logika otomatisnya sebelum ada keputusan. Ongkir hanya tambahan jika mode `SEPARATE`, dengan nominal yang diisi operator; tidak ada tarif otomatis.
+- **Diskon dan pajak sengaja tidak diterapkan pada MVP**, sesuai keputusan operator. Tidak ada kolom input, rumus potongan/PPN, atau penghitungan otomatis terkait. Pesanan gratis belum memiliki aturan khusus. Ongkir hanya tambahan jika mode `SEPARATE`, dengan nominal yang diisi operator; tidak ada tarif otomatis.
 
 ## C. Pembayaran
 
@@ -122,7 +122,7 @@ Sebelum merilis pembatalan order berbayar, tentukan: persentase/refund penuh ata
 ## I. Keputusan pemilik/operator yang masih dibutuhkan
 
 1. Pada pesanan dengan DP, apakah uang bisa dikembalikan? Dalam kondisi apa saja?
-2. Apakah diskon/potongan harga dan pajak dibutuhkan? (Ongkir telah diputuskan: bisa termasuk atau terpisah.)
+2. **Diskon dan pajak tidak diperlukan pada tahap awal** (sudah diputuskan). Jika kebutuhan berubah, revisi aturan bisnis dan database terlebih dahulu.
 3. Kategori pengeluaran, metode pembayaran, dan rekening yang benar-benar digunakan?
 4. Apakah pesanan yang sudah dibayar penuh bisa diperbaiki, dibatalkan, atau diganti?
 5. Apakah dibutuhkan jam pengiriman spesifik (di luar tanggal) dan status kurir? **Belum diputuskan**.
