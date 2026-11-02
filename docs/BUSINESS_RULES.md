@@ -1,7 +1,7 @@
 # Business Rules — Mutiara Florist Management System
 
-**Versi:** v0.3 (2 November 2026) — pengiriman per item  
-**Status:** Aturan inti sebagai **baseline desain**. Kebijakan refund, ongkir/diskon, dan beberapa skenario pembatalan **belum disetujui**. Jangan mengklaim sudah menjadi kebijakan operasional.
+**Versi:** v0.4 (2 November 2026) — pengiriman dan ongkir per item  
+**Status:** Ongkir termasuk/terpisah **telah dikonfirmasi**. Perincian mode dan biaya per item adalah baseline desain teknis. Kebijakan refund, diskon, pajak, dan beberapa skenario pembatalan **belum disetujui**.
 
 ## A. Alur pesanan
 
@@ -16,11 +16,15 @@ Status pengerjaan **setiap item**: `NEW` → `PROCESSING` → `READY` → `DELIV
 
 ## B. Nilai tagihan
 
-- `item_subtotal = quantity × unit_price`.
-- `order_total = Σ item_subtotal`. Total harus positif pada MVP.
+- `item_product_subtotal = quantity × unit_price`.
+- `shipping_charge = 0` untuk `INCLUDED` atau `shipping_fee` untuk `SEPARATE`. Nilai `shipping_fee` **sekali per baris item/pengiriman**, tidak dikalikan quantity.
+- `item_total = item_product_subtotal + shipping_charge`.
+- `order_total = Σ item_total`. Total harus positif pada MVP.
+- Dalam satu order dapat bercampur item INCLUDE dan SEPARATE. Mode dan nominal ongkir dicatat per item sesuai tanggal/tujuan. Untuk INCLUDE, harga satuan bunga yang dimasukkan operator sudah mengakomodasi ongkir.
+- Ongkir yang dibayar florist ke kurir merupakan **biaya nyata** di `expenses`, bukan pengurangan otomatis pada tagihan dan bukan selalu sama dengan ongkir yang ditagihkan pelanggan.
 - Kolom `orders.total_amount` hanya boleh diperbarui oleh service dalam transaksi MySQL yang sama dengan perubahan item.
-- Setelah DP diterima, perubahan harga/jumlah tidak boleh membuat total pesanan lebih kecil daripada jumlah uang yang sudah tercatat. Revisi harus terdata di audit.
-- Belum ada aturan untuk ongkir, diskon, pajak atau gratisan. **Jangan** tambahkan angka otomatis ke tagihan sebelum ada keputusan.
+- Setelah DP diterima, perubahan harga/jumlah/**ongkir** tidak boleh membuat total pesanan lebih kecil daripada jumlah uang yang sudah tercatat. Revisi harus terdata di audit.
+- **Diskon, pajak, dan transaksi barang gratis belum diputuskan.** Jangan menambahkan logika otomatisnya sebelum ada keputusan. Ongkir hanya tambahan jika mode `SEPARATE`, dengan nominal yang diisi operator; tidak ada tarif otomatis.
 
 ## C. Pembayaran
 
@@ -69,7 +73,9 @@ Sebelum merilis pembatalan order berbayar, tentukan: persentase/refund penuh ata
 | Metrik | Definisi | Periode |
 | --- | --- | --- |
 | Jumlah order aktif | Orders non-CANCELLED | order_date |
-| Nilai penjualan pesanan | SUM(total_amount) orders non-CANCELLED | order_date |
+| Total nilai pesanan (termasuk ongkir tambahan) | SUM(total_amount) orders non-CANCELLED | order_date |
+| Nilai bunga | SUM(qty × unit_price) dari items order aktif | order_date |
+| Ongkir tambahan ditagihkan | SUM(shipping_fee) untuk item SEPARATE pada order aktif | order_date |
 | Penerimaan uang | SUM(payments amount WHERE POSTED) | payment_date |
 | Pengeluaran uang | SUM(expenses amount WHERE POSTED) | expense_date |
 | Selisih kas sederhana | Penerimaan uang - pengeluaran uang | tanggal arus kas |
@@ -80,6 +86,7 @@ Sebelum merilis pembatalan order berbayar, tentukan: persentase/refund penuh ata
 ## G. Validasi input dan keamanan
 
 - Jumlah item > 0; harga satuan >= 0; total order > 0; nilai pembayaran/pengeluaran > 0. **Tanggal kirim dan lokasi tujuan wajib per item**, bukan sekali untuk seluruh pesanan.
+- Mode ongkir wajib `INCLUDED` dengan fee = 0 atau `SEPARATE` dengan fee > 0. `shipping_fee` tidak boleh negatif, dikalikan qty, atau dihitung ulang sebagai penerimaan kas.
 - Perhitungan menggunakan integer Rupiah + validasi overflow.
 - Validasi di Laravel backend walaupun form sudah memiliki validasi JS.
 - Penghapusan permanen data keuangan tidak tersedia dalam antarmuka biasa.
@@ -106,13 +113,18 @@ Sebelum merilis pembatalan order berbayar, tentukan: persentase/refund penuh ata
 | BR-13 | Satu order dua item dengan lokasi/tanggal pengiriman berbeda | Kedua jadwal dan tujuan tersimpan per item tanpa saling menimpa |
 | BR-14 | Hanya item pertama dari dua item sudah DELIVERED | Order belum berstatus COMPLETED |
 | BR-15 | Dua item dengan jenis sama namun tanggal berbeda | Tetap dua item berbeda dan tidak digabung otomatis |
+| BR-16 | Item harga Rp800.000 dengan ongkir INCLUDED | Tagihan item Rp800.000, tambahan ongkir Rp0 |
+| BR-17 | Item dua buket @Rp250.000 dengan ongkir SEPARATE Rp75.000 | Tagihan item Rp575.000, bukan Rp650.000 |
+| BR-18 | Satu order mencampur INCLUDED dan SEPARATE | Total tepat; ongkir tiap item tidak saling menimpa |
+| BR-19 | Ubah ongkir sehingga tagihan baru lebih kecil dari DP POSTED | Perubahan ditolak secara atomik |
+| BR-20 | Florist membayar kurir Rp55.000 dari ongkir pelanggan Rp75.000 | Biaya nyata dicatat sebagai expense; tidak menduplikasi penerimaan |
 
 ## I. Keputusan pemilik/operator yang masih dibutuhkan
 
 1. Pada pesanan dengan DP, apakah uang bisa dikembalikan? Dalam kondisi apa saja?
-2. Apakah ongkir dan diskon biasanya dicatat terpisah dari harga bunga?
+2. Apakah diskon/potongan harga dan pajak dibutuhkan? (Ongkir telah diputuskan: bisa termasuk atau terpisah.)
 3. Kategori pengeluaran, metode pembayaran, dan rekening yang benar-benar digunakan?
 4. Apakah pesanan yang sudah dibayar penuh bisa diperbaiki, dibatalkan, atau diganti?
 5. Apakah dibutuhkan jam pengiriman spesifik (di luar tanggal) dan status kurir? **Belum diputuskan**.
 
-Rangkuman status masing-masing keputusan ada di [DECISIONS.md](DECISIONS.md). Diagram alur: [WORKFLOWS.md](WORKFLOWS.md).
+Rangkuman status ada di [DECISIONS.md](DECISIONS.md). Definisi harga dan ongkir: [PRICING_AND_SHIPPING.md](PRICING_AND_SHIPPING.md). Diagram alur: [WORKFLOWS.md](WORKFLOWS.md).
