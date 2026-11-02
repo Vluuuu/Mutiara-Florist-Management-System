@@ -1,5 +1,5 @@
 # Roadmap Pengembangan
-**Status:** Rencana awal, belum ada tanggal pasti atau implementasi yang diklaim selesai.
+**Status:** Phase 1 sedang berjalan. Kerangka Laravel 13, login, dashboard, dan migrasi telah di-commit ke GitHub; setup runtime lokal belum diverifikasi.
 
 ## Phase 0 — Foundation (sedang berlangsung)
 - [x] Inisialisasi repo GitHub private dan README.
@@ -13,14 +13,16 @@
 **Exit gate:** core schema & aturan pembayaran (tanpa DP wajib) cukup sebagai baseline untuk memulai Laravel. Pembatalan/refund sengaja di luar MVP dan bukan blocker setup/migration core. Keputusan lain yang memengaruhi model harus dicatat sebelum perubahan migrasi.
 
 ## Phase 1 — Laravel Foundation
-- [ ] Bootstrap Laravel sesuai versi PHP yang dipakai.
+- [x] Import kerangka resmi **Laravel 13** (butuh PHP >=8.3) ke repository.
 - [ ] Konfigurasi MySQL lokal via `.env`; pastikan tidak masuk Git.
-- [ ] Setup Blade, Tailwind, dan Alpine.js.
-- [ ] Layout dashboard dan navigasi responsif.
-- [ ] Migration core (8 tabel) setelah validasi ERD; seed data sintetis.
-- [ ] Login satu akun operator dan tes autentikasi.
+- [x] Tambahkan layout Blade, Tailwind 4, dan Alpine.js (build lokal masih perlu diverifikasi).
+- [x] Implementasi awal layout dashboard dan navigasi responsif; modul lain masih placeholder nonaktif.
+- [x] Tulis migration awal untuk **8 tabel inti** termasuk users; belum dijalankan pada MySQL laptop.
+- [ ] Jalankan `php artisan migrate` dan uji rollback pada database pengembangan kosong.
+- [x] Tulis login/logout admin tunggal tanpa registrasi publik dan perintah `mfms:create-admin`.
+- [ ] Jalankan tes autentikasi dan dashboard serta uji browser di laptop.
 
-**Exit gate:** proyek bisa dibuka di browser lokal, tes setup lulus, dan migration bisa dijalankan ulang dari nol.
+**Exit gate:** proyek bisa dibuka di browser lokal, tes setup lulus, dan migration bisa dijalankan ulang dari nol. **Belum tercapai** sampai verifikasi lokal dilakukan. Lihat [panduan setup Windows](LOCAL_SETUP.md).
 
 ## Phase 2 — Orders & Customers
 - [ ] CRUD pelanggan.
