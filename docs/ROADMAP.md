@@ -1,5 +1,5 @@
 # Roadmap Pengembangan
-**Status:** Phase 1 berjalan di XAMPP lokal (2 November 2026): Composer sukses, 4 migrasi DONE, admin dibuat, server berjalan, `/login` dan `/dashboard` diakses. Tes otomatis dan QA browser belum diverifikasi.
+**Status:** Phase 1 sudah berjalan dan tes otomatis dasar **7 PASS / 23 assertions** (2 November 2026). Keempat migrasi berstatus Ran. QA visual browser, rollback pada database uji terpisah, dan commit lockfiles masih tersisa sebelum exit gate dinyatakan penuh.
 
 ## Phase 0 — Foundation (sedang berlangsung)
 - [x] Inisialisasi repo GitHub private dan README.
@@ -22,9 +22,11 @@
 - [ ] Uji migrasi ulang dari awal/rollback pada **database uji terpisah**, bukan database lokal yang sudah memiliki akun admin.
 - [x] Tulis login/logout admin tunggal tanpa registrasi publik dan perintah `mfms:create-admin`.
 - [x] Buat akun admin pertama dengan `mfms:create-admin` dan akses `/login` serta `/dashboard` melalui server lokal.
-- [ ] Jalankan PHPUnit serta uji browser login, dashboard, dan logout secara eksplisit.
+- [x] Jalankan PHPUnit pada laptop: **7 tests PASS, 23 assertions**, termasuk login/logout, proteksi dashboard, dan ringkasan keuangan.
+- [ ] QA manual tampilan browser dan logout serta uji migrasi rollback pada database uji terpisah.
+- [ ] Commit/push `composer.lock` dan `package-lock.json` lokal (belum ada di repository).
 
-**Exit gate:** proyek bisa dibuka di browser lokal, tes setup lulus, dan migration bisa dijalankan ulang dari nol. **Sebagian besar setup lokal sudah terbukti; belum selesai** sampai PHPUnit, QA login/logout dan migrasi database uji terverifikasi. Lihat [panduan setup Windows](LOCAL_SETUP.md).
+**Exit gate:** proyek bisa dibuka di browser lokal, tes setup lulus, dan migration bisa dijalankan ulang dari nol. **Tes setup sudah lulus**; QA manual browser, uji rollback database uji, dan commit lockfiles belum terverifikasi. Implementasi Phase 2 dapat disiapkan dengan data sintetis, namun Phase 1 belum ditutup secara formal. Lihat [panduan setup Windows](LOCAL_SETUP.md).
 
 ## Phase 2 — Orders & Customers
 - [ ] CRUD pelanggan.
