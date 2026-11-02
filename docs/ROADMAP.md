@@ -13,7 +13,7 @@
 **Exit gate:** core schema & aturan pembayaran (tanpa DP wajib) cukup sebagai baseline untuk memulai Laravel. Pembatalan/refund sengaja di luar MVP dan bukan blocker setup/migration core. Keputusan lain yang memengaruhi model harus dicatat sebelum perubahan migrasi.
 
 ## Phase 1 — Laravel Foundation
-- [x] Import kerangka resmi **Laravel 12** (butuh PHP >=8.2) ke repository.
+- [x] Adaptasi scaffold aplikasi ke **Laravel 12**, memakai skeleton dan dependensi kompatibel PHP >=8.2; kode runtime masih perlu diverifikasi di XAMPP.
 - [ ] Konfigurasi MySQL lokal via `.env`; pastikan tidak masuk Git.
 - [x] Tambahkan layout Blade, Tailwind 4, dan Alpine.js (build lokal masih perlu diverifikasi).
 - [x] Implementasi awal layout dashboard dan navigasi responsif; modul lain masih placeholder nonaktif.
