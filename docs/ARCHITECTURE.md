@@ -40,7 +40,8 @@ Lampiran (jika digunakan) disimpan di Laravel storage dengan akses terkontrol, b
 4. Payments: catatan penerimaan POSTED/VOIDED, idempotency key, kalkulasi status bayar/piutang; belum menangani refund uang nyata.
 5. Expenses: pengeluaran dan kategori.
 6. Reports: penjualan menurut order_date, penerimaan menurut payment_date, pengeluaran menurut expense_date, piutang snapshot saat ini, ekspor Excel.
-7. Backup: dump terverifikasi, enkripsi, restore aman.\n8. Audit: append-only log untuk tindakan keuangan penting, tanpa rahasia atau PII berlebihan.
+7. Backup: dump terverifikasi, enkripsi, restore aman.
+8. Audit: append-only log untuk tindakan keuangan penting, tanpa rahasia atau PII berlebihan.
 
 ## 4. Operasi yang harus atomik
 - Saat menyimpan pesanan: simpan header dan item dalam satu transaksi database.
@@ -84,4 +85,7 @@ CSRF bawaan Laravel, validasi input di server, session cookie aman, akses dokume
 ## 8. Referensi internal
 - [PRD](PRD.md)
 - [Rancangan database](DATABASE.md)
-- [Aturan bisnis](BUSINESS_RULES.md)\n- [Use cases & workflows](WORKFLOWS.md)\n- [Test plan](TEST_PLAN.md)\n- [Decision log](DECISIONS.md)
+- [Aturan bisnis](BUSINESS_RULES.md)
+- [Use cases & workflows](WORKFLOWS.md)
+- [Test plan](TEST_PLAN.md)
+- [Decision log](DECISIONS.md)
