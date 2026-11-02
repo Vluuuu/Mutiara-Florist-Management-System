@@ -1,5 +1,5 @@
 # Acceptance & Test Plan — MFMS
-**Status:** rancangan kasus uji. Tidak ada tes yang dinyatakan sudah dijalankan.
+**Status:** Test suite dasar autentikasi dan dashboard sudah ditulis di repo (Laravel PHPUnit). **Belum dijalankan**, tidak ada klaim PASS.
 
 ## Pendekatan
 Unit test untuk kalkulasi nominal/status; feature test Laravel untuk controller, autentikasi, form validation, MySQL transactions dan laporan. Tambahkan tes concurrency ber-DATABASE nyata untuk pembayaran.
@@ -46,6 +46,12 @@ Unit test untuk kalkulasi nominal/status; feature test Laravel untuk controller,
 | T-36 | Order & Payments | Order seluruh item DELIVERED tetapi belum menerima uang | Progres order COMPLETED, payment status UNPAID, sisa tagihan tetap ada |
 | T-37 | Order & Payments | Order selesai dikirim, pembayaran penuh baru diterima kemudian | Payment berubah PAID dan sisa 0; progres delivery tetap COMPLETED |
 | T-38 | Order & Payments | Pencatatan DP dilakukan pada order tertentu, tidak pada order lain | DP bersifat opsional dan status PARTIAL hanya pada order yang benar-benar dibayar sebagian |
+
+## Implementasi tes awal
+- `tests/Feature/ExampleTest.php` — redirect dari / ke /login.
+- `tests/Feature/AdminAccessTest.php` — proteksi dashboard, registrasi publik 404, login, logout dan kredensial salah.
+- `tests/Feature/DashboardTest.php` — total pesanan 1.000.000, pembayaran POSTED 250.000, piutang 750.000, pengeluaran 50.000.
+- Tes tersebut belum dieksekusi. `php artisan test` menggunakan SQLite memory dalam `phpunit.xml` dan membutuhkan `pdo_sqlite`. Verifikasi migration MySQL tetap harus dilakukan.
 
 ## Exit gate Phase 0
 - Rancangan ERD, aturan pembayaran dan kriteria penerimaan konsisten.
