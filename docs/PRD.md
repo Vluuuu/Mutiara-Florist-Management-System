@@ -1,6 +1,6 @@
 # Product Requirements Document (PRD)
 **Produk:** Mutiara Florist Management System (MFMS)  
-**Status:** Draft v0.4 — tanggal/lokasi kirim dan pilihan ongkir termasuk/terpisah telah dikonfirmasi; refund/diskon/pajak masih Open
+**Status:** Draft v0.5 — pengiriman dan ongkir per item telah dikonfirmasi; diskon/pajak dinyatakan di luar cakupan MVP, kebijakan refund masih Open
 
 ## 1. Konteks dan masalah
 Mutiara Indah Florist saat ini mencatat pemesanan secara manual di Google Sheets. Kolom acuan: tanggal, pemesan, untuk/penerima, dari/pengirim ucapan, jenis bunga, quantity, penanda pembayaran, keterangan, dan harga. Terdapat tab bulanan (contoh Mei dan Juni 2025). Struktur ini menjadi referensi kebutuhan, **bukan** data yang harus langsung dipindahkan ke repository.
@@ -49,10 +49,10 @@ Aplikasi administrasi internal yang berjalan di laptop operator dan mengintegras
 Dashboard; Pesanan (daftar, buat, detail, edit); Pelanggan; Pembayaran/Piutang; Keuangan (pengeluaran); Laporan; Pengaturan/Backup.
 
 ## 7. Di luar ruang lingkup awal
-Website pemesanan publik, payment gateway, POS multi-cabang, inventory bunga, HR/penggajian, multi-tenant, mobile native, hosting online, otomasi WhatsApp, dan pembukuan akuntansi double-entry penuh.
+Website pemesanan publik, payment gateway, POS multi-cabang, inventory bunga, HR/penggajian, multi-tenant, mobile native, hosting online, otomasi WhatsApp, diskon/potongan harga, penghitungan pajak, dan pembukuan akuntansi double-entry penuh.
 
 ## 8. Kriteria penerimaan awal
-- Pesanan dengan beberapa item **berbeda tanggal/lokasi kirim dan mode ongkir** tersimpan benar; total = jumlah (quantity × harga bunga + ongkir tambahan per item). Order dinyatakan selesai hanya setelah seluruh item dikirim.
+- Pesanan dengan beberapa item **berbeda tanggal/lokasi kirim dan mode ongkir** tersimpan benar; total = jumlah (quantity × harga bunga + ongkir tambahan per item), **tanpa diskon dan pajak**. Order dinyatakan selesai hanya setelah seluruh item dikirim.
 - DP dan pelunasan menghasilkan saldo dan status yang benar; pembayaran berlebih dan submit ganda ditolak.
 - Transaksi pembayaran tidak dihitung ganda sebagai pemasukan.
 - Pengeluaran memengaruhi ringkasan kas, bukan nilai penjualan. Order berbayar tidak dapat dibatalkan hingga kebijakan refund disetujui.
@@ -61,7 +61,7 @@ Website pemesanan publik, payment gateway, POS multi-cabang, inventory bunga, HR
 - Backup dapat dipulihkan pada basis data uji dan hasilnya diverifikasi.
 
 ## 9. Hal yang perlu dikonfirmasi ke operator/pemilik
-- **Potongan harga dan pajak** belum diputuskan; ongkir sudah dipastikan kadang termasuk dan kadang terpisah. Apakah pelanggan pernah membayar kurir langsung (di luar kas florist)?
+- **Diskon dan pajak tidak diperlukan pada MVP (dikonfirmasi operator).** Rumus tagihan hanya mencakup nilai bunga dan ongkir tambahan jika SEPARATE. Pembayaran pelanggan langsung ke kurir masih merupakan kasus yang perlu ditinjau.
 - Aturan pembatalan, refund, koreksi pembayaran, dan deposit hangus?
 - Metode pembayaran dan rekening apa saja yang diperlukan?
 - Apakah pengeluaran mencakup utang pemasok, atau hanya uang yang sudah keluar?
