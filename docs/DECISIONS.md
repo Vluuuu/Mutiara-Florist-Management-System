@@ -1,20 +1,38 @@
-# Decision Log
-Berisi keputusan yang sudah disepakati dan usulan yang **belum** final. Perbarui ketika scope berubah.
+# Decision Log — MFMS
+**Revisi:** 2 November 2026 · **Status:** Phase 0 masih berlangsung.
 
-| ID | Status | Keputusan / Usulan | Alasan |
+Status:
+- **Accepted:** arah produk yang telah dinyatakan pengguna.
+- **Design baseline:** desain teknis untuk mulai implementasi core, masih bisa berubah saat review.
+- **Open:** memerlukan keputusan operator/pemilik; jangan implementasikan asumsinya sebagai kebijakan final.
+
+| ID | Status | Keputusan / isu | Keterangan |
 | --- | --- | --- | --- |
-| D-001 | Accepted | Sistem khusus administrasi internal Mutiara Indah Florist, bukan toko online publik | Sesuai kebutuhan pencatatan pesanan |
-| D-002 | Accepted | Target implementasi full-stack Laravel + MySQL, bukan mockup saja | Pengembangan nyata diizinkan untuk tugas PAW |
-| D-003 | Accepted | Aplikasi digunakan dari satu laptop oleh satu operator pada fase awal | Pengguna saat ini yang mencatat pesanan |
-| D-004 | Accepted | Database utama lokal; Google Drive untuk cadangan, Excel untuk ekspor | Pemisahan data operasional, backup, dan laporan |
-| D-005 | Accepted | Modul utama: pelanggan, pesanan, pembayaran, pengeluaran, piutang, dashboard, laporan | Cakupan yang telah dipilih |
-| D-006 | Proposed | Laravel monolith MVC + Blade + Tailwind + Alpine.js | Sederhana untuk aplikasi PHP server-rendered |
-| D-007 | Proposed | Login satu akun administrator | Keamanan data lokal tanpa role multi-user |
-| D-008 | Proposed | `orders` dan `order_items` terpisah; pembayaran sebagai riwayat | Mengakomodasi beberapa item/DP |
-| D-009 | Proposed | Nominal disimpan sebagai Rupiah bulat; laporan kas dibedakan dari penjualan | Menghindari pecahan floating-point dan penghitungan ganda |
-| D-010 | Open | Pembatalan, koreksi pembayaran, refund, dan penanganan DP hangus | Berpengaruh pada data dan piutang |
-| D-011 | Open | Ongkir, diskon, pajak, lokasi/tanggal kirim per item | Berpengaruh pada skema dan total order |
-| D-012 | Open | Pilihan server development Windows dan mekanisme backup Drive otomatis vs manual | Memerlukan verifikasi lingkungan |
-| D-013 | Open | Jadwal rilis dan apakah impor Excel masuk MVP | Perlu prioritas pengerjaan |
+| D-001 | Accepted | Administrasi florist internal, bukan toko online | Sumber data awal Google Sheets |
+| D-002 | Accepted | Implementasi full-stack Laravel + MySQL | Tugas PAW mengizinkan cakupan melebihi mockup |
+| D-003 | Accepted | Operator tunggal melalui laptop lokal | Tidak perlu multi-tenant/akses remote sekarang |
+| D-004 | Accepted | MySQL lokal; Drive untuk backup; Excel untuk laporan | Media berfungsi berbeda |
+| D-005 | Accepted | Modul order, pelanggan, pembayaran, pengeluaran, piutang, laporan, dashboard | Lingkup produk awal |
+| D-006 | Design baseline | Laravel monolith MVC + Blade + Tailwind + Alpine.js | Tidak memakai Next.js terpisah |
+| D-007 | Design baseline | Autentikasi satu akun admin | Lindungi data lokal |
+| D-008 | Design baseline | 8 tabel core termasuk audit_logs; order_items dan payments terpisah | Memungkinkan multi-item dan DP |
+| D-009 | Design baseline | Uang integer Rupiah; status bayar dihitung dari POSTED payments | Menghindari float dan checkbox tidak konsisten |
+| D-010 | Design baseline | Perubahan order & payment atomik; cegah pembayaran ganda dengan transaction, lock, idempotency | Integritas data |
+| D-011 | Design baseline | Pembatalan order tanpa pembayaran saja pada MVP; order berbayar ditahan | Batas aman sampai kebijakan refund disepakati |
+| D-012 | Design baseline | Penjualan berdasar order_date, penerimaan payment_date, pengeluaran expense_date | Cegah laporan kas dan penjualan tercampur |
+| D-013 | Design baseline | Piutang yang ditampilkan adalah snapshot saat ini, bukan histori as-of | Belum ada historical ledger/snapshot |
+| D-014 | Open | Refund, DP hangus, biaya pembatalan dan koreksi pembayaran berimplikasi uang nyata | Belum ada persetujuan kebijakan |
+| D-015 | Open | Ongkir/diskon/pajak dan penyesuaian total | Pengaruh skema & tagihan |
+| D-016 | Open | Tanggal dan alamat pengiriman satu per order atau bisa berbeda per item | Tentukan model form |
+| D-017 | Open | Metode bayar dan kategori biaya yang umum digunakan | Butuh daftar awal |
+| D-018 | Open | Lingkungan pengembangan Windows yang dipakai; backup Drive manual/otomatis | Perlu cek perangkat & preferensi |
+| D-019 | Open | Impor Excel/Sheets masuk MVP atau fase berikutnya | Perlu prioritas/estimasi |
+| D-020 | Open | Penanganan pesanan gratis, revisi status completed, dan retensi lampiran | Kasus pinggir belum ditetapkan |
 
-**Catatan:** `Accepted` berarti keputusan arah proyek dalam percakapan; `Proposed` belum diuji di implementasi. Tidak ada kode aplikasi yang telah dibuat ketika log ini diinisialisasi.
+## Rencana tindak lanjut
+1. Konfirmasi D-014 s.d. D-020 yang relevan dengan operator atau pemilik.
+2. Finalisasi aturan ini **sebelum mengimplementasikan pembatalan berbayar**.
+3. Core Laravel setup boleh dimulai tanpa seluruh kebijakan lanjutan, sepanjang tidak membuat fitur yang bertentangan dengan status Open.
+4. Jika sebuah keputusan mengubah tabel, perbarui [DATABASE](DATABASE.md), [BUSINESS_RULES](BUSINESS_RULES.md), [PRD](PRD.md) dan tes terkait.
+
+Tidak ada migrasi atau aplikasi berjalan yang dibuat pada tahap dokumentasi ini.
