@@ -1,0 +1,59 @@
+# Secrets / local environment
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Laravel/PHP
+/vendor/
+/bootstrap/cache/*.php
+/storage/*.key
+/storage/logs/*
+!/storage/logs/.gitignore
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+.phpunit.result.cache
+.phpunit-watcher.yml
+
+# Frontend tooling
+/node_modules/
+/public/build/
+/public/hot
+npm-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Local business data and backups
+/backups/
+/backup/
+/database/dumps/
+/database/backups/
+/private-data/
+/local-data/
+*.sql
+*.sql.gz
+*.sqlite
+*.sqlite3
+*.bak
+*.backup
+*.7z
+*.zip
+*.enc
+
+# User uploads / payment receipts
+/storage/app/private/
+/storage/app/public/uploads/
+/public/storage
+
+# Avoid committing generated artifacts by default
+/coverage/
