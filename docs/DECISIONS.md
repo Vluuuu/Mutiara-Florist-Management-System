@@ -22,7 +22,7 @@ Status:
 | D-012 | Design baseline | Penjualan berdasar order_date, penerimaan payment_date, pengeluaran expense_date | Cegah laporan kas dan penjualan tercampur |
 | D-013 | Design baseline | Piutang yang ditampilkan adalah snapshot saat ini, bukan histori as-of | Belum ada historical ledger/snapshot |
 | D-014 | Open | Refund, DP hangus, biaya pembatalan dan koreksi pembayaran berimplikasi uang nyata | Belum ada persetujuan kebijakan |
-| D-015 | Open | Ongkir/diskon/pajak dan penyesuaian total | Pengaruh skema & tagihan |
+| D-015 | Accepted (ongkir) / Open (diskon, pajak) | Ongkir bisa termasuk harga bunga atau ditagihkan terpisah; diskon/pajak belum ditentukan | Jawaban operator 2 Nov 2026; desain per-item pada [PRICING_AND_SHIPPING.md](PRICING_AND_SHIPPING.md) |
 | D-016 | Accepted | Satu pesanan dapat berisi banyak item dengan tanggal **dan** lokasi pengiriman berbeda | Jawaban operator: tiap bunga mengikuti permintaan tanggal/tujuan pembeli; model per item |
 | D-017 | Open | Metode bayar dan kategori biaya yang umum digunakan | Butuh daftar awal |
 | D-018 | Open | Lingkungan pengembangan Windows yang dipakai; backup Drive manual/otomatis | Perlu cek perangkat & preferensi |
@@ -30,9 +30,11 @@ Status:
 | D-020 | Open | Penanganan pesanan gratis, revisi status completed, dan retensi lampiran | Kasus pinggir belum ditetapkan |
 
 ## Rencana tindak lanjut
-1. Konfirmasi keputusan berstatus **Open** (khususnya D-014, D-015, D-017 s.d. D-020) dengan operator atau pemilik.
+1. Konfirmasi keputusan **Open** (refund D-014; diskon/pajak pada D-015; dan D-017 s.d. D-020) dengan operator atau pemilik.
 2. Finalisasi aturan ini **sebelum mengimplementasikan pembatalan berbayar**.
 3. Core Laravel setup boleh dimulai tanpa seluruh kebijakan lanjutan, sepanjang tidak membuat fitur yang bertentangan dengan status Open.
 4. Jika sebuah keputusan mengubah tabel, perbarui [DATABASE](DATABASE.md), [BUSINESS_RULES](BUSINESS_RULES.md), [PRD](PRD.md) dan tes terkait.
+
+**Design baseline ongkir:** `order_items.shipping_mode` (`INCLUDED`/`SEPARATE`) dan `order_items.shipping_fee` (Rupiah bulat). Mode ini boleh berbeda antar-item dalam satu pesanan. Biaya aktual pengiriman tidak dianggap sama dengan ongkir yang ditagihkan.
 
 Tidak ada migrasi atau aplikasi berjalan yang dibuat pada tahap dokumentasi ini.
