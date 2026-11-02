@@ -1,6 +1,6 @@
 # Phase 2.2 — Pesanan Bunga Multi-Item
 
-**Status (2 November 2026):** Implementasi backend, form, daftar, detail, edit, audit, dan 17 tes feature sudah di-push ke GitHub. **Belum ada verifikasi tes baru maupun QA browser di laptop operator.**
+**Status (2 November 2026):** Modul pesanan telah diperbarui dan diuji pada laptop operator: Vite build berhasil, **34 tests PASS / 193 assertions**, 6 route `orders` terdaftar, serta operator mengonfirmasi uji web berhasil. QA rinci di bawah tetap merupakan checklist, bukan semua skenario telah dibuktikan manual.
 
 ## Fitur
 - Masuk sebagai admin; sidebar **Pesanan** dan rute `/orders` kini aktif.
@@ -39,7 +39,7 @@ Tidak ada migrasi baru pada Phase 2.2. Untuk berjaga-jaga, `php artisan migrate:
 8. Uji filter daftar, edit status bunga bertahap, refresh dan kembali ke detail. Status keseluruhan harus COMPLETED **hanya** setelah semua item DELIVERED.
 9. Logout, akses `/orders` secara langsung; harus kembali ke login.
 
-Bila `php artisan test` gagal, kirim output lengkap **tanpa password**. Jangan klaim tes baru lulus sampai output tersedia.
+Hasil `php artisan test` terbaru telah dikonfirmasi **34 PASS / 193 assertions**. Jika ada bug pada QA browser berikutnya, simpan output error tanpa password dan jangan gunakan pelanggan nyata dulu.
 
 ## Batasan dan langkah berikutnya
 - Pencatatan pembayaran/DP **belum tersedia di UI**. Pesanan yang dibuat sekarang tidak otomatis dianggap lunas. Status pembayaran dihitung dari data pembayaran POSTED yang ada.
