@@ -1,5 +1,5 @@
 # Acceptance & Test Plan — MFMS
-**Status:** Pada 2 November 2026 operator menjalankan `php artisan test`: **17 PASS / 83 assertions**, termasuk 10 tes `CustomerManagementTest`. Migrasi soft delete MariaDB dan build Vite juga berhasil. QA manual browser belum diverifikasi.
+**Status:** Baseline terverifikasi pada 2 November 2026: **17 PASS / 83 assertions** untuk Phase 2.1 (pelanggan). **17 tes baru OrderManagementTest ditulis untuk Phase 2.2 tetapi belum dijalankan pada laptop operator**; klaim PASS hanya untuk baseline. QA manual browser juga belum terverifikasi.
 
 ## Pendekatan
 Unit test untuk kalkulasi nominal/status; feature test Laravel untuk controller, autentikasi, form validation, MySQL transactions dan laporan. Tambahkan tes concurrency ber-DATABASE nyata untuk pembayaran.
@@ -53,6 +53,10 @@ Unit test untuk kalkulasi nominal/status; feature test Laravel untuk controller,
 - Pencarian nama/telepon, pagination 10 baris, dan HTML escaping.
 - Pengarsipan pelanggan tanpa pesanan memakai soft delete; pelanggan dengan pesanan ditolak dan riwayat tetap utuh.
 - Jalankan setelah `php artisan migrate` lokal. Uji memakai database SQLite in-memory terpisah dari data operasional.
+
+## Tes Pesanan Multi-Item (Phase 2.2, belum dijalankan)
+- 17 skenario di `tests/Feature/OrderManagementTest.php`: proteksi akses dan tanpa route delete; dua bunga beda tanggal/lokasi; total Rp1.375.000 dengan ongkir hanya satu kali; rollback form tidak valid; biaya kirim INCLUDED/SEPARATE; nilai positif dan batas input; pelanggan arsip ditolak; edit menjaga ID item; piutang dan alasan revisi harga setelah DP; pelanggan berbayar tidak dapat dipindahkan; ID item lintas order ditolak; status bertahap dan COMPLETED hanya setelah semua item terkirim; penghapusan item diproses ditolak; filter daftar; ULID; ID item duplikat.
+- PHPUnit menggunakan SQLite in-memory sesuai `phpunit.xml`; hasil integrasi MariaDB dan QA browser perlu diverifikasi terpisah. Jangan klaim PASS sebelum menerima output tes dari laptop operator.
 
 ## Implementasi tes awal
 - `tests/Feature/ExampleTest.php` — redirect dari / ke /login.

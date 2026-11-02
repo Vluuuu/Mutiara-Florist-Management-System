@@ -2,7 +2,7 @@
 
 Sistem administrasi internal **Mutiara Indah Florist** untuk mengelola pesanan bunga dan pembukuan keuangan dalam satu aplikasi web.
 
-> **Status:** **Phase 2.1 — CRUD Pelanggan sudah terpasang dan 17 tes otomatis PASS (83 assertions)** pada 2 November 2026. Laravel 12 / PHP 8.2 di XAMPP; migrasi ke-5 (soft delete pelanggan) dan build Vite berhasil. QA manual browser belum terverifikasi; modul Pesanan belum tersedia. Baseline bisnis v0.6: pengiriman/ongkir per item, DP opsional, tanpa cancel/refund/diskon/pajak MVP.
+> **Status:** **Phase 2.2 — modul Pesanan Multi-Item sudah ditulis di GitHub**, tetapi pengujian baru belum dijalankan di laptop (2 November 2026). Baseline verifikasi Phase 2.1: 17 tes PASS / 83 assertions, lima migrasi Ran. Form pesanan, transaksi server, dan 17 tes baru menunggu QA lokal. Baseline bisnis v0.6: pengiriman/ongkir per item, DP opsional, tanpa cancel/refund/diskon/pajak MVP.
 
 ## Tujuan
 
@@ -29,7 +29,7 @@ Sistem administrasi internal **Mutiara Indah Florist** untuk mengelola pesanan b
 
 Lihat **[panduan setup lokal](docs/LOCAL_SETUP.md)**. Ringkasnya: clone repo, `composer install`, buat `.env`, jalankan MySQL dan buat database `mutiara_florist`, `php artisan key:generate`, `php artisan migrate`, `php artisan mfms:create-admin`, `npm install && npm run build`, lalu `php artisan serve`. PHP harus **>=8.2**.
 
-Setup lokal sudah menjalankan lima migrasi, membuat akun admin, dan **17 tes otomatis PASS (83 assertions)**, termasuk 10 skenario pelanggan. `composer.lock` dan `package-lock.json` tersimpan di GitHub. **QA browser dan backup/restore masih menunggu verifikasi**. Jangan memasukkan data pelanggan asli sebelum validasi dan backup tersedia.
+Setup lokal sudah menjalankan lima migrasi, membuat akun admin, dan **17 tes otomatis dasar PASS (83 assertions)**. `composer.lock` dan `package-lock.json` tersimpan di GitHub. Untuk pesanan Phase 2.2 jalankan `git pull --ff-only origin main`, `npm run build`, dan `php artisan test`, lalu cek `/orders` dengan **data sintetis**. Tidak ada migrasi baru untuk Phase 2.2. **QA browser, backup/restore, dan tes baru masih menunggu verifikasi**.
 
 ## Dokumentasi
 
@@ -40,6 +40,7 @@ Setup lokal sudah menjalankan lima migrasi, membuat akun admin, dan **17 tes oto
 - [Aturan harga dan ongkos kirim](docs/PRICING_AND_SHIPPING.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Uji fitur pelanggan Phase 2](docs/CUSTOMERS_PHASE2.md)
+- [Uji pesanan multi-item Phase 2.2](docs/ORDERS_PHASE2.md)
 - [Log keputusan](docs/DECISIONS.md)
 - [Alur kerja dan use cases](docs/WORKFLOWS.md)
 - [Rancangan pengujian](docs/TEST_PLAN.md)

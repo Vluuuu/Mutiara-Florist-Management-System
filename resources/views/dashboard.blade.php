@@ -9,7 +9,7 @@
             <h1 class="text-3xl font-semibold tracking-tight text-emerald-950">Dashboard</h1>
             <p class="mt-2 max-w-2xl text-sm leading-6 text-stone-500">Data kumulatif sejak awal pencatatan. Nilai pesanan dan uang yang sudah diterima ditampilkan terpisah.</p>
         </div>
-        <span class="rounded-full border border-stone-200 bg-white px-3 py-1.5 text-xs text-stone-600">Phase 1 · Fondasi</span>
+        <span class="rounded-full border border-stone-200 bg-white px-3 py-1.5 text-xs text-stone-600">Phase 2 · Pesanan</span>
     </div>
 
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -31,6 +31,6 @@
 
     <section class="mt-8 rounded-xl border border-stone-200 bg-white p-6">
         <h2 class="text-base font-semibold text-emerald-950">Pengembangan berikutnya</h2>
-        <p class="mt-2 text-sm leading-6 text-stone-600">Modul pelanggan, pesanan multi-item, pembayaran, pengeluaran dan laporan akan ditambahkan bertahap. Di tahap ini belum ada data simulasi atau transaksi otomatis.</p>
+        <p class="mt-2 text-sm leading-6 text-stone-600">Modul Pelanggan dan Pesanan multi-item sudah tersedia. Pencatatan pembayaran, pengeluaran, ekspor laporan, serta backup masih dikembangkan. Gunakan data fiktif sampai pengujian dan backup selesai.</p>
     </section>
 @endsection
