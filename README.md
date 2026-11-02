@@ -2,7 +2,7 @@
 
 Sistem administrasi internal **Mutiara Indah Florist** untuk mengelola pesanan bunga dan pembukuan keuangan dalam satu aplikasi web.
 
-> **Status:** Phase 0 — perencanaan dan dokumentasi (baseline skema v0.6: pengiriman/ongkir per item, DP opsional, bayar penuh awal/akhir; tanpa cancel/refund/diskon/pajak pada MVP). Belum ada implementasi aplikasi. Rencana pengembangan: full-stack Laravel dan MySQL lokal, satu operator utama dari laptop.
+> **Status:** **Phase 1 — Laravel Foundation (code committed, runtime belum diverifikasi pada laptop).** Laravel 13, login admin, dashboard berbasis database, dan migration core telah ditambahkan. CRUD dan pengujian MySQL lokal belum selesai. Baseline bisnis v0.6: pengiriman/ongkir per item, DP opsional, tanpa cancel/refund/diskon/pajak MVP.
 
 ## Tujuan
 
@@ -15,8 +15,8 @@ Sistem administrasi internal **Mutiara Indah Florist** untuk mengelola pesanan b
 
 | Lapisan | Rencana |
 | --- | --- |
-| Aplikasi | Laravel monolith (PHP, MVC) |
-| UI | Blade, Tailwind CSS, Alpine.js |
+| Aplikasi | Laravel 13 monolith (PHP 8.3+, MVC) |
+| UI | Blade, Tailwind CSS 4, Alpine.js |
 | Database | MySQL lokal + Eloquent ORM + migrations |
 | Grafik | Chart.js |
 | Lingkungan awal | Windows, server pengembangan lokal |
@@ -24,6 +24,12 @@ Sistem administrasi internal **Mutiara Indah Florist** untuk mengelola pesanan b
 | Pengguna tahap awal | Satu operator/admin |
 
 **Batasan awal:** akses lokal melalui laptop; tidak ada toko online, payment gateway, multi-tenant, atau hosting produksi. Akses HP/jarak jauh dan integrasi pihak ketiga merupakan pengembangan berikutnya.
+
+## Jalankan di Windows
+
+Lihat **[panduan setup lokal](docs/LOCAL_SETUP.md)**. Ringkasnya: clone repo, `composer install`, buat `.env`, jalankan MySQL dan buat database `mutiara_florist`, `php artisan key:generate`, `php artisan migrate`, `php artisan mfms:create-admin`, `npm install && npm run build`, lalu `php artisan serve`. PHP harus **>=8.3**.
+
+Saat ini halaman `/login` dan `/dashboard` sudah ditulis, tetapi belum diuji dengan browser/DB pada laptop; **jangan masukkan data pelanggan asli** sampai validasi dan backup berfungsi.
 
 ## Dokumentasi
 
