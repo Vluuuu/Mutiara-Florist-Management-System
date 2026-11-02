@@ -2,7 +2,7 @@
 
 Sistem administrasi internal **Mutiara Indah Florist** untuk mengelola pesanan bunga dan pembukuan keuangan dalam satu aplikasi web.
 
-> **Status:** **Phase 1 — Laravel Foundation (code committed, runtime belum diverifikasi pada laptop).** Laravel 12, login admin, dashboard berbasis database, dan migration core telah ditambahkan. CRUD dan pengujian MySQL lokal belum selesai. Baseline bisnis v0.6: pengiriman/ongkir per item, DP opsional, tanpa cancel/refund/diskon/pajak MVP.
+> **Status:** **Phase 1 — Laravel Foundation (berjalan di laptop, QA belum lengkap).** Laravel 12 terinstal di XAMPP; migrasi MariaDB lokal dan pembuatan akun admin berhasil 2 November 2026. Server menerima request login/dashboard. Tes otomatis/QA browser dan CRUD belum selesai. Baseline bisnis v0.6: pengiriman/ongkir per item, DP opsional, tanpa cancel/refund/diskon/pajak MVP.
 
 ## Tujuan
 
@@ -29,7 +29,7 @@ Sistem administrasi internal **Mutiara Indah Florist** untuk mengelola pesanan b
 
 Lihat **[panduan setup lokal](docs/LOCAL_SETUP.md)**. Ringkasnya: clone repo, `composer install`, buat `.env`, jalankan MySQL dan buat database `mutiara_florist`, `php artisan key:generate`, `php artisan migrate`, `php artisan mfms:create-admin`, `npm install && npm run build`, lalu `php artisan serve`. PHP harus **>=8.2**.
 
-Saat ini halaman `/login` dan `/dashboard` sudah ditulis, tetapi belum diuji dengan browser/DB pada laptop; **jangan masukkan data pelanggan asli** sampai validasi dan backup berfungsi.
+Setup lokal sudah menghasilkan migration DONE dan akun admin pertama; halaman `/login` serta `/dashboard` telah diakses. **Tes otomatis, tampilan dashboard secara manual, dan backup/restore masih perlu diverifikasi. Jangan masukkan data pelanggan asli** sampai validasi dan backup berfungsi.
 
 ## Dokumentasi
 
