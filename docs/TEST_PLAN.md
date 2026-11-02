@@ -19,8 +19,8 @@ Unit test untuk kalkulasi nominal/status; feature test Laravel untuk controller,
 | T-09 | Payments | Submit dua kali idempotency key sama | Satu pembayaran tercatat |
 | T-10 | Payments | Submit dua pembayaran valid dengan key berbeda | Keduanya tercatat bila saldo cukup |
 | T-11 | Payments | Dua request paralel pada saldo 100k masing-masing 100k | Paling banyak satu diterima |
-| T-12 | Cancellation | Batalkan order tanpa pembayaran | CANCELLED, tidak hilang permanen |
-| T-13 | Cancellation | Batalkan order yang sudah DP | Ditolak pada MVP |
+| T-12 | MVP Scope | Coba mencari aksi pembatalan pada order belum dibayar | Tidak ada tombol/endpoint pembatalan pada MVP |
+| T-13 | MVP Scope | Coba mencari aksi pembatalan/refund pada order berbayar | Tidak ada tombol/endpoint pembatalan atau refund pada MVP |
 | T-14 | Audit | Void payment/expense salah input | Alasan/waktu/aktor tercatat |
 | T-15 | Expenses | Catat pengeluaran 100k | Nilai kas keluar bertambah, nilai penjualan tetap |
 | T-16 | Reports | Order tanggal A dibayar tanggal B | Masuk penjualan A, penerimaan B |
@@ -41,14 +41,19 @@ Unit test untuk kalkulasi nominal/status; feature test Laravel untuk controller,
 | T-31 | Pricing | Item sama jenis tetapi tanggal/lokasi berbeda | Masing-masing ongkir dicatat dan dihitung sekali per pengiriman |
 | T-32 | Pricing | Input pesanan normal dengan bunga dan ongkir terpisah | Total = Σ(qty × unit_price + ongkir SEPARATE), tidak ada diskon/pajak |
 | T-33 | Scope | Form dan database awal | Tidak mempunyai field diskon/pajak maupun perhitungan otomatisnya |
+| T-34 | Order & Payments | Simpan order tanpa pembayaran atau deposit | Berhasil; payments kosong, status UNPAID, piutang = total tagihan |
+| T-35 | Order & Payments | Bayar lunas bersamaan dengan pemesanan | Tepat satu payment POSTED dengan nominal penuh, status PAID |
+| T-36 | Order & Payments | Order seluruh item DELIVERED tetapi belum menerima uang | Progres order COMPLETED, payment status UNPAID, sisa tagihan tetap ada |
+| T-37 | Order & Payments | Order selesai dikirim, pembayaran penuh baru diterima kemudian | Payment berubah PAID dan sisa 0; progres delivery tetap COMPLETED |
+| T-38 | Order & Payments | Pencatatan DP dilakukan pada order tertentu, tidak pada order lain | DP bersifat opsional dan status PARTIAL hanya pada order yang benar-benar dibayar sebagian |
 
 ## Exit gate Phase 0
 - Rancangan ERD, aturan pembayaran dan kriteria penerimaan konsisten.
-- Pengiriman berbeda tanggal/tujuan dan ongkir termasuk/terpisah per item telah disetujui pengguna. Diskon dan pajak dinyatakan di luar cakupan MVP; aturan pembatalan/refund tetap terbuka.
+- Pengiriman berbeda tanggal/tujuan dan ongkir termasuk/terpisah per item sudah disetujui. Pembayaran penuh awal/akhir dan DP opsional adalah pola utama. **Cancel/refund (termasuk bagi order belum bayar) dan diskon/pajak tidak termasuk MVP.**
 - Hal yang belum disetujui tetap diberi label OPEN; tidak diam-diam ditambahkan ke MVP.
 
 ## Exit gate sebelum data usaha nyata dimasukkan
-- Semua T-01 s.d. T-33 yang relevan pada scope rilis lulus.
+- Semua T-01 s.d. T-38 yang relevan pada scope rilis lulus.
 - Restore teruji, rahasia tidak ada di Git, migrasi dari nol berhasil, UI divalidasi operator.
 - SOP backup dan penanganan kesalahan input tersedia.
 
