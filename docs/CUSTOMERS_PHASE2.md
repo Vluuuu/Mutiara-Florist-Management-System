@@ -1,6 +1,6 @@
 # Phase 2.1 — CRUD Pelanggan
 
-**Status (2 November 2026):** Kode dan tes ditulis di GitHub; **belum ada bukti pengujian kode baru pada laptop operator**.
+**Status (2 November 2026):** Migrasi `deleted_at` berhasil dijalankan pada MariaDB lokal, Vite build PASS, dan `php artisan test` **17 PASS / 83 assertions** (termasuk 10 tes pelanggan). **QA interaksi browser manual masih menunggu verifikasi.**
 
 ## Cakupan
 - Admin yang sudah login dapat mengakses **Pelanggan** melalui sidebar atau `/customers`.
