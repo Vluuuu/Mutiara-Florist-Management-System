@@ -1,0 +1,71 @@
+# Product Requirements Document (PRD)
+**Produk:** Mutiara Florist Management System (MFMS)  
+**Status:** Draft v0.1 — bahan validasi sebelum coding
+
+## 1. Konteks dan masalah
+Mutiara Indah Florist saat ini mencatat pemesanan secara manual di Google Sheets. Kolom acuan: tanggal, pemesan, untuk/penerima, dari/pengirim ucapan, jenis bunga, quantity, penanda pembayaran, keterangan, dan harga. Terdapat tab bulanan (contoh Mei dan Juni 2025). Struktur ini menjadi referensi kebutuhan, **bukan** data yang harus langsung dipindahkan ke repository.
+
+## 2. Target produk
+Aplikasi administrasi internal yang berjalan di laptop operator dan mengintegrasikan pesanan, riwayat pembayaran, pengeluaran, piutang, serta laporan. Target pengembangan adalah sistem full-stack fungsional. Tidak ada pelanggan yang login atau checkout mandiri.
+
+**Pengguna tahap awal:** satu operator/admin yang mencatat transaksi dari laptop. Pemilik usaha dapat menerima hasil laporan, tidak perlu akun tersendiri pada versi awal.
+
+## 3. Alur utama
+1. Operator mencari atau menambahkan pelanggan.
+2. Operator membuat pesanan dengan tanggal, target pengiriman, item bunga, penerima/tujuan, nama pengirim ucapan, kuantitas, dan harga.
+3. Operator mengubah status pengerjaan secara independen dari pembayaran.
+4. Operator mencatat DP atau pelunasan; sistem menghitung sisa tagihan dan status bayar.
+5. Operator mencatat pengeluaran usaha dan melihat rekap piutang, penerimaan, serta pengeluaran.
+6. Operator mengekspor laporan dan membuat/memulihkan backup terverifikasi.
+
+## 4. Kebutuhan fungsional
+| ID | Kebutuhan | Prioritas |
+| --- | --- | --- |
+| FR-01 | Login/logout satu akun operator, sesi aman | P0 |
+| FR-02 | CRUD pelanggan dan pencarian nama/telepon | P0 |
+| FR-03 | CRUD pesanan, item bunga, dan detail tulisan/tujuan | P0 |
+| FR-04 | Filter pesanan menurut tanggal, status, jenis, dan pelanggan | P0 |
+| FR-05 | Status pengerjaan terpisah dari status bayar | P0 |
+| FR-06 | Catat pembayaran sebagian/pelunasan dengan riwayat | P0 |
+| FR-07 | Hitung total tagihan, sudah dibayar, sisa/piutang | P0 |
+| FR-08 | CRUD pengeluaran dengan kategori dan tanggal | P0 |
+| FR-09 | Dashboard penjualan, penerimaan, pengeluaran, piutang | P0 |
+| FR-10 | Laporan bulanan dan ekspor Excel | P0 |
+| FR-11 | Backup lokal, salinan off-device, dan alur restore | P0, menjelang pemakaian nyata |
+| FR-12 | Bukti pembayaran/foto pesanan sebagai lampiran | P1 |
+| FR-13 | Impor data Google Sheets/Excel dengan pratinjau | P1 |
+| FR-14 | Invoice PDF | P1 |
+| FR-15 | Backup Drive otomatis | P1; manual dulu bila perlu |
+
+## 5. Kebutuhan nonfungsional
+- **Local-first:** halaman dan database lokal tidak memerlukan internet untuk proses utama.
+- **Integritas:** nominal uang menggunakan nilai eksak, perubahan keuangan memiliki riwayat, operasi multi-tabel atomik.
+- **Keamanan:** login, validasi server, CSRF, escape output, larangan commit data sensitif.
+- **Kegunaan:** antarmuka bahasa Indonesia, Rupiah, tabel yang bisa dicari, mobile responsive meskipun laptop prioritas.
+- **Keandalan:** backup database beserta lampiran dan uji pemulihan berkala.
+- **Audit:** jejak pencatatan/pembatalan transaksi keuangan; detailnya perlu diputuskan.
+
+## 6. Struktur halaman
+Dashboard; Pesanan (daftar, buat, detail, edit); Pelanggan; Pembayaran/Piutang; Keuangan (pengeluaran); Laporan; Pengaturan/Backup.
+
+## 7. Di luar ruang lingkup awal
+Website pemesanan publik, payment gateway, POS multi-cabang, inventory bunga, HR/penggajian, multi-tenant, mobile native, hosting online, otomasi WhatsApp, dan pembukuan akuntansi double-entry penuh.
+
+## 8. Kriteria penerimaan awal
+- Pesanan dengan beberapa item tersimpan dan totalnya benar.
+- DP dan pelunasan menghasilkan saldo dan status yang benar; pembayaran berlebih ditolak.
+- Transaksi pembayaran tidak dihitung ganda sebagai pemasukan.
+- Pengeluaran memengaruhi ringkasan kas, bukan nilai penjualan.
+- Filter tanggal laporan konsisten dengan tanggal peristiwa tiap metrik.
+- Data tetap ada setelah aplikasi direstart.
+- Backup dapat dipulihkan pada basis data uji dan hasilnya diverifikasi.
+
+## 9. Hal yang perlu dikonfirmasi ke operator/pemilik
+- Apakah satu order selalu satu tanggal/lokasi kirim atau tiap item dapat berbeda?
+- Apakah ongkos kirim dan potongan harga perlu dicatat terpisah?
+- Aturan pembatalan, refund, koreksi pembayaran, dan deposit hangus?
+- Metode pembayaran dan rekening apa saja yang diperlukan?
+- Apakah pengeluaran mencakup utang pemasok, atau hanya uang yang sudah keluar?
+- Jadwal backup yang sesuai pola pemakaian laptop.
+
+Lihat [BUSINESS_RULES.md](BUSINESS_RULES.md) untuk aturan yang masih diusulkan.
