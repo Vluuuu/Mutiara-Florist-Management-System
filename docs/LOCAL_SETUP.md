@@ -1,6 +1,6 @@
 # Phase 1 — Menjalankan MFMS di Laptop Windows
 
-**Status:** Panduan setup, bukan hasil pengujian di laptop operator. Aplikasi telah di-*scaffold* di GitHub, tetapi Composer, MySQL lokal, migrasi, dan browser harus dijalankan di laptop.
+**Status:** Setup awal telah dibuktikan operator pada 2 November 2026: Laravel 12 terinstal, MariaDB 10.4.32 port 3307 terhubung, 4 migration DONE, admin lokal dibuat, server menerima request `/login` dan `/dashboard`. QA browser/tes otomatis belum dilakukan.
 
 ## 1. Prasyarat
 
@@ -54,13 +54,13 @@ APP_TIMEZONE=Asia/Jakarta
 APP_LOCALE=id
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
-DB_PORT=3306
+DB_PORT=3307
 DB_DATABASE=mutiara_florist
 DB_USERNAME=root
-DB_PASSWORD=
+DB_PASSWORD=ISI_PASSWORD_LOKAL_SENDIRI
 ```
 
-`DB_USERNAME` dan `DB_PASSWORD` hanyalah contoh development XAMPP. Jika MySQL lokal memakai user/password berbeda, gunakan kredensial yang benar. Jangan unggah isi `.env`, dump SQL, atau password ke chat/repositori.
+Pada laptop pengembangan yang sudah dicek, MariaDB XAMPP menggunakan **port 3307** dan akun root memiliki password (tidak dicatat di repo). Sesuaikan nilai `DB_PASSWORD` lokal milikmu; string `ISI_PASSWORD_LOKAL_SENDIRI` hanyalah placeholder, bukan password nyata. Jika menggunakan instalasi lain, port dan akun juga dapat berbeda. **Jangan unggah** isi `.env`, dump SQL, atau password ke chat/repositori.
 
 ## 4. Kunci aplikasi, migrasi, dan akun admin
 
@@ -87,6 +87,8 @@ Buka **http://127.0.0.1:8000/login**, lalu masuk dengan akun yang dibuat pada la
 Jika ingin mengembangkan tampilan dengan hot-reload, jalankan `npm run dev` di terminal terpisah. `npm run build` tidak membutuhkan CDN font pihak ketiga.
 
 ## 6. Verifikasi dasar
+
+Hasil yang sudah dicatat pada laptop operator: `composer install` sukses, `php artisan key:generate` sukses, `php artisan migrate` sukses (4 migration), `php artisan mfms:create-admin` sukses, `php artisan serve` sukses; request ke login dan dashboard tercatat. **Output `php artisan test` dan konfirmasi tampilan browser masih diperlukan.**
 
 ```powershell
 php artisan route:list
