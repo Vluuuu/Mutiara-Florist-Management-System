@@ -19,7 +19,6 @@ class OrderService
             $this->ensureActiveCustomer((int) $data['customer_id']);
 
             $total = $this->total($data['items']);
-            $statuses = array_fill(0, count($data['items']), 'NEW');
 
             $order = new Order();
             $order->forceFill([
@@ -42,7 +41,7 @@ class OrderService
 
             $this->audit($actorId, 'order.created', $order->id, [
                 'total_after' => $total,
-                'items_count' => count($statuses),
+                'items_count' => count($data['items']),
             ]);
 
             return $order;
@@ -70,6 +69,10 @@ class OrderService
 
                 $previous = $id === null ? null : $oldItems->get($id);
                 $newStatus = $item['fulfillment_status'] ?? 'NEW';
+
+                if ($id === null && $newStatus !== 'NEW') {
+                    throw ValidationException::withMessages(['items' => 'Bunga baru harus dimulai dengan status Baru.']);
+                }
                 $previousStatus = $previous?->fulfillment_status ?? 'NEW';
                 $step = array_search($newStatus, self::PROGRESS, true);
                 $oldStep = array_search($previousStatus, self::PROGRESS, true);
@@ -192,7 +195,7 @@ class OrderService
 
     private function ensureActiveCustomer(int $customerId): void
     {
-        if (! Customer::query()->whereKey($customerId)->lockForUpdate()->exists()) {
+        if (Customer::query()->whereKey($customerId)->lockForUpdate()->first() === null) {
             throw ValidationException::withMessages(['customer_id' => 'Pelanggan tidak aktif atau tidak ditemukan.']);
         }
     }
