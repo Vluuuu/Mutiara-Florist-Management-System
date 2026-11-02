@@ -1,5 +1,5 @@
 # Workflow & Use Cases — MFMS
-**Versi:** v0.2 · **Status:** pengiriman per item disepakati, implementasi belum diuji.
+**Versi:** v0.3 · **Status:** pengiriman dan ongkir per item disepakati, implementasi belum diuji.
 
 ## Aktor
 **Operator/admin tunggal** menggunakan laptop lokal. Tidak ada akun pelanggan, supplier, atau pemilik terpisah pada MVP.
@@ -10,7 +10,7 @@
 | --- | --- | --- | --- |
 | UC-01 | Login | Akun operator ada | Sesi terautentikasi |
 | UC-02 | Tambah/cari pelanggan | Operator login | Data customer tersedia |
-| UC-03 | Catat pesanan multi-item dengan tanggal dan tujuan kirim berbeda per item | Pelanggan dipilih | Order + jadwal/tujuan setiap item + total tersimpan atomik |
+| UC-03 | Catat pesanan multi-item, jadwal/tujuan, mode ongkir dan fee per item | Pelanggan dipilih | Order + jadwal/tujuan/harga/ongkir masing-masing item + total tersimpan atomik |
 | UC-04 | Ubah status pengerjaan per item | Order aktif | Status item diperbarui, ringkasan order dihitung ulang |
 | UC-05 | Terima DP/pelunasan | Saldo terutang > 0 | Payment POSTED dan sisa tagihan baru |
 | UC-06 | Koreksi input pembayaran | Payment salah | Payment VOIDED dengan alasan/audit |
@@ -24,8 +24,8 @@
 ```mermaid
 flowchart TD
     A[Operator buka form pesanan] --> B[Cari atau tambah pelanggan]
-    B --> C[Isi item beserta tanggal dan lokasi kirim masing-masing]
-    C --> D[Validasi tiap item dan hitung total di server]
+    B --> C[Isi item, jadwal, tujuan, mode ongkir dan fee]
+    C --> D[Validasi item dan ongkir; hitung total di server]
     D --> E{Valid?}
     E -- Tidak --> C
     E -- Ya --> F[Mulai transaction database]
@@ -49,6 +49,8 @@ flowchart TD
     I --> J[Tampilkan bukti pencatatan]
 ```
 
+**Perhitungan harga:** subtotal per item = qty × unit_price + shipping_fee jika mode SEPARATE. Jika INCLUDED, shipping_fee wajib 0; mode campuran antar-item diperbolehkan. Perubahan harga/ongkir setelah DP harus divalidasi secara atomik terhadap paid_amount. Lihat [PRICING_AND_SHIPPING](PRICING_AND_SHIPPING.md).
+
 Koreksi input payment: tindakan void terpisah, memerlukan alasan, mencatat siapa dan kapan; **refund dana nyata belum diimplementasikan**.
 
 ## Aturan status dan pengiriman per item
@@ -66,11 +68,11 @@ Jika sebagian item sudah terkirim, ringkasan order tetap **PROCESSING** sampai s
 1. Operator memilih periode.
 2. Penjualan: agregasi order non-cancel menurut tanggal order.
 3. Uang masuk: pembayaran POSTED menurut tanggal pembayaran.
-4. Uang keluar: pengeluaran POSTED menurut tanggal pengeluaran.
+4. Uang keluar: pengeluaran POSTED menurut tanggal pengeluaran. Jika florist membayar kurir, biaya pengiriman nyata masuk expenses dan tidak otomatis sama dengan ongkir yang ditagih.
 5. Piutang: **saldo saat ini** untuk order aktif, diberi label sesuai.
 6. Tampilkan dashboard atau ekspor data berdasarkan definisi yang sama.
 
-**Larangan perhitungan ganda:** pembayaran tidak juga dibuat sebagai row pemasukan yang dijumlahkan ulang. Total pesanan bukan penerimaan kas.
+**Larangan perhitungan ganda:** pembayaran tidak juga dibuat sebagai row pemasukan yang dijumlahkan ulang. Ongkir SEPARATE hanya menjadi bagian tagihan, **bukan** pembayaran tunai tambahan di luar payments. Total pesanan bukan penerimaan kas.
 
 ## Alur keamanan dan backup
 
