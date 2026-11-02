@@ -9,6 +9,7 @@ use App\Services\OrderService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Illuminate\Support\Str;
 
 class OrderController extends Controller
 {
@@ -60,10 +61,16 @@ class OrderController extends Controller
 
     public function show(Order $order): View
     {
-        $order->load(['customer', 'items' => fn ($query) => $query->orderBy('id')]);
-        $received = (int) $order->payments()->where('status', 'POSTED')->sum('amount');
+        $order->load([
+            'customer',
+            'items' => fn ($query) => $query->orderBy('id'),
+            'payments' => fn ($query) => $query->with('recordedBy:id,name')->orderByDesc('id'),
+        ]);
+        $received = (int) $order->payments->where('status', 'POSTED')->sum('amount');
+        $outstanding = max((int) $order->total_amount - $received, 0);
+        $newPaymentKey = (string) Str::uuid();
 
-        return view('orders.show', compact('order', 'received'));
+        return view('orders.show', compact('order', 'received', 'outstanding', 'newPaymentKey'));
     }
 
     public function edit(Order $order): View

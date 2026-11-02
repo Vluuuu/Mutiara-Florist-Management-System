@@ -81,6 +81,6 @@
         <div class="flex justify-between gap-3"><dt class="text-stone-500">Total ongkir tambahan</dt><dd class="font-medium">Rp{{ number_format($shippingTotal, 0, ',', '.') }}</dd></div>
         <div class="flex justify-between gap-3 border-t border-stone-200 pt-3 text-lg font-semibold"><dt>Total tagihan</dt><dd>Rp{{ number_format($order->total_amount, 0, ',', '.') }}</dd></div>
     </dl>
-    <p class="mt-4 text-xs leading-5 text-stone-500">Fitur mencatat DP, pembayaran lunas, dan pengeluaran akan ditambahkan dalam Phase 3. Saat ini pesanan baru belum mencatat pembayaran.</p>
+    <p class="mt-4 text-xs leading-5 text-stone-500">Pembayaran hanya dihitung jika status POSTED. Koreksi pencatatan (VOIDED) tidak berarti uang dikembalikan.</p>
 </section>
 @endsection

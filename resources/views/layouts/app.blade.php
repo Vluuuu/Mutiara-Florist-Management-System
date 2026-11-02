@@ -27,8 +27,11 @@
                 <a href="{{ route('orders.index') }}" @if(request()->routeIs('orders.*')) aria-current="page" @endif class="mt-1 flex items-center rounded-lg px-4 py-3 text-sm font-semibold {{ request()->routeIs('orders.*') ? 'bg-emerald-50 text-emerald-900' : 'text-stone-600 hover:bg-stone-50' }}">
                     <span class="mr-3">▦</span> Pesanan
                 </a>
+                <a href="{{ route('payments.index') }}" @if(request()->routeIs('payments.*')) aria-current="page" @endif class="mt-1 flex items-center rounded-lg px-4 py-3 text-sm font-semibold {{ request()->routeIs('payments.*') ? 'bg-emerald-50 text-emerald-900' : 'text-stone-600 hover:bg-stone-50' }}">
+                    <span class="mr-3">◈</span> Pembayaran & Piutang
+                </a>
                 <p class="px-4 pb-2 pt-7 text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-400">Dalam pengembangan</p>
-                @foreach (['Pembayaran', 'Pengeluaran', 'Laporan'] as $item)
+                @foreach (['Pengeluaran', 'Laporan'] as $item)
                     <p class="cursor-default rounded-lg px-4 py-2.5 text-sm text-stone-400" aria-disabled="true">{{ $item }}</p>
                 @endforeach
             </nav>
