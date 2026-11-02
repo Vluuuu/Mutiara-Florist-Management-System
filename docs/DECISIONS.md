@@ -1,5 +1,5 @@
 # Decision Log — MFMS
-**Revisi:** 2 November 2026 · **Status:** Phase 0 masih berlangsung.
+**Revisi:** 2 November 2026 · **Status:** Phase 1 dimulai, runtime belum diuji pada laptop operator.
 
 Status:
 - **Accepted:** arah produk yang telah dinyatakan pengguna.
@@ -43,4 +43,6 @@ Status:
 
 **Design baseline ongkir:** `order_items.shipping_mode` (`INCLUDED`/`SEPARATE`) dan `order_items.shipping_fee` (Rupiah bulat). Mode ini boleh berbeda antar-item dalam satu pesanan. Biaya aktual pengiriman tidak dianggap sama dengan ongkir yang ditagihkan. **Tidak ada discount/tax fields atau kalkulasi diskon/pajak pada MVP.**
 
-Tidak ada migrasi atau aplikasi berjalan yang dibuat pada tahap dokumentasi ini.
+## Implementasi Phase 1
+Kerangka resmi Laravel 13 telah ditambahkan ke repo, bersama halaman login/dashboard dan **file migration** core. Migrasi **belum dieksekusi** ke MySQL lokal, tidak ada kredensial admin default atau data pelanggan asli di repo. Lihat [LOCAL_SETUP.md](LOCAL_SETUP.md) untuk verifikasi runtime. PHP 8.3+ diperlukan.
+
