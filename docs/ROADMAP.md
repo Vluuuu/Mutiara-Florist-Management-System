@@ -4,13 +4,13 @@
 ## Phase 0 — Foundation (sedang berlangsung)
 - [x] Inisialisasi repo GitHub private dan README.
 - [x] Draft PRD, arsitektur, database, aturan bisnis, roadmap, dan log keputusan.
-- [ ] Validasi seluruh alur bisnis dengan operator/pemilik (pengiriman per item dan ongkir termasuk/terpisah sudah dikonfirmasi; diskon/pajak tidak masuk MVP; refund masih terbuka).
+- [ ] Validasi seluruh alur bisnis dengan operator/pemilik (pengiriman & ongkir per item, pembayaran penuh di awal/akhir, DP opsional sudah dikonfirmasi; cancel/refund ditunda).
 - [x] Buat rancangan ERD 8 tabel dan baseline integritas pembayaran (v0.5, pengiriman/ongkir per item tanpa diskon/pajak).
-- [ ] Konfirmasi kebijakan pembatalan/refund; belum final.
+- [x] Keputusan scope: **pembatalan/refund tidak dikembangkan pada MVP** karena belum ada kebutuhan kasus nyata; aturannya diputuskan nanti jika diperlukan.
 - [x] Susun acceptance criteria dan test scenarios versi pertama (draft).
 - [ ] Review/sahkan acceptance criteria bersama operator.
 
-**Exit gate:** scope dan aturan uang disetujui sebelum membuat migration final. Setup Laravel dapat dimulai sementara kebijakan refund tetap terbuka, asalkan fungsi refund/pembatalan berbayar belum diimplementasikan.
+**Exit gate:** core schema & aturan pembayaran (tanpa DP wajib) cukup sebagai baseline untuk memulai Laravel. Pembatalan/refund sengaja di luar MVP dan bukan blocker setup/migration core. Keputusan lain yang memengaruhi model harus dicatat sebelum perubahan migrasi.
 
 ## Phase 1 — Laravel Foundation
 - [ ] Bootstrap Laravel sesuai versi PHP yang dipakai.
@@ -32,10 +32,10 @@
 **Exit gate:** pesanan dapat dibuat, dicari, diedit sesuai aturan, dan bertahan setelah restart.
 
 ## Phase 3 — Payments & Expenses
-- [ ] Riwayat DP dan pelunasan.
+- [ ] Riwayat pembayaran fleksibel: tanpa DP, langsung lunas saat pesan, bayar penuh kemudian, dan DP opsional.
 - [ ] Status bayar dan piutang hasil perhitungan.
 - [ ] CRUD kategori serta pencatatan pengeluaran.
-- [ ] Aturan pembatalan, void/reversal, dan audit log (setelah keputusan bisnis final).
+- [ ] Void kesalahan input pembayaran/pengeluaran dengan alasan dan audit; **bukan** implementasi cancel/refund. Fitur cancel/refund masuk backlog pasca-MVP bila diperlukan.
 - [ ] Tes nominal, pembayaran berlebih, submit ganda, dan konsistensi transaksi.
 
 **Exit gate:** seluruh angka pembayaran/piutang konsisten dan dapat ditelusuri.
@@ -51,7 +51,7 @@
 **Exit gate:** laporan sesuai data sumber dan minimal satu backup berhasil dipulihkan.
 
 ## Phase 5 — QA & Handover
-- [ ] Uji alur dari pesanan hingga pelunasan.
+- [ ] Uji alur pembayaran penuh di awal/akhir, DP opsional, serta pesanan selesai namun belum dibayar.
 - [ ] Uji tampilan laptop dan smartphone.
 - [ ] Uji keamanan dasar (auth, validasi, file, secrets).
 - [ ] Panduan penggunaan dan prosedur backup/restore.
