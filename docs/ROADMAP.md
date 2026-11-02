@@ -4,8 +4,8 @@
 ## Phase 0 — Foundation (sedang berlangsung)
 - [x] Inisialisasi repo GitHub private dan README.
 - [x] Draft PRD, arsitektur, database, aturan bisnis, roadmap, dan log keputusan.
-- [ ] Validasi alur bisnis dengan operator/pemilik.
-- [x] Buat rancangan ERD 8 tabel dan baseline integritas pembayaran (v0.2).
+- [ ] Validasi seluruh alur bisnis dengan operator/pemilik (pengiriman per item sudah dikonfirmasi, refund dan harga tambahan belum).
+- [x] Buat rancangan ERD 8 tabel dan baseline integritas pembayaran (v0.3, pengiriman per item).
 - [ ] Konfirmasi kebijakan pembatalan/refund; belum final.
 - [x] Susun acceptance criteria dan test scenarios versi pertama (draft).
 - [ ] Review/sahkan acceptance criteria bersama operator.
@@ -24,9 +24,9 @@
 
 ## Phase 2 — Orders & Customers
 - [ ] CRUD pelanggan.
-- [ ] CRUD pesanan dan multi-item.
+- [ ] CRUD pesanan dan multi-item dengan **tanggal dan tujuan kirim per item**.
 - [ ] Nomor order unik, validasi input, filter/pencarian.
-- [ ] Status pengerjaan.
+- [ ] Status pengerjaan per item dan ringkasan otomatis status order.
 - [ ] Pengujian transaksi multi-item dan pengubahan data.
 
 **Exit gate:** pesanan dapat dibuat, dicari, diedit sesuai aturan, dan bertahan setelah restart.
