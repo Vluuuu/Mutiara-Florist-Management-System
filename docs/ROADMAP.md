@@ -24,7 +24,7 @@
 - [x] Buat akun admin pertama dengan `mfms:create-admin` dan akses `/login` serta `/dashboard` melalui server lokal.
 - [x] Jalankan PHPUnit pada laptop: **7 tests PASS, 23 assertions**, termasuk login/logout, proteksi dashboard, dan ringkasan keuangan.
 - [ ] QA manual tampilan browser dan logout serta uji migrasi rollback pada database uji terpisah.
-- [ ] Commit/push `composer.lock` dan `package-lock.json` lokal (belum ada di repository).
+- [x] `composer.lock` dan `package-lock.json` sudah di-commit dan di-push ke `main` oleh operator (`37fdaa2`); `git status --short` kosong.
 
 **Exit gate:** proyek bisa dibuka di browser lokal, tes setup lulus, dan migration bisa dijalankan ulang dari nol. **Tes setup sudah lulus**; QA manual browser, uji rollback database uji, dan commit lockfiles belum terverifikasi. Implementasi Phase 2 dapat disiapkan dengan data sintetis, namun Phase 1 belum ditutup secara formal. Lihat [panduan setup Windows](LOCAL_SETUP.md).
 
