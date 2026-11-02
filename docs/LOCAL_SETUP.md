@@ -4,7 +4,7 @@
 
 ## 1. Prasyarat
 
-- **PHP 8.3+**, ekstensi `pdo_mysql`, `mbstring`, `fileinfo`, `openssl`, `dom`, `xml`, dll. Versi PHP XAMPP yang lebih tua tidak dapat menjalankan Laravel 13.
+- **PHP 8.2+**, ekstensi `pdo_mysql`, `mbstring`, `fileinfo`, `openssl`, `dom`, `xml`, dll. Versi PHP XAMPP yang lebih tua tidak dapat menjalankan Laravel 12.
 - Composer 2, Node.js versi yang kompatibel dengan Vite 8 (Node.js 20.19+ atau 22.12+), npm, Git.
 - MySQL/MariaDB lokal; XAMPP yang sudah terinstal dapat digunakan **jika versi PHP memenuhi syarat**. Jangan menjalankan dua server MySQL pada port 3306 yang sama.
 - Repository GitHub bersifat **private**, jadi `git clone` memerlukan akun GitHub dengan akses.
