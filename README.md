@@ -2,7 +2,7 @@
 
 Sistem administrasi internal **Mutiara Indah Florist** untuk mengelola pesanan bunga dan pembukuan keuangan dalam satu aplikasi web.
 
-> **Status:** **Phase 2.2 — modul Pesanan Multi-Item sudah ditulis di GitHub**, tetapi pengujian baru belum dijalankan di laptop (2 November 2026). Baseline verifikasi Phase 2.1: 17 tes PASS / 83 assertions, lima migrasi Ran. Form pesanan, transaksi server, dan 17 tes baru menunggu QA lokal. Baseline bisnis v0.6: pengiriman/ongkir per item, DP opsional, tanpa cancel/refund/diskon/pajak MVP.
+> **Status:** **Phase 2.2 — Pesanan Multi-Item berjalan di XAMPP dan suite tes 34 PASS / 193 assertions** (2 November 2026). Operator melaporkan uji web berhasil; build Vite lulus. QA lintas-skenario dan backup/restore belum selesai. Baseline bisnis v0.6: pengiriman/ongkir per item, DP opsional, tanpa cancel/refund/diskon/pajak MVP.
 
 ## Tujuan
 
@@ -29,7 +29,7 @@ Sistem administrasi internal **Mutiara Indah Florist** untuk mengelola pesanan b
 
 Lihat **[panduan setup lokal](docs/LOCAL_SETUP.md)**. Ringkasnya: clone repo, `composer install`, buat `.env`, jalankan MySQL dan buat database `mutiara_florist`, `php artisan key:generate`, `php artisan migrate`, `php artisan mfms:create-admin`, `npm install && npm run build`, lalu `php artisan serve`. PHP harus **>=8.2**.
 
-Setup lokal sudah menjalankan lima migrasi, membuat akun admin, dan **17 tes otomatis dasar PASS (83 assertions)**. `composer.lock` dan `package-lock.json` tersimpan di GitHub. Untuk pesanan Phase 2.2 jalankan `git pull --ff-only origin main`, `npm run build`, dan `php artisan test`, lalu cek `/orders` dengan **data sintetis**. Tidak ada migrasi baru untuk Phase 2.2. **QA browser, backup/restore, dan tes baru masih menunggu verifikasi**.
+Setup lokal sudah menjalankan lima migrasi, membuat akun admin, dan **34 tes otomatis PASS (193 assertions)** termasuk seluruh tes Pesanan Phase 2.2; operator juga telah mencoba modul di browser. `composer.lock` dan `package-lock.json` tersimpan di GitHub. **Backup/restore, QA lengkap, serta modul pembayaran belum selesai**; jangan memasukkan data pelanggan nyata dulu.
 
 ## Dokumentasi
 
