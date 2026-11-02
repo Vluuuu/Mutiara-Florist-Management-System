@@ -10,6 +10,7 @@ use App\Services\ExpenseService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class ExpenseController extends Controller
@@ -21,7 +22,7 @@ class ExpenseController extends Controller
             'category_id' => ['nullable', 'integer'],
             'status' => ['nullable', 'in:POSTED,VOIDED'],
             'from' => ['nullable', 'date_format:Y-m-d'],
-            'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
+            'to' => ['nullable', 'date_format:Y-m-d'],
         ]);
 
         $search = trim((string) ($filters['q'] ?? ''));
@@ -29,6 +30,14 @@ class ExpenseController extends Controller
         $status = $filters['status'] ?? '';
         $from = $filters['from'] ?? '';
         $to = $filters['to'] ?? '';
+
+        // A date-to-only filter is valid; compare only when both dates are set.
+        if ($from !== '' && $to !== '' && $to < $from) {
+            throw ValidationException::withMessages([
+                'to' => 'Tanggal akhir tidak boleh lebih awal dari tanggal mulai.',
+            ]);
+        }
+
         $pattern = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $search).'%';
 
         $query = Expense::query()

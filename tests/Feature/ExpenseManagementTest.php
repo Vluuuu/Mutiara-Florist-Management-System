@@ -339,6 +339,13 @@ class ExpenseManagementTest extends TestCase
             ->assertViewHas('postedTotal', 0);
 
         $this->get(route('expenses.index'))->assertViewHas('postedTotal', 75000);
+
+        $this->get(route('expenses.index', ['to' => '2026-11-03']))
+            ->assertOk()
+            ->assertViewHas('postedTotal', 0); // Only the VOIDED expense is before Nov 3.
+
+        $this->get(route('expenses.index', ['from' => '2026-11-06', 'to' => '2026-11-01']))
+            ->assertSessionHasErrors('to');
     }
 
     public function test_categories_are_never_deleted_and_expenses_are_not_editable_or_hard_deleted(): void
