@@ -162,7 +162,7 @@ payment_status    = UNPAID jika paid_amount = 0 dan total > 0
 - `shipping_fee` adalah ongkir **yang ditagihkan kepada pelanggan** (bukan ongkos aktual yang dibayarkan florist kepada kurir). Ongkos aktual yang dibayar dicatat tersendiri di `expenses` jika ada.
 - Untuk `INCLUDED`, ongkir diasumsikan sudah terserap dalam harga produk yang dimasukkan operator. Jangan menambah ongkir kedua kali.
 - Mode campuran diizinkan dalam satu order karena tanggal/tujuan kirim dapat berbeda.
-- `orders.total_amount` dan item (termasuk ongkir) diperbarui dalam **satu database transaction**. Perubahan total setelah ada pembayaran dibatasi: jangan izinkan total baru < sudah dibayar. Perubahan nominal penting harus masuk audit.
+- `orders.total_amount` dan item (termasuk ongkir) diperbarui dalam **satu database transaction** dengan penguncian baris order sebelum memeriksa pembayaran POSTED. Baik edit harga/ongkir maupun posting pembayaran memakai urutan lock yang konsisten pada order untuk menghindari race. Jangan izinkan total baru < sudah dibayar. Perubahan nominal penting harus masuk audit.
 - Validasi pembayaran dilakukan di transaction yang mengunci baris order (`SELECT ... FOR UPDATE` melalui Eloquent `lockForUpdate`), supaya dua submit simultan tidak melebihi tagihan. Unik `idempotency_key` membatasi pengulangan satu aksi; bukan melarang dua pembayaran sah dengan jumlah sama.
 - DB index: `orders(order_date, status)`, `orders(customer_id)`, **`order_items(delivery_date, fulfillment_status)`**, `payments(order_id, payment_date, status)`, `expenses(expense_date, status)`. FK dan indeks ditentukan secara konsisten di migration.
 
