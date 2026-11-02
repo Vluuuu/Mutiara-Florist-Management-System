@@ -1,5 +1,5 @@
 # Acceptance & Test Plan — MFMS
-**Status:** Baseline Phase 1: `php artisan test` **7 PASS / 23 assertions** pada 2 November 2026, empat migrasi Ran. **Tes baru CustomerManagementTest (10 skenario) sudah ditulis tetapi belum dieksekusi pada laptop.** Tidak ada klaim PASS untuk tes baru sampai hasil diberikan operator.
+**Status:** Pada 2 November 2026 operator menjalankan `php artisan test`: **17 PASS / 83 assertions**, termasuk 10 tes `CustomerManagementTest`. Migrasi soft delete MariaDB dan build Vite juga berhasil. QA manual browser belum diverifikasi.
 
 ## Pendekatan
 Unit test untuk kalkulasi nominal/status; feature test Laravel untuk controller, autentikasi, form validation, MySQL transactions dan laporan. Tambahkan tes concurrency ber-DATABASE nyata untuk pembayaran.
@@ -47,7 +47,7 @@ Unit test untuk kalkulasi nominal/status; feature test Laravel untuk controller,
 | T-37 | Order & Payments | Order selesai dikirim, pembayaran penuh baru diterima kemudian | Payment berubah PAID dan sisa 0; progres delivery tetap COMPLETED |
 | T-38 | Order & Payments | Pencatatan DP dilakukan pada order tertentu, tidak pada order lain | DP bersifat opsional dan status PARTIAL hanya pada order yang benar-benar dibayar sebagian |
 
-## Tes CRUD Pelanggan (Phase 2, belum dijalankan)
+## Tes CRUD Pelanggan (Phase 2, 10 tes PASS pada laptop)
 - Akses halaman/aksi tanpa login ditolak; nama wajib dan ukuran input dibatasi.
 - Tambah/edit pelanggan menulis audit. Nomor telepon sama boleh digunakan oleh pelanggan berbeda.
 - Pencarian nama/telepon, pagination 10 baris, dan HTML escaping.
