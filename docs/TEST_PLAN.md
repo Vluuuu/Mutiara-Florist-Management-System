@@ -1,5 +1,5 @@
 # Acceptance & Test Plan — MFMS
-**Status:** Test suite dasar autentikasi dan dashboard sudah ditulis di repo (Laravel PHPUnit). **Belum dijalankan**, tidak ada klaim PASS.
+**Status:** Pada 2 November 2026, `php artisan test` dijalankan di laptop operator dan menghasilkan **7 PASS (23 assertions, durasi 1,88 detik)**. Empat migrasi dasar berstatus Ran di MariaDB. Hasil ini terbatas pada tes yang sudah diimplementasikan; sebagian besar skenario T-01 s.d. T-38 masih belum diuji.
 
 ## Pendekatan
 Unit test untuk kalkulasi nominal/status; feature test Laravel untuk controller, autentikasi, form validation, MySQL transactions dan laporan. Tambahkan tes concurrency ber-DATABASE nyata untuk pembayaran.
@@ -51,7 +51,7 @@ Unit test untuk kalkulasi nominal/status; feature test Laravel untuk controller,
 - `tests/Feature/ExampleTest.php` — redirect dari / ke /login.
 - `tests/Feature/AdminAccessTest.php` — proteksi dashboard, registrasi publik 404, login, logout dan kredensial salah.
 - `tests/Feature/DashboardTest.php` — total pesanan 1.000.000, pembayaran POSTED 250.000, piutang 750.000, pengeluaran 50.000.
-- Tes tersebut belum dieksekusi. `php artisan test` menggunakan SQLite memory dalam `phpunit.xml` dan membutuhkan `pdo_sqlite`. Verifikasi migration MySQL tetap harus dilakukan.
+- Ketiga file tes di atas berhasil dijalankan bersama tes unit bawaan, total **7 PASS / 23 assertions**. PHPUnit menggunakan SQLite in-memory melalui `phpunit.xml`; migrasi MariaDB lokal telah berhasil dijalankan terpisah. Belum ada bukti uji rollback pada database uji terpisah, concurrency MySQL, maupun QA visual browser.
 
 ## Exit gate Phase 0
 - Rancangan ERD, aturan pembayaran dan kriteria penerimaan konsisten.
@@ -65,4 +65,4 @@ Unit test untuk kalkulasi nominal/status; feature test Laravel untuk controller,
 
 Rincian contoh dan invariant ongkir lihat [PRICING_AND_SHIPPING.md](PRICING_AND_SHIPPING.md).
 
-Tidak ada hitungan tes PASS sebelum tes benar-benar dibuat dan dijalankan.
+Status pengujian selanjutnya harus membedakan PASS tes otomatis dasar dari skenario penerimaan T-01–T-38 yang belum semuanya memiliki implementasi.
