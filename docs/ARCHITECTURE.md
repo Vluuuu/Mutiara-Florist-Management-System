@@ -1,5 +1,5 @@
 # Arsitektur Sistem
-**Status:** Baseline arsitektur v0.4 (ongkir per item), belum diimplementasikan.
+**Status:** Baseline arsitektur v0.5 (DP opsional, pembatalan/refund ditunda), belum diimplementasikan.
 
 ## 1. Pilihan arsitektur
 **Laravel monolith dengan pola MVC**, Blade untuk server-rendered UI, Tailwind CSS + Alpine.js untuk komponen, MySQL lokal sebagai sumber data utama. Tidak ada layanan Next.js terpisah dan tidak membutuhkan API publik pada tahap awal.
@@ -29,7 +29,7 @@ Lampiran (jika digunakan) disimpan di Laravel storage dengan akses terkontrol, b
 - **Routes / Middleware:** pemetaan URL, autentikasi/sesi, otorisasi dasar.
 - **Controllers:** permintaan HTTP dan pemilihan response/Blade view; tidak menaruh kalkulasi uang di view.
 - **Form Requests:** validasi format, batas nilai, dan kewajiban input.
-- **Services:** create/update order, hitung tagihan, posting pembayaran, pembatalan, laporan dan backup.
+- **Services:** create/update order, hitung tagihan, posting/void koreksi pembayaran, laporan dan backup; tidak ada service pembatalan/refund pada MVP.
 - **Eloquent Models:** relasi dan persistence MySQL.
 - **Blade UI:** tabel, form, status, dashboard, dan chart; angka bersumber dari backend.
 
@@ -37,7 +37,7 @@ Lampiran (jika digunakan) disimpan di Laravel storage dengan akses terkontrol, b
 1. Identity: akun admin dan sesi lokal.
 2. Customers: profil dan pencarian pelanggan.
 3. Orders: header pesanan; tanggal/lokasi pengiriman, penerima, pengirim ucapan, harga dan **ongkir INCLUDED/SEPARATE per item**; status order diringkas dari item; status bayar tetap independen.
-4. Payments: catatan penerimaan POSTED/VOIDED, idempotency key, kalkulasi status bayar/piutang; belum menangani refund uang nyata.
+4. Payments: **nol payment saat order dibuat diperbolehkan**; lunas awal, bayar akhir, DP opsional. Catatan penerimaan POSTED/VOIDED, idempotency key, kalkulasi status bayar/piutang; tidak menangani refund di MVP.
 5. Expenses: pengeluaran dan kategori.
 6. Reports: penjualan menurut order_date, penerimaan menurut payment_date, pengeluaran menurut expense_date, piutang snapshot saat ini, ekspor Excel.
 7. Backup: dump terverifikasi, enkripsi, restore aman.
@@ -46,7 +46,7 @@ Lampiran (jika digunakan) disimpan di Laravel storage dengan akses terkontrol, b
 ## 4. Operasi yang harus atomik
 - Saat menyimpan pesanan: validasi tanggal, tujuan, mode ongkir dan biaya per item; hitung total tagihan dari nilai bunga + ongkir tambahan; simpan header dan item dalam satu transaksi database. Saat item berubah status, ringkasan status order disinkronkan secara konsisten; jangan menganggap seluruh order selesai bila baru sebagian item DELIVERED.
 - Saat mencatat pembayaran: lock baris order di MySQL transaction, hitung outstanding **termasuk ongkir tambahan**, validasi amount, simpan POSTED payment, gunakan idempotency key unik untuk aksi. Dua request paralel tidak boleh mencatat uang melebihi tagihan.
-- Saat pembatalan/koreksi: jangan menghapus jejak penerimaan uang. Pada MVP, hanya order tanpa pembayaran yang dapat dibatalkan; void berarti koreksi input dengan audit, bukan refund. Order berbayar tidak dapat dibatalkan sampai kebijakan refund disepakati.
+- **Pembatalan/refund tidak menjadi fitur MVP**, baik pesanan belum dibayar maupun berbayar. Tidak ada tombol/route CANCELLED atau hard delete untuk mengakali pembatalan. Void payment hanya koreksi pencatatan yang salah dengan audit, bukan bukti uang dikembalikan.
 
 ## 5. Struktur kode usulan
 ```text
