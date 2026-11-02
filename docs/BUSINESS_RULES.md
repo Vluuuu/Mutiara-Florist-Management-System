@@ -1,62 +1,115 @@
-# Aturan Bisnis — Pesanan dan Pembukuan
-**Status:** Draft v0.1. Aturan yang belum dipastikan ditandai **PERLU KEPUTUSAN**.
+# Business Rules — Mutiara Florist Management System
 
-## 1. Pemesanan
-- Pemesanan dibuat oleh operator internal, bukan pelanggan melalui checkout publik.
-- Satu pelanggan dapat membuat banyak pesanan.
-- Satu pesanan dapat berisi banyak item bunga dengan penerima, pengirim ucapan, jumlah, dan harga masing-masing.
-- Status pengerjaan contoh: `NEW`, `PROCESSING`, `READY`, `COMPLETED`, `CANCELLED`.
-- Status pengerjaan **tidak sama** dengan status pembayaran.
-- Data pengiriman wajib cukup jelas untuk pengerjaan nyata; detail validasi disepakati saat form difinalisasi.
+**Versi:** v0.2 (2 November 2026)  
+**Status:** Aturan inti sebagai **baseline desain**. Kebijakan refund, ongkir/diskon, dan beberapa skenario pembatalan **belum disetujui**. Jangan mengklaim sudah menjadi kebijakan operasional.
 
-## 2. Nilai pesanan
-- Nominal dalam Rupiah bulat (`BIGINT`), bukan floating-point.
-- `total_item = quantity × unit_price`; total tagihan berasal dari penjumlahan item yang valid.
-- Ongkir, diskon, dan pajak **belum diputuskan**. Jangan diam-diam menambahkan logikanya.
-- Setelah pembayaran diterima, revisi total pesanan harus melalui prosedur terkontrol agar tidak menimbulkan saldo negatif atau riwayat tidak konsisten.
+## A. Alur pesanan
 
-## 3. Pembayaran
-- Setiap penerimaan uang adalah satu baris `payments`; DP dan pelunasan dapat tercatat terpisah.
-- Pembayaran valid harus positif dan tidak melebihi saldo terutang (hingga prosedur lebih bayar/refund dibuat).
-- `sudah_dibayar = SUM(payments valid)`.
-- `sisa_tagihan = total_tagihan - sudah_dibayar`.
-- `Belum Dibayar` bila pembayaran 0; `DP/Sebagian` bila >0 dan < total; `Lunas` bila sama dengan total.
-- Status bayar dihitung, bukan dua checkbox manual yang dapat saling bertentangan.
-- Cegah submit ganda dan gunakan transaksi MySQL untuk pencatatan pembayaran.
-- Koreksi pembayaran tidak boleh menghilangkan jejak historis; desain reversal/void **PERLU KEPUTUSAN**.
+1. Operator memilih pelanggan yang sudah ada atau membuat pelanggan baru.
+2. Pesanan harus memiliki paling sedikit satu item bunga dengan jenis, penerima ("Untuk"), pengirim ucapan ("Dari"), kuantitas, dan harga satuan.
+3. Detail **penerima/pengirim/alamat per item** memungkinkan satu pemesan memesan beberapa rangkaian yang berbeda.
+4. Satu tanggal pengiriman pada header order adalah **asumsi MVP**; jadwal kirim per item perlu diputuskan.
+5. Nomor pesanan unik dihasilkan backend; jangan menggunakan "jumlah order + 1" yang rawan bentrok.
+6. Total rupiah dihitung pada server, bukan menerima nominal total mentah yang bisa dimanipulasi browser.
 
-## 4. Pengeluaran dan laporan
-- Pengeluaran memiliki tanggal, kategori, nominal, dan keterangan.
-- **Nilai penjualan:** jumlah nilai pesanan yang memenuhi definisi transaksi penjualan pada periode tanggal order.
-- **Penerimaan kas:** penjumlahan pembayaran valid berdasarkan tanggal pembayaran; **bukan** menjumlahkan nilai pesanan sekali lagi.
-- **Pengeluaran kas:** transaksi pengeluaran berdasarkan tanggal pengeluaran.
-- **Selisih kas operasional sederhana:** penerimaan kas - pengeluaran kas. Ini **bukan otomatis laba bersih** karena tidak mencakup seluruh pengakuan biaya/akuntansi.
-- **Piutang:** jumlah sisa tagihan pesanan aktif sesuai aturan pembatalan yang nanti ditetapkan.
-- Setiap metrik harus menampilkan periode yang dipilih dan definisi tanggalnya.
+Status pengerjaan: `NEW`, `PROCESSING`, `READY`, `COMPLETED`, `CANCELLED`. Perpindahan tahap normal maju; aturan memperbaiki status yang keliru harus diaudit. Status bayar tidak menjadi bagian dari enum pengerjaan.
 
-## 5. Pembatalan dan pengembalian uang — PERLU KEPUTUSAN
-- Apakah pesanan yang belum dibayar boleh dibatalkan langsung?
-- Bagaimana menangani pesanan yang sudah DP?
-- Apakah DP dapat dikembalikan, hangus, atau diperhitungkan sebagian?
-- Bagaimana memisahkan refund dari pengeluaran operasional biasa?
-- Apakah pesanan selesai masih boleh diperbaiki dan siapa yang dapat melakukannya?
+## B. Nilai tagihan
 
-**Sementara:** jangan implementasikan penghapusan permanen pada pembayaran. Jangan mengasumsikan pesanan dibatalkan otomatis menghapus catatan uang masuk.
+- `item_subtotal = quantity × unit_price`.
+- `order_total = Σ item_subtotal`. Total harus positif pada MVP.
+- Kolom `orders.total_amount` hanya boleh diperbarui oleh service dalam transaksi MySQL yang sama dengan perubahan item.
+- Setelah DP diterima, perubahan harga/jumlah tidak boleh membuat total pesanan lebih kecil daripada jumlah uang yang sudah tercatat. Revisi harus terdata di audit.
+- Belum ada aturan untuk ongkir, diskon, pajak atau gratisan. **Jangan** tambahkan angka otomatis ke tagihan sebelum ada keputusan.
 
-## 6. Data lama dan impor — PERLU KEPUTUSAN
-- Sheets yang digunakan saat ini memiliki beberapa kolom tidak lengkap/ambigu. Impor harus menggunakan mapping kolom, pratinjau, validasi, deteksi duplikat, dan laporan baris ditolak.
-- Nilai harga `?`, status pembayaran kosong, dan tanggal tidak standar tidak boleh dianggap valid secara otomatis.
-- Jangan mengunggah data pelanggan asli sebagai fixture, screenshot publik, atau contoh repo.
+## C. Pembayaran
 
-## 7. Kasus uji minimum
-| Skenario | Ekspektasi |
-| --- | --- |
-| 2 item @ Rp500.000 dan Rp300.000, masing-masing qty 1 | Total Rp800.000 |
-| Total Rp800.000, DP Rp200.000 | Status sebagian, sisa Rp600.000 |
-| Pelunasan Rp600.000 | Status lunas, sisa Rp0 |
-| Pembayaran tambahan Rp10.000 pada pesanan lunas | Ditolak |
-| Pembayaran yang sama disubmit dua kali | Tidak tercatat ganda |
-| Pengeluaran Rp100.000 | Menambah pengeluaran, tidak mengubah penjualan |
-| Pelanggan memesan beberapa order | Riwayat order tetap terpisah |
+- Pencatatan penerimaan uang adalah **event pembayaran**; satu pesanan dapat memiliki banyak event.
+- Satu event memiliki nilai positif, tanggal pembayaran, metode, referensi opsional, dan siapa yang mencatat.
+- Event dengan `status = POSTED` dihitung sebagai penerimaan. `VOIDED` berarti pencatatan salah yang dibatalkan dengan alasan dan audit; **bukan** bukti pengembalian uang kepada pelanggan.
+- Status bayar **turunan**, bukan dua checkbox seperti di Sheets:
+  - `UNPAID` jika jumlah POSTED = 0.
+  - `PARTIAL` jika 0 < jumlah POSTED < total tagihan.
+  - `PAID` jika jumlah POSTED = total tagihan.
+- Tidak menerima pembayaran lebih besar dari saldo tagihan. Pengecekan saldo dan insert payment harus memakai transaction dan lock pada baris order.
+- Cegah pengiriman form ganda menggunakan idempotency key unik per aksi. **Dua pembayaran dengan nominal sama tetap boleh** bila merupakan dua aksi yang benar-benar berbeda.
+- Koreksi nilai pembayaran dilakukan dengan void beserta alasan/audit, lalu catat pembayaran yang benar bila sesuai. Tidak ada hard delete.
 
-Dokumen ini menjadi acuan tes dan implementasi, setelah aturan yang belum pasti disahkan.
+### Contoh perhitungan
+```text
+Order terdiri dari 2 item: Rp500.000 dan Rp300.000
+Total tagihan: Rp800.000
+DP diterima: Rp200.000
+Status: PARTIAL | Sisa: Rp600.000
+Pelunasan diterima: Rp600.000
+Status: PAID | Sisa: Rp0
+```
+
+## D. Pembatalan dan refund: batas aman sementara
+
+**Keputusan bisnis masih terbuka.** Agar tidak salah menangani uang, pendekatan MVP yang diusulkan:
+
+- Order **belum dibayar** dapat dibatalkan, dengan alasan dan jejak audit. Status menjadi `CANCELLED`, tanpa penghapusan data.
+- Order dengan pembayaran POSTED **tidak dapat dibatalkan melalui UI** hingga kebijakan DP hangus, refund, biaya pembatalan, dan penyajian di laporan disepakati.
+- Order yang sudah `COMPLETED` tidak dapat dibatalkan/diubah sembarangan.
+- Refund tidak diperlakukan sebagai `expenses` operasional biasa tanpa model dan aturan yang jelas.
+- Jika benar-benar sudah ada uang dikembalikan, jangan gunakan void untuk menyamarkan kejadian tersebut.
+
+Sebelum merilis pembatalan order berbayar, tentukan: persentase/refund penuh atau parsial, bagaimana DP hangus dicatat, jenis perubahan status yang diizinkan, serta apakah butuh entitas `refunds` terpisah.
+
+## E. Pengeluaran
+
+- Catat **uang usaha yang benar-benar dikeluarkan**, bukan utang dagang yang belum dibayar.
+- Setiap pengeluaran harus memiliki tanggal, kategori, nominal positif, keterangan, dan operator pencatat.
+- Pengeluaran bisa di-void dengan alasan dan audit bila salah input; belum perlu sistem akuntansi double-entry.
+- Kategori biaya dinonaktifkan, bukan dihapus permanen bila telah digunakan.
+
+## F. Definisi metrik dan periode laporan
+
+| Metrik | Definisi | Periode |
+| --- | --- | --- |
+| Jumlah order aktif | Orders non-CANCELLED | order_date |
+| Nilai penjualan pesanan | SUM(total_amount) orders non-CANCELLED | order_date |
+| Penerimaan uang | SUM(payments amount WHERE POSTED) | payment_date |
+| Pengeluaran uang | SUM(expenses amount WHERE POSTED) | expense_date |
+| Selisih kas sederhana | Penerimaan uang - pengeluaran uang | tanggal arus kas |
+| Piutang saat ini | SUM(max(order total - payments POSTED, 0)) untuk order aktif | snapshot saat dilihat |
+
+**Penting:** nilai penjualan bukan uang masuk; DP dan pelunasan dihitung tepat sekali dalam uang masuk. Selisih kas sederhana **bukan laba bersih**. Jangan menampilkan "piutang per akhir bulan" jika belum punya rekonstruksi saldo historis. Koreksi/void yang sah dapat mengubah jumlah historis menurut tanggal transaksi; audit menyimpan jejak tindakan.
+
+## G. Validasi input dan keamanan
+
+- Jumlah item > 0; harga satuan >= 0; total order > 0; nilai pembayaran/pengeluaran > 0.
+- Perhitungan menggunakan integer Rupiah + validasi overflow.
+- Validasi di Laravel backend walaupun form sudah memiliki validasi JS.
+- Penghapusan permanen data keuangan tidak tersedia dalam antarmuka biasa.
+- Operator harus login. Password hash, CSRF, session safety, dan izin akses untuk lampiran.
+- Gunakan data simulasi di repo dan tes; informasi pelanggan asli hanya ada di database lokal.
+- Backup konsisten harus mencakup database, serta lampiran jika fitur lampiran aktif; uji restore di lingkungan terpisah.
+
+## H. Acceptance scenarios (sebelum implementasi)
+
+| ID | Skenario | Hasil yang diharapkan |
+| --- | --- | --- |
+| BR-01 | Order 2 item @500k dan @300k | Total 800k |
+| BR-02 | DP 200k | Status PARTIAL, piutang 600k |
+| BR-03 | Bayar 600k berikutnya | Status PAID, piutang 0 |
+| BR-04 | Bayar lagi 10k pada order lunas | Ditolak |
+| BR-05 | Dua request dengan idempotency key sama | Paling banyak 1 payment dibuat |
+| BR-06 | Dua payment sah masing-masing 100k dengan key berbeda | Keduanya masuk jika saldo cukup |
+| BR-07 | Order belum dibayar dibatalkan | Tetap tercatat, tidak masuk penjualan aktif |
+| BR-08 | Pembatalan order yang sudah ada DP | Ditolak sampai kebijakan ditetapkan |
+| BR-09 | Pengeluaran 100k | Pengeluaran bertambah; tidak mengubah nilai penjualan |
+| BR-10 | Ubah nilai item sehingga total < sudah dibayar | Ditolak |
+| BR-11 | Void pembayaran salah input dengan alasan | Penerimaan terkoreksi; audit tidak hilang |
+| BR-12 | Pembayaran paralel pada saldo tersisa sama | Total POSTED tidak melebihi tagihan |
+
+## I. Keputusan pemilik/operator yang masih dibutuhkan
+
+1. Pada pesanan dengan DP, apakah uang bisa dikembalikan? Dalam kondisi apa saja?
+2. Apakah ongkir dan diskon biasanya dicatat terpisah dari harga bunga?
+3. Apakah beberapa item di satu pesanan boleh dikirim pada tanggal berbeda?
+4. Kategori pengeluaran, metode pembayaran, dan rekening yang benar-benar digunakan?
+5. Apakah pesanan yang sudah dibayar penuh bisa diperbaiki, dibatalkan, atau diganti?
+
+Rangkuman status masing-masing keputusan ada di [DECISIONS.md](DECISIONS.md). Diagram alur: [WORKFLOWS.md](WORKFLOWS.md).
