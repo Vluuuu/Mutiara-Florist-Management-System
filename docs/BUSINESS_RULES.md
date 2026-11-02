@@ -1,18 +1,18 @@
 # Business Rules — Mutiara Florist Management System
 
-**Versi:** v0.2 (2 November 2026)  
+**Versi:** v0.3 (2 November 2026) — pengiriman per item  
 **Status:** Aturan inti sebagai **baseline desain**. Kebijakan refund, ongkir/diskon, dan beberapa skenario pembatalan **belum disetujui**. Jangan mengklaim sudah menjadi kebijakan operasional.
 
 ## A. Alur pesanan
 
 1. Operator memilih pelanggan yang sudah ada atau membuat pelanggan baru.
 2. Pesanan harus memiliki paling sedikit satu item bunga dengan jenis, penerima ("Untuk"), pengirim ucapan ("Dari"), kuantitas, dan harga satuan.
-3. Detail **penerima/pengirim/alamat per item** memungkinkan satu pemesan memesan beberapa rangkaian yang berbeda.
-4. Satu tanggal pengiriman pada header order adalah **asumsi MVP**; jadwal kirim per item perlu diputuskan.
+3. Detail **penerima, pengirim ucapan, tanggal kirim, dan lokasi tujuan** ditentukan untuk setiap item karena satu pemesan dapat memilih tanggal/alamat berbeda dalam satu order (dikonfirmasi operator).
+4. Satu baris item merupakan kelompok bunga dengan **tanggal dan lokasi pengiriman yang sama**. Jika tanggal/lokasi berbeda, pisahkan ke item lain meskipun jenis bunganya sama.
 5. Nomor pesanan unik dihasilkan backend; jangan menggunakan "jumlah order + 1" yang rawan bentrok.
 6. Total rupiah dihitung pada server, bukan menerima nominal total mentah yang bisa dimanipulasi browser.
 
-Status pengerjaan: `NEW`, `PROCESSING`, `READY`, `COMPLETED`, `CANCELLED`. Perpindahan tahap normal maju; aturan memperbaiki status yang keliru harus diaudit. Status bayar tidak menjadi bagian dari enum pengerjaan.
+Status pengerjaan **setiap item**: `NEW` → `PROCESSING` → `READY` → `DELIVERED`. Status pesanan adalah ringkasan dari item-itemnya: baru, diproses (termasuk progres campuran), siap (semua item READY), selesai (semua item DELIVERED), atau dibatalkan seluruhnya jika belum ada pembayaran. Pengiriman sebagian **tidak membuat seluruh pesanan dianggap selesai**. Perbaikan status manual perlu audit. Status bayar tetap terpisah.
 
 ## B. Nilai tagihan
 
@@ -79,7 +79,7 @@ Sebelum merilis pembatalan order berbayar, tentukan: persentase/refund penuh ata
 
 ## G. Validasi input dan keamanan
 
-- Jumlah item > 0; harga satuan >= 0; total order > 0; nilai pembayaran/pengeluaran > 0.
+- Jumlah item > 0; harga satuan >= 0; total order > 0; nilai pembayaran/pengeluaran > 0. **Tanggal kirim dan lokasi tujuan wajib per item**, bukan sekali untuk seluruh pesanan.
 - Perhitungan menggunakan integer Rupiah + validasi overflow.
 - Validasi di Laravel backend walaupun form sudah memiliki validasi JS.
 - Penghapusan permanen data keuangan tidak tersedia dalam antarmuka biasa.
@@ -103,13 +103,16 @@ Sebelum merilis pembatalan order berbayar, tentukan: persentase/refund penuh ata
 | BR-10 | Ubah nilai item sehingga total < sudah dibayar | Ditolak |
 | BR-11 | Void pembayaran salah input dengan alasan | Penerimaan terkoreksi; audit tidak hilang |
 | BR-12 | Pembayaran paralel pada saldo tersisa sama | Total POSTED tidak melebihi tagihan |
+| BR-13 | Satu order dua item dengan lokasi/tanggal pengiriman berbeda | Kedua jadwal dan tujuan tersimpan per item tanpa saling menimpa |
+| BR-14 | Hanya item pertama dari dua item sudah DELIVERED | Order belum berstatus COMPLETED |
+| BR-15 | Dua item dengan jenis sama namun tanggal berbeda | Tetap dua item berbeda dan tidak digabung otomatis |
 
 ## I. Keputusan pemilik/operator yang masih dibutuhkan
 
 1. Pada pesanan dengan DP, apakah uang bisa dikembalikan? Dalam kondisi apa saja?
 2. Apakah ongkir dan diskon biasanya dicatat terpisah dari harga bunga?
-3. Apakah beberapa item di satu pesanan boleh dikirim pada tanggal berbeda?
-4. Kategori pengeluaran, metode pembayaran, dan rekening yang benar-benar digunakan?
-5. Apakah pesanan yang sudah dibayar penuh bisa diperbaiki, dibatalkan, atau diganti?
+3. Kategori pengeluaran, metode pembayaran, dan rekening yang benar-benar digunakan?
+4. Apakah pesanan yang sudah dibayar penuh bisa diperbaiki, dibatalkan, atau diganti?
+5. Apakah dibutuhkan jam pengiriman spesifik (di luar tanggal) dan status kurir? **Belum diputuskan**.
 
 Rangkuman status masing-masing keputusan ada di [DECISIONS.md](DECISIONS.md). Diagram alur: [WORKFLOWS.md](WORKFLOWS.md).
