@@ -18,10 +18,10 @@ Status:
 | D-008 | Design baseline | 8 tabel core termasuk audit_logs; order_items dan payments terpisah | Memungkinkan multi-item dan DP |
 | D-009 | Design baseline | Uang integer Rupiah; status bayar dihitung dari POSTED payments | Menghindari float dan checkbox tidak konsisten |
 | D-010 | Design baseline | Perubahan order & payment atomik; cegah pembayaran ganda dengan transaction, lock, idempotency | Integritas data |
-| D-011 | Design baseline | Pembatalan order tanpa pembayaran saja pada MVP; order berbayar ditahan | Batas aman sampai kebijakan refund disepakati |
+| D-011 | Accepted (scope) | **Tidak ada fitur cancel/refund pada MVP**, termasuk order belum dibayar | Operator belum menemui kasus pembatalan; aturan refund/DP hangus belum diketahui, diputuskan pada tahap lanjutan |
 | D-012 | Design baseline | Penjualan berdasar order_date, penerimaan payment_date, pengeluaran expense_date | Cegah laporan kas dan penjualan tercampur |
 | D-013 | Design baseline | Piutang yang ditampilkan adalah snapshot saat ini, bukan histori as-of | Belum ada historical ledger/snapshot |
-| D-014 | Open | Refund, DP hangus, biaya pembatalan dan koreksi pembayaran berimplikasi uang nyata | Belum ada persetujuan kebijakan |
+| D-014 | Deferred | Kebijakan refund/DP hangus dan pembatalan | Ditunda hingga ada kebutuhan nyata; bukan blocker migration inti |
 | D-015 | Accepted | Ongkir bisa termasuk harga bunga atau ditagihkan terpisah | Jawaban operator 2 Nov 2026; rincian di [PRICING_AND_SHIPPING.md](PRICING_AND_SHIPPING.md) |
 | D-016 | Accepted | Satu pesanan dapat berisi banyak item dengan tanggal **dan** lokasi pengiriman berbeda | Jawaban operator: tiap bunga mengikuti permintaan tanggal/tujuan pembeli; model per item |
 | D-017 | Open | Metode bayar dan kategori biaya yang umum digunakan | Butuh daftar awal |
@@ -31,11 +31,14 @@ Status:
 | D-021 | Accepted | Diskon/potongan harga dan pajak **tidak diperlukan pada MVP** | Dikonfirmasi operator 2 Nov 2026; tidak membuat kolom atau fitur awal |
 | D-022 | Open | Ongkir dibayar pelanggan langsung ke kurir di luar florist | Perlu aturan agar tidak dicatat sebagai kas florist |
 | D-023 | Design baseline | Mode dan ongkir ditagihkan per item pengiriman, dapat campur dalam satu order | Mendukung multi-tujuan dan tidak menduplikasi ongkir per quantity |
+| D-024 | Accepted | **DP opsional**; umumnya lunas langsung saat memesan atau dibayar penuh belakangan | Tidak boleh memaksa deposit untuk menyimpan pesanan; user 2 Nov 2026 |
+| D-025 | Accepted | Pesanan boleh COMPLETED namun masih UNPAID/PARTIAL | Progres pengerjaan dan status pembayaran dipisah |
+| D-026 | Accepted (scope) | Belum ada kasus pembatalan yang dilaporkan; implementasi cancel/refund setelah MVP bila diperlukan | Tidak menciptakan aturan refund tanpa dasar |
 
 ## Rencana tindak lanjut
-1. Konfirmasi keputusan **Open** (refund D-014, D-017 s.d. D-020, dan pembayaran kurir langsung D-022) dengan operator atau pemilik. D-021 telah ditetapkan di luar MVP.
-2. Finalisasi aturan ini **sebelum mengimplementasikan pembatalan berbayar**.
-3. Core Laravel setup boleh dimulai tanpa seluruh kebijakan lanjutan, sepanjang tidak membuat fitur yang bertentangan dengan status Open.
+1. Konfirmasi keputusan **Open** yang masih dibutuhkan untuk MVP (D-017 s.d. D-020 dan D-022 jika relevan). Refund D-014 **Deferred** dan diskon/pajak D-021 di luar MVP.
+2. Jika pembatalan/refund benar-benar dibutuhkan kelak, rancang dan setujui aturannya sebelum implementasi; tidak diperlukan untuk migration core MVP.
+3. Core Laravel setup boleh dimulai sekarang dengan pembayaran 0..N per order, DP opsional, dan tanpa fitur CANCELLED/refund.
 4. Jika sebuah keputusan mengubah tabel, perbarui [DATABASE](DATABASE.md), [BUSINESS_RULES](BUSINESS_RULES.md), [PRD](PRD.md) dan tes terkait.
 
 **Design baseline ongkir:** `order_items.shipping_mode` (`INCLUDED`/`SEPARATE`) dan `order_items.shipping_fee` (Rupiah bulat). Mode ini boleh berbeda antar-item dalam satu pesanan. Biaya aktual pengiriman tidak dianggap sama dengan ongkir yang ditagihkan. **Tidak ada discount/tax fields atau kalkulasi diskon/pajak pada MVP.**
