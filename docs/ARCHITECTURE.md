@@ -1,5 +1,5 @@
 # Arsitektur Sistem
-**Status:** Baseline arsitektur v0.5 (DP opsional, pembatalan/refund ditunda), belum diimplementasikan.
+**Status:** Baseline arsitektur v0.5; Laravel 13 scaffold, login dan dashboard dasar sudah ada di repo. Runtime lokal/CRUD belum diverifikasi.
 
 ## 1. Pilihan arsitektur
 **Laravel monolith dengan pola MVC**, Blade untuk server-rendered UI, Tailwind CSS + Alpine.js untuk komponen, MySQL lokal sebagai sumber data utama. Tidak ada layanan Next.js terpisah dan tidak membutuhkan API publik pada tahap awal.
@@ -82,7 +82,14 @@ Struktur persisnya akan ditetapkan saat scaffold Laravel dibuat. Service adalah 
 ## 7. Keamanan dan verifikasi
 CSRF bawaan Laravel, validasi input di server, session cookie aman, akses dokumen transaksi terproteksi, parameter query yang aman (Eloquent), dan logging tanpa data sensitif. Backup dienkripsi sebelum disalin ke Drive; kunci enkripsi disimpan terpisah. Restore harus diuji pada database terpisah sebelum diperlukan di lingkungan utama.
 
-## 8. Referensi internal
+## 8. Implementasi awal dan batasannya
+- Kerangka Laravel 13 standar dengan Blade, Tailwind dan Alpine.
+- `LoginController` menyediakan login/logout dengan session regeneration dan middleware `auth`; tidak ada pendaftaran publik. Admin pertama dibuat dengan CLI.
+- `DashboardController` mengagregasi order, pembayaran POSTED, expense POSTED dan piutang snapshot; **tidak** menampilkan nilai pesanan sebagai uang masuk.
+- Migration core mengikuti rancangan 8 tabel. Form CRUD/order/payment service, pengujian MySQL laptop, backup dan restore **belum** diimplementasikan.
+- `docs/LOCAL_SETUP.md` memuat cara uji di Windows. PHP 8.3+.
+
+## 9. Referensi internal
 - [PRD](PRD.md)
 - [Rancangan database](DATABASE.md)
 - [Aturan bisnis](BUSINESS_RULES.md)
