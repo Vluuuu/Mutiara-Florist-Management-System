@@ -30,8 +30,11 @@
                 <a href="{{ route('payments.index') }}" @if(request()->routeIs('payments.*')) aria-current="page" @endif class="mt-1 flex items-center rounded-lg px-4 py-3 text-sm font-semibold {{ request()->routeIs('payments.*') ? 'bg-emerald-50 text-emerald-900' : 'text-stone-600 hover:bg-stone-50' }}">
                     <span class="mr-3">◈</span> Pembayaran & Piutang
                 </a>
+                <a href="{{ route('expenses.index') }}" @if(request()->routeIs('expenses.*') || request()->routeIs('expense-categories.*')) aria-current="page" @endif class="mt-1 flex items-center rounded-lg px-4 py-3 text-sm font-semibold {{ request()->routeIs('expenses.*') || request()->routeIs('expense-categories.*') ? 'bg-emerald-50 text-emerald-900' : 'text-stone-600 hover:bg-stone-50' }}">
+                    <span class="mr-3">▤</span> Pengeluaran
+                </a>
                 <p class="px-4 pb-2 pt-7 text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-400">Dalam pengembangan</p>
-                @foreach (['Pengeluaran', 'Laporan'] as $item)
+                @foreach (['Laporan'] as $item)
                     <p class="cursor-default rounded-lg px-4 py-2.5 text-sm text-stone-400" aria-disabled="true">{{ $item }}</p>
                 @endforeach
             </nav>
@@ -53,7 +56,7 @@
                 @endif
                 @yield('content')
             </main>
-            <footer class="px-5 pb-6 text-xs text-stone-400 md:px-9">MFMS · Sistem lokal · Phase 2</footer>
+            <footer class="px-5 pb-6 text-xs text-stone-400 md:px-9">MFMS · Sistem lokal · Phase 3</footer>
         </div>
     </div>
 </body>
