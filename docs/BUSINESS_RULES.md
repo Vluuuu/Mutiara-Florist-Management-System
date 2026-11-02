@@ -1,7 +1,7 @@
 # Business Rules — Mutiara Florist Management System
 
-**Versi:** v0.5 (2 November 2026) — pengiriman, ongkir per item, tanpa diskon/pajak pada MVP  
-**Status:** Ongkir termasuk/terpisah telah dikonfirmasi; **diskon dan pajak tidak diperlukan pada MVP**. Perincian ongkir per item adalah baseline desain teknis. Kebijakan refund dan beberapa skenario pembatalan masih terbuka.
+**Versi:** v0.6 (2 November 2026) — pembayaran fleksibel, DP opsional, pembatalan ditunda  
+**Status:** Pembayaran umumnya langsung lunas saat pesan atau dibayar belakangan; DP **opsional**. Belum ada kasus pembatalan dalam praktik yang dilaporkan, sehingga **fitur cancel/refund tidak dibuat pada MVP**. Diskon/pajak juga di luar MVP.
 
 ## A. Alur pesanan
 
@@ -12,7 +12,7 @@
 5. Nomor pesanan unik dihasilkan backend; jangan menggunakan "jumlah order + 1" yang rawan bentrok.
 6. Total rupiah dihitung pada server, bukan menerima nominal total mentah yang bisa dimanipulasi browser.
 
-Status pengerjaan **setiap item**: `NEW` → `PROCESSING` → `READY` → `DELIVERED`. Status pesanan adalah ringkasan dari item-itemnya: baru, diproses (termasuk progres campuran), siap (semua item READY), selesai (semua item DELIVERED), atau dibatalkan seluruhnya jika belum ada pembayaran. Pengiriman sebagian **tidak membuat seluruh pesanan dianggap selesai**. Perbaikan status manual perlu audit. Status bayar tetap terpisah.
+Status pengerjaan **setiap item**: `NEW` → `PROCESSING` → `READY` → `DELIVERED`. Status pesanan adalah ringkasan dari item-itemnya: baru, diproses (termasuk progres campuran), siap (semua item READY), selesai (semua item DELIVERED). **Tidak ada CANCELLED dalam alur MVP.** Pengiriman sebagian **tidak membuat seluruh pesanan dianggap selesai**. Perbaikan status manual perlu audit. Status bayar tetap terpisah.
 
 ## B. Nilai tagihan
 
@@ -28,7 +28,9 @@ Status pengerjaan **setiap item**: `NEW` → `PROCESSING` → `READY` → `DELIV
 
 ## C. Pembayaran
 
-- Pencatatan penerimaan uang adalah **event pembayaran**; satu pesanan dapat memiliki banyak event.
+- **DP tidak wajib.** Saat membuat order, operator boleh menyimpan order dengan **nol pembayaran**, membayar **langsung lunas** pada tanggal pemesanan, atau mencatat pembayaran sebagian/DP bila memang terjadi.
+- Pelanggan boleh **membayar penuh belakangan**, termasuk setelah bunga selesai/dikirim. Status operasional DELIVERED/COMPLETED tidak mensyaratkan status pembayaran PAID, dan sebaliknya.
+- Pencatatan penerimaan uang adalah **event pembayaran**; satu pesanan dapat memiliki nol, satu atau banyak event. Tidak ada `dp_amount` wajib pada `orders` atau jadwal cicilan wajib.
 - Satu event memiliki nilai positif, tanggal pembayaran, metode, referensi opsional, dan siapa yang mencatat.
 - Event dengan `status = POSTED` dihitung sebagai penerimaan. `VOIDED` berarti pencatatan salah yang dibatalkan dengan alasan dan audit; **bukan** bukti pengembalian uang kepada pelanggan.
 - Status bayar **turunan**, bukan dua checkbox seperti di Sheets:
@@ -39,7 +41,7 @@ Status pengerjaan **setiap item**: `NEW` → `PROCESSING` → `READY` → `DELIV
 - Cegah pengiriman form ganda menggunakan idempotency key unik per aksi. **Dua pembayaran dengan nominal sama tetap boleh** bila merupakan dua aksi yang benar-benar berbeda.
 - Koreksi nilai pembayaran dilakukan dengan void beserta alasan/audit, lalu catat pembayaran yang benar bila sesuai. Tidak ada hard delete.
 
-### Contoh perhitungan
+### Contoh perhitungan (DP hanyalah salah satu kemungkinan)
 ```text
 Order terdiri dari 2 item: Rp500.000 dan Rp300.000
 Total tagihan: Rp800.000
@@ -49,17 +51,11 @@ Pelunasan diterima: Rp600.000
 Status: PAID | Sisa: Rp0
 ```
 
-## D. Pembatalan dan refund: batas aman sementara
+## D. Pembatalan dan refund: **di luar MVP**
 
-**Keputusan bisnis masih terbuka.** Agar tidak salah menangani uang, pendekatan MVP yang diusulkan:
+Dalam praktik usaha sejauh ini belum ada kebutuhan pembatalan yang dilaporkan operator; aturan DP hangus/refund juga belum diketahui. Maka **jangan implementasikan tombol, endpoint, atau perubahan status CANCELLED**, untuk order berbayar maupun belum dibayar, di MVP. Tidak ada penghapusan order transaksi sebagai pengganti cancel.
 
-- Order **belum dibayar** dapat dibatalkan, dengan alasan dan jejak audit. Status menjadi `CANCELLED`, tanpa penghapusan data.
-- Order dengan pembayaran POSTED **tidak dapat dibatalkan melalui UI** hingga kebijakan DP hangus, refund, biaya pembatalan, dan penyajian di laporan disepakati.
-- Order yang sudah `COMPLETED` tidak dapat dibatalkan/diubah sembarangan.
-- Refund tidak diperlakukan sebagai `expenses` operasional biasa tanpa model dan aturan yang jelas.
-- Jika benar-benar sudah ada uang dikembalikan, jangan gunakan void untuk menyamarkan kejadian tersebut.
-
-Sebelum merilis pembatalan order berbayar, tentukan: persentase/refund penuh atau parsial, bagaimana DP hangus dicatat, jenis perubahan status yang diizinkan, serta apakah butuh entitas `refunds` terpisah.
+Jika ada kebutuhan pembatalan nyata di masa depan, tetapkan lebih dahulu: kebijakan pembatalan, refund penuh/sebagian, DP hangus, biaya kirim yang sudah timbul, perubahan piutang dan perlakuan akuntansinya. Catatan uang keluar karena refund tidak boleh disamakan dengan expense operasional biasa. **Void pembayaran salah input berbeda dari refund nyata.**
 
 ## E. Pengeluaran
 
@@ -72,14 +68,14 @@ Sebelum merilis pembatalan order berbayar, tentukan: persentase/refund penuh ata
 
 | Metrik | Definisi | Periode |
 | --- | --- | --- |
-| Jumlah order aktif | Orders non-CANCELLED | order_date |
-| Total nilai pesanan (termasuk ongkir tambahan) | SUM(total_amount) orders non-CANCELLED | order_date |
-| Nilai bunga | SUM(qty × unit_price) dari items order aktif | order_date |
-| Ongkir tambahan ditagihkan | SUM(shipping_fee) untuk item SEPARATE pada order aktif | order_date |
+| Jumlah order | Semua orders MVP (tidak ada fitur cancellation) | order_date |
+| Total nilai pesanan (termasuk ongkir tambahan) | SUM(total_amount) orders | order_date |
+| Nilai bunga | SUM(qty × unit_price) dari semua order_items MVP | order_date |
+| Ongkir tambahan ditagihkan | SUM(shipping_fee) untuk item SEPARATE | order_date |
 | Penerimaan uang | SUM(payments amount WHERE POSTED) | payment_date |
 | Pengeluaran uang | SUM(expenses amount WHERE POSTED) | expense_date |
 | Selisih kas sederhana | Penerimaan uang - pengeluaran uang | tanggal arus kas |
-| Piutang saat ini | SUM(max(order total - payments POSTED, 0)) untuk order aktif | snapshot saat dilihat |
+| Piutang saat ini | SUM(max(order total - payments POSTED, 0)) untuk semua order MVP, **termasuk yang sudah dikirim namun belum dibayar** | snapshot saat dilihat |
 
 **Penting:** nilai penjualan bukan uang masuk; DP dan pelunasan dihitung tepat sekali dalam uang masuk. Selisih kas sederhana **bukan laba bersih**. Jangan menampilkan "piutang per akhir bulan" jika belum punya rekonstruksi saldo historis. Koreksi/void yang sah dapat mengubah jumlah historis menurut tanggal transaksi; audit menyimpan jejak tindakan.
 
@@ -104,8 +100,8 @@ Sebelum merilis pembatalan order berbayar, tentukan: persentase/refund penuh ata
 | BR-04 | Bayar lagi 10k pada order lunas | Ditolak |
 | BR-05 | Dua request dengan idempotency key sama | Paling banyak 1 payment dibuat |
 | BR-06 | Dua payment sah masing-masing 100k dengan key berbeda | Keduanya masuk jika saldo cukup |
-| BR-07 | Order belum dibayar dibatalkan | Tetap tercatat, tidak masuk penjualan aktif |
-| BR-08 | Pembatalan order yang sudah ada DP | Ditolak sampai kebijakan ditetapkan |
+| BR-07 | Order belum dibayar mencoba dibatalkan | Tombol/endpoint CANCELLED tidak tersedia pada MVP; order tetap ada |
+| BR-08 | Order berbayar mencoba dibatalkan | Tidak ada fitur pembatalan/refund MVP |
 | BR-09 | Pengeluaran 100k | Pengeluaran bertambah; tidak mengubah nilai penjualan |
 | BR-10 | Ubah nilai item sehingga total < sudah dibayar | Ditolak |
 | BR-11 | Void pembayaran salah input dengan alasan | Penerimaan terkoreksi; audit tidak hilang |
@@ -118,13 +114,18 @@ Sebelum merilis pembatalan order berbayar, tentukan: persentase/refund penuh ata
 | BR-18 | Satu order mencampur INCLUDED dan SEPARATE | Total tepat; ongkir tiap item tidak saling menimpa |
 | BR-19 | Ubah ongkir sehingga tagihan baru lebih kecil dari DP POSTED | Perubahan ditolak secara atomik |
 | BR-20 | Florist membayar kurir Rp55.000 dari ongkir pelanggan Rp75.000 | Biaya nyata dicatat sebagai expense; tidak menduplikasi penerimaan |
+| BR-21 | Buat order tanpa pembayaran | UNPAID, outstanding = total tagihan; order berhasil tersimpan |
+| BR-22 | Buat order dan bayar penuh di awal | Satu payment POSTED dengan nilai total; status PAID |
+| BR-23 | Order sudah seluruh item DELIVERED, tetapi belum dibayar | Order COMPLETED secara operasional, payment_status UNPAID, outstanding tetap ada |
+| BR-24 | Order sudah DELIVERED kemudian dibayar penuh | Payment PAID, outstanding menjadi nol tanpa mengubah status pengerjaan |
+| BR-25 | Pembayaran parsial/DP bila terjadi | PARTIAL; DP opsional, bukan syarat membuat order |
 
 ## I. Keputusan pemilik/operator yang masih dibutuhkan
 
-1. Pada pesanan dengan DP, apakah uang bisa dikembalikan? Dalam kondisi apa saja?
+1. Kebijakan cancel/refund/DP hangus **ditunda sampai benar-benar dibutuhkan**, tidak memblokir pembangunan fitur inti.
 2. **Diskon dan pajak tidak diperlukan pada tahap awal** (sudah diputuskan). Jika kebutuhan berubah, revisi aturan bisnis dan database terlebih dahulu.
 3. Kategori pengeluaran, metode pembayaran, dan rekening yang benar-benar digunakan?
-4. Apakah pesanan yang sudah dibayar penuh bisa diperbaiki, dibatalkan, atau diganti?
+4. Aturan koreksi data pesanan yang sudah dibayar penuh/sudah dikirim, selain pembatalan?
 5. Apakah dibutuhkan jam pengiriman spesifik (di luar tanggal) dan status kurir? **Belum diputuskan**.
 
 Rangkuman status ada di [DECISIONS.md](DECISIONS.md). Definisi harga dan ongkir: [PRICING_AND_SHIPPING.md](PRICING_AND_SHIPPING.md). Diagram alur: [WORKFLOWS.md](WORKFLOWS.md).
