@@ -128,6 +128,41 @@ class OrderService
                 throw ValidationException::withMessages(['change_reason' => 'Alasan perubahan harga wajib diisi karena sudah ada pembayaran.']);
             }
 
+            // Audit the type of item changes without duplicating private recipient/contact details.
+            $itemChanges = [];
+            foreach ($data['items'] as $item) {
+                $id = isset($item['id']) ? (int) $item['id'] : null;
+                if ($id === null) {
+                    continue;
+                }
+
+                $previous = $oldItems->get($id);
+                $changedFields = [];
+
+                foreach ([
+                    'flower_type', 'recipient', 'sender_name', 'delivery_date',
+                    'delivery_location', 'quantity', 'unit_price', 'shipping_mode',
+                    'shipping_fee', 'fulfillment_status', 'notes',
+                ] as $field) {
+                    $before = $field === 'delivery_date'
+                        ? $previous->delivery_date->format('Y-m-d')
+                        : $previous->{$field};
+
+                    if ((string) ($before ?? '') !== (string) ($item[$field] ?? ($field === 'fulfillment_status' ? 'NEW' : ''))) {
+                        $changedFields[] = $field;
+                    }
+                }
+
+                if ($changedFields !== []) {
+                    $itemChanges[] = [
+                        'id' => $id,
+                        'fields' => $changedFields,
+                        'status_before' => $previous->fulfillment_status,
+                        'status_after' => $item['fulfillment_status'] ?? 'NEW',
+                    ];
+                }
+            }
+
             $totalBefore = (int) $locked->total_amount;
             $locked->forceFill([
                 'customer_id' => (int) $data['customer_id'],
@@ -152,6 +187,8 @@ class OrderService
                 'items_count' => count($data['items']),
                 'items_added' => $added,
                 'items_removed' => $removed->count(),
+                'removed_ids' => $removed->keys()->values()->all(),
+                'changed_items' => $itemChanges,
                 'status_after' => $locked->status,
                 'change_reason' => $data['change_reason'] ?? null,
             ]);
