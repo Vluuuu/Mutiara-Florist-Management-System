@@ -319,7 +319,11 @@ class PaymentManagementTest extends TestCase
 
         $this->get(route('payments.index', ['q' => $second->order_number]))
             ->assertOk()
-            ->assertDontSee($second->order_number);
+            ->assertSee('Tidak ada piutang yang ditemukan')
+            // Search input intentionally keeps the keyword. Assert the actual
+            // receivables collection is empty, not the entire HTML response.
+            ->assertViewHas('orders', fn ($orders) => $orders->isEmpty())
+            ->assertViewHas('outstanding', 0);
     }
 
     public function test_validation_rejects_bad_method_and_missing_key(): void
