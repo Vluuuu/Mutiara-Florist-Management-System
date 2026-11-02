@@ -2,7 +2,7 @@
 
 Sistem administrasi internal **Mutiara Indah Florist** untuk mengelola pesanan bunga dan pembukuan keuangan dalam satu aplikasi web.
 
-> **Status:** **Phase 3.1 Pembayaran & Piutang: 50 PASS / 324 assertions** di laptop. Phase 3.2 Pengeluaran & Kategori sudah ditambahkan ke GitHub beserta migrasi UUID dan 15 tes baru, namun **belum diuji di laptop**. Backup/restore dan uji transaksi paralel MariaDB belum selesai.
+> **Status:** **Phase 3.2 Pengeluaran & Kategori: 65 PASS / 469 assertions** pada laptop (2 November 2026). Migrasi UUID dan build Vite berhasil. QA browser penuh, backup/restore, dan concurrency MariaDB belum selesai.
 
 ## Tujuan
 
@@ -29,7 +29,7 @@ Sistem administrasi internal **Mutiara Indah Florist** untuk mengelola pesanan b
 
 Lihat **[panduan setup lokal](docs/LOCAL_SETUP.md)**. Ringkasnya: clone repo, `composer install`, buat `.env`, jalankan MySQL dan buat database `mutiara_florist`, `php artisan key:generate`, `php artisan migrate`, `php artisan mfms:create-admin`, `npm install && npm run build`, lalu `php artisan serve`. PHP harus **>=8.2**.
 
-Setup laptop sudah menjalankan lima migrasi dan **50 tes Phase 3.1 PASS (324 assertions)**. Untuk Phase 3.2, tarik perubahan GitHub lalu jalankan `php artisan migrate`, `npm run build`, dan `php artisan test`. Migration tambahan hanya menambah UUID unik nullable pada `expenses`; jangan gunakan `migrate:fresh`. **Belum ada tes Phase 3.2 yang diverifikasi**. Jangan masukkan data bisnis asli sebelum backup/restore diuji.
+Setup lokal sudah menjalankan enam migrasi, termasuk `expenses.idempotency_key`, dan **65 tes PASS / 469 assertions**. Phase 3.2 lulus pengujian otomatis; QA browser belum dilaporkan. Backup/restore dan uji concurrency MariaDB belum selesai. Jangan masukkan data bisnis asli.
 
 ## Dokumentasi
 

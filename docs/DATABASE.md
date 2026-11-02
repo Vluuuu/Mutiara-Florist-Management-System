@@ -1,7 +1,7 @@
 # Database Design & ERD — MFMS
 
 **Versi rancangan:** v0.6 (2 November 2026) — ongkir per item, DP opsional, pembatalan ditunda  
-**Status:** Migrasi inti dan `customers.deleted_at` sudah berjalan di laptop (total lima). Phase 3.2 menambahkan migrasi keenam `expenses.idempotency_key` nullable unik, **belum dijalankan di laptop**. Data usaha asli tidak disimpan di GitHub.
+**Status:** Enam migrasi DONE di MariaDB lokal, termasuk `customers.deleted_at` dan `expenses.idempotency_key` UUID unik nullable. Data usaha asli tidak disimpan di GitHub.
 
 ## 1. Konteks dan prinsip
 

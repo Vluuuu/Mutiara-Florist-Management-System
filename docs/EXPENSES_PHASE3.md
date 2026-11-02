@@ -1,6 +1,6 @@
 # Phase 3.2 — Pengeluaran Usaha
 
-**Status (2 November 2026):** Kode sudah ditambahkan ke GitHub. 15 tes fitur baru dan satu migrasi database **belum dijalankan di laptop**. Baseline Phase 3.1: 50 PASS / 324 assertions.
+**Status (2 November 2026):** Migrasi UUID pengeluaran DONE pada MariaDB lokal, Vite build PASS, PHPUnit **65 PASS / 469 assertions**, termasuk 15 tes pengeluaran. QA browser manual masih perlu diverifikasi.
 
 ## Fitur
 - Menu **Pengeluaran**: `/expenses` — riwayat kas keluar, pencarian keterangan, filter kategori/status/tanggal, pagination, dan total POSTED untuk hasil filter.
@@ -34,6 +34,6 @@ Pastikan XAMPP MariaDB port 3307 berjalan, dan `php artisan serve` tetap aktif d
 5. Uji validasi nominal negatif, akses setelah logout, dan tampilan desktop/mobile.
 
 ## Exit gate
-- Jika 15 tes baru lulus bersama 50 sebelumnya, target **65 PASS**, tetapi **belum dikonfirmasi**.
-- Migrasi + pengujian MariaDB dan QA browser perlu dibuktikan.
+- **65 PASS / 469 assertions** telah terverifikasi pada laptop; migrasi MariaDB dan Vite build juga PASS.
+- QA browser manual, uji concurrency database, dan backup/restore masih perlu dibuktikan.
 - Tes concurrency pembayaran pada MariaDB serta backup/restore belum selesai. Jangan masukkan data usaha asli terlebih dahulu.

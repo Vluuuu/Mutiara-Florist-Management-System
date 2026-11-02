@@ -1,5 +1,5 @@
 # Acceptance & Test Plan — MFMS
-**Status:** Terakhir terverifikasi (2 November 2026) **50 PASS / 324 assertions** Phase 3.1. Phase 3.2 menambahkan 15 tes `ExpenseManagementTest`, **belum dijalankan**; total 65 tes hanya target. Uji concurrency MariaDB dan restore tetap terbuka.
+**Status:** Pengujian laptop 2 November 2026: **65 PASS / 469 assertions** (3,97s), termasuk 15 ExpenseManagementTest. Migrasi UUID pengeluaran dan Vite build PASS. QA browser penuh, concurrency MariaDB, dan restore masih terbuka.
 
 ## Pendekatan
 Unit test untuk kalkulasi nominal/status; feature test Laravel untuk controller, autentikasi, form validation, MySQL transactions dan laporan. Tambahkan tes concurrency ber-DATABASE nyata untuk pembayaran.
@@ -63,12 +63,12 @@ Unit test untuk kalkulasi nominal/status; feature test Laravel untuk controller,
 - Pemeriksaan saldo menggunakan lock baris order yang sama dengan `OrderService::update` dan constraint unik pada `payments.idempotency_key`. **Tes SQLite tidak membuktikan serialisasi nyata MariaDB**; skenario T-11 concurrency dengan proses/request terpisah dan database MariaDB khusus uji masih OPEN.
 - T-35 (payment saat satu request create order secara atomik) belum diimplementasikan: pengguna dapat menyimpan order lalu langsung membuka detail dan membayarnya sebagai dua langkah.
 
-## Tes Pengeluaran (Phase 3.2, 15 skenario baru belum dijalankan)
+## Tes Pengeluaran (Phase 3.2, 15 skenario PASS)
 - Pengelolaan kategori: nama unik, rename, nonaktif/aktif kembali, riwayat pengeluaran tetap ada.
 - Pencatatan nominal positif, tanggal, kategori aktif, keterangan, idempotency UUID unik; replay identik tidak membuat catatan kedua.
 - Koreksi dengan VOIDED (alasan wajib, audit, tanpa hard delete), penolakan void ganda; dampak dashboard tepat tanpa mengubah nilai order/pembayaran.
 - Filter tanggal/kategori/status/keterangan, larangan edit/delete dan penolakan guest.
-- Migration `2026_11_02_000003_add_idempotency_key_to_expenses.php` wajib dijalankan lokal; kolom nullable untuk data lama. **Belum ada hasil PASS tes baru.**
+- Migration `2026_11_02_000003_add_idempotency_key_to_expenses.php` wajib dijalankan lokal; kolom nullable untuk data lama. **15 tes baru telah PASS; total 65 PASS / 469 assertions.**
 
 ## Implementasi tes awal
 - `tests/Feature/ExampleTest.php` — redirect dari / ke /login.

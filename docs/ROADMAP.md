@@ -1,5 +1,5 @@
 # Roadmap Pengembangan
-**Status:** Phase 3.1 telah diverifikasi di laptop: **50 PASS / 324 assertions** (2 November 2026). Phase 3.2 Pengeluaran & Kategori: kode, migration dan 15 tes baru tersedia di GitHub, tetapi **belum dijalankan di laptop**. QA concurrency MariaDB dan backup/restore masih terbuka.
+**Status:** Phase 3.2 Pengeluaran & Kategori: pengujian lokal **65 PASS / 469 assertions** (3,97s) pada 2 November 2026, migrasi UUID pengeluaran DONE, Vite build PASS. QA browser, uji concurrency MariaDB, dan backup/restore masih terbuka.
 
 ## Phase 0 — Foundation (sedang berlangsung)
 - [x] Inisialisasi repo GitHub private dan README.
@@ -52,8 +52,8 @@
 - [ ] QA manual seluruh alur pembayaran dengan data fiktif dan uji concurrency MariaDB riil (SQLite PHPUnit belum membuktikannya).
 - [ ] Dukungan pembayaran penuh/DP **bersamaan dengan submit pembuatan order dalam satu transaksi atomik** (T-35); saat ini pembayaran dicatat dari detail setelah order tersimpan.
 - [x] **Kode Phase 3.2:** kategori tambah/rename/nonaktif/aktif, pengeluaran POSTED, pencarian/filter, void beralasan dan audit; tanpa hard delete.
-- [x] Migration UUID idempotency pengeluaran dan 15 tes baru `ExpenseManagementTest` sudah ditulis; **belum dijalankan**.
-- [ ] Jalankan `php artisan migrate`, build, PHPUnit dan QA browser Phase 3.2 (data fiktif). Lihat [EXPENSES_PHASE3.md](EXPENSES_PHASE3.md).
+- [x] Migrasi UUID pengeluaran DONE pada MariaDB lokal, Vite build PASS, 15 tes ExpenseManagementTest PASS; keseluruhan **65 PASS / 469 assertions**.
+- [ ] QA manual browser kategori, pengeluaran, filter, void, dan dashboard dengan data fiktif. Lihat [EXPENSES_PHASE3.md](EXPENSES_PHASE3.md).
 
 **Exit gate:** seluruh angka pembayaran/piutang konsisten dan dapat ditelusuri.
 
