@@ -2,7 +2,7 @@
 
 Sistem administrasi internal **Mutiara Indah Florist** untuk mengelola pesanan bunga dan pembukuan keuangan dalam satu aplikasi web.
 
-> **Status:** **Phase 2 dimulai — CRUD Pelanggan telah ditulis dan di-push, pengujian Phase 2 di laptop belum dilakukan.** Laravel 12 / PHP 8.2 di XAMPP, 4 migration awal Ran, 7 tes dasar PASS. Ada migrasi tambahan untuk arsip pelanggan yang perlu dijalankan lokal. Modul Pesanan belum tersedia. Baseline bisnis v0.6: pengiriman/ongkir per item, DP opsional, tanpa cancel/refund/diskon/pajak MVP.
+> **Status:** **Phase 2.1 — CRUD Pelanggan sudah terpasang dan 17 tes otomatis PASS (83 assertions)** pada 2 November 2026. Laravel 12 / PHP 8.2 di XAMPP; migrasi ke-5 (soft delete pelanggan) dan build Vite berhasil. QA manual browser belum terverifikasi; modul Pesanan belum tersedia. Baseline bisnis v0.6: pengiriman/ongkir per item, DP opsional, tanpa cancel/refund/diskon/pajak MVP.
 
 ## Tujuan
 
@@ -29,7 +29,7 @@ Sistem administrasi internal **Mutiara Indah Florist** untuk mengelola pesanan b
 
 Lihat **[panduan setup lokal](docs/LOCAL_SETUP.md)**. Ringkasnya: clone repo, `composer install`, buat `.env`, jalankan MySQL dan buat database `mutiara_florist`, `php artisan key:generate`, `php artisan migrate`, `php artisan mfms:create-admin`, `npm install && npm run build`, lalu `php artisan serve`. PHP harus **>=8.2**.
 
-Setup awal sudah menghasilkan 4 migrasi Ran, satu akun admin, akses login/dashboard dan **7 tes dasar PASS**. `composer.lock` dan `package-lock.json` sudah tersimpan di GitHub. Untuk Phase 2, jalankan `git pull --ff-only origin main`, lalu `php artisan migrate` dan `php artisan test`. **Belum ada hasil tes Phase 2 sampai dijalankan pada laptop**. Jangan memasukkan data pelanggan asli sebelum validasi dan backup tersedia.
+Setup lokal sudah menjalankan lima migrasi, membuat akun admin, dan **17 tes otomatis PASS (83 assertions)**, termasuk 10 skenario pelanggan. `composer.lock` dan `package-lock.json` tersimpan di GitHub. **QA browser dan backup/restore masih menunggu verifikasi**. Jangan memasukkan data pelanggan asli sebelum validasi dan backup tersedia.
 
 ## Dokumentasi
 
