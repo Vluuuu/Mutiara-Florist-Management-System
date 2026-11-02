@@ -1,5 +1,5 @@
 # Arsitektur Sistem
-**Status:** Baseline arsitektur v0.3, belum diimplementasikan.
+**Status:** Baseline arsitektur v0.4 (ongkir per item), belum diimplementasikan.
 
 ## 1. Pilihan arsitektur
 **Laravel monolith dengan pola MVC**, Blade untuk server-rendered UI, Tailwind CSS + Alpine.js untuk komponen, MySQL lokal sebagai sumber data utama. Tidak ada layanan Next.js terpisah dan tidak membutuhkan API publik pada tahap awal.
@@ -36,7 +36,7 @@ Lampiran (jika digunakan) disimpan di Laravel storage dengan akses terkontrol, b
 ## 3. Modul
 1. Identity: akun admin dan sesi lokal.
 2. Customers: profil dan pencarian pelanggan.
-3. Orders: header pesanan; tanggal dan lokasi pengiriman, penerima, pengirim ucapan, dan status pengerjaan **per item**; status order diringkas dari item; status bayar tetap independen.
+3. Orders: header pesanan; tanggal/lokasi pengiriman, penerima, pengirim ucapan, harga dan **ongkir INCLUDED/SEPARATE per item**; status order diringkas dari item; status bayar tetap independen.
 4. Payments: catatan penerimaan POSTED/VOIDED, idempotency key, kalkulasi status bayar/piutang; belum menangani refund uang nyata.
 5. Expenses: pengeluaran dan kategori.
 6. Reports: penjualan menurut order_date, penerimaan menurut payment_date, pengeluaran menurut expense_date, piutang snapshot saat ini, ekspor Excel.
@@ -44,8 +44,8 @@ Lampiran (jika digunakan) disimpan di Laravel storage dengan akses terkontrol, b
 8. Audit: append-only log untuk tindakan keuangan penting, tanpa rahasia atau PII berlebihan.
 
 ## 4. Operasi yang harus atomik
-- Saat menyimpan pesanan: validasi tanggal dan tujuan per item, lalu simpan header dan item dalam satu transaksi database. Saat item berubah status, ringkasan status order disinkronkan secara konsisten; jangan menganggap seluruh order selesai bila baru sebagian item DELIVERED.
-- Saat mencatat pembayaran: lock baris order di MySQL transaction, hitung outstanding, validasi amount, simpan POSTED payment, gunakan idempotency key unik untuk aksi. Dua request paralel tidak boleh mencatat uang melebihi tagihan.
+- Saat menyimpan pesanan: validasi tanggal, tujuan, mode ongkir dan biaya per item; hitung total tagihan dari nilai bunga + ongkir tambahan; simpan header dan item dalam satu transaksi database. Saat item berubah status, ringkasan status order disinkronkan secara konsisten; jangan menganggap seluruh order selesai bila baru sebagian item DELIVERED.
+- Saat mencatat pembayaran: lock baris order di MySQL transaction, hitung outstanding **termasuk ongkir tambahan**, validasi amount, simpan POSTED payment, gunakan idempotency key unik untuk aksi. Dua request paralel tidak boleh mencatat uang melebihi tagihan.
 - Saat pembatalan/koreksi: jangan menghapus jejak penerimaan uang. Pada MVP, hanya order tanpa pembayaran yang dapat dibatalkan; void berarti koreksi input dengan audit, bukan refund. Order berbayar tidak dapat dibatalkan sampai kebijakan refund disepakati.
 
 ## 5. Struktur kode usulan
@@ -89,3 +89,4 @@ CSRF bawaan Laravel, validasi input di server, session cookie aman, akses dokume
 - [Use cases & workflows](WORKFLOWS.md)
 - [Test plan](TEST_PLAN.md)
 - [Decision log](DECISIONS.md)
+- [Pricing & shipping](PRICING_AND_SHIPPING.md)
