@@ -1,7 +1,7 @@
 # Database Design & ERD — MFMS
 
 **Versi rancangan:** v0.6 (2 November 2026) — ongkir per item, DP opsional, pembatalan ditunda  
-**Status:** Migrasi 8 tabel inti sudah ada dan berhasil dijalankan di MariaDB lokal. Phase 2 menambahkan migrasi `deleted_at` untuk pelanggan, **belum dijalankan pada laptop operator**. Tidak ada data pelanggan asli di repo.
+**Status:** Migrasi inti dan `customers.deleted_at` sudah berjalan di laptop (total lima). Phase 3.2 menambahkan migrasi keenam `expenses.idempotency_key` nullable unik, **belum dijalankan di laptop**. Data usaha asli tidak disimpan di GitHub.
 
 ## 1. Konteks dan prinsip
 
@@ -131,7 +131,7 @@ erDiagram
 | `order_items` | Rangkaian bunga dan pengiriman masing-masing | quantity > 0; unit_price >= 0; **delivery_date, delivery_location, shipping_mode dan shipping_fee per item**; pengirim/penerima dan fulfillment_status per item |
 | `payments` | Penerimaan uang **opsional**: lunas awal, lunas kemudian, atau DP jika ada | 0..N per order; amount > 0; POSTED/VOIDED; idempotency_key unik per submit |
 | `expense_categories` | Kelompok biaya | nama unik; nonaktifkan alih-alih hapus jika sudah dipakai |
-| `expenses` | Pengeluaran kas usaha | amount > 0; POSTED/VOIDED; category FK |
+| `expenses` | Pengeluaran kas usaha | amount > 0, POSTED/VOIDED, category FK; idempotency_key nullable unik (Phase 3.2, wajib UUID untuk entri baru) |
 | `audit_logs` | Riwayat aksi kritis | append-only, actor dan waktu; tidak simpan password atau data sensitif berlebihan |
 
 Model awal menggunakan **8 tabel bisnis/pendukung** (di luar tabel framework Laravel seperti sessions/cache/jobs jika dibuat). Belum memerlukan `products`, `invoices`, `refunds`, ataupun `attachments` karena aturan atau kebutuhan detailnya belum disepakati.

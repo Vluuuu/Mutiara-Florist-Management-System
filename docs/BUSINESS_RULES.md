@@ -67,6 +67,8 @@ Jika ada kebutuhan pembatalan nyata di masa depan, tetapkan lebih dahulu: kebija
 - Setiap pengeluaran harus memiliki tanggal, kategori, nominal positif, keterangan, dan operator pencatat.
 - Pengeluaran bisa di-void dengan alasan dan audit bila salah input; belum perlu sistem akuntansi double-entry.
 - Kategori biaya dinonaktifkan, bukan dihapus permanen bila telah digunakan.
+- Phase 3.2: kategori bisa dibuat, diubah nama, dinonaktifkan/diaktifkan kembali tanpa menghapus histori; hanya kategori aktif boleh dipilih untuk pengeluaran baru.
+- Entri pengeluaran baru wajib UUID unik untuk mencegah submit ganda. Koreksi kas keluar yang salah dilakukan dengan status VOIDED dan alasan minimal 10 karakter; riwayat dan audit tetap ada. Ini **bukan refund atau pengembalian uang otomatis**.
 
 ## F. Definisi metrik dan periode laporan
 

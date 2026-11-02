@@ -2,7 +2,7 @@
 
 Sistem administrasi internal **Mutiara Indah Florist** untuk mengelola pesanan bunga dan pembukuan keuangan dalam satu aplikasi web.
 
-> **Status:** **Phase 3.1 — kode Pembayaran & Piutang sudah ditambahkan ke GitHub, belum dites pada laptop** (2 November 2026). Baseline terakhir yang sudah lulus: Phase 2.2 **34 PASS / 193 assertions**. 16 tes pembayaran baru, QA browser keuangan dan concurrency MariaDB menunggu verifikasi. Baseline bisnis v0.6: pengiriman/ongkir per item, DP opsional, tanpa cancel/refund/diskon/pajak MVP.
+> **Status:** **Phase 3.1 Pembayaran & Piutang: 50 PASS / 324 assertions** di laptop. Phase 3.2 Pengeluaran & Kategori sudah ditambahkan ke GitHub beserta migrasi UUID dan 15 tes baru, namun **belum diuji di laptop**. Backup/restore dan uji transaksi paralel MariaDB belum selesai.
 
 ## Tujuan
 
@@ -29,7 +29,7 @@ Sistem administrasi internal **Mutiara Indah Florist** untuk mengelola pesanan b
 
 Lihat **[panduan setup lokal](docs/LOCAL_SETUP.md)**. Ringkasnya: clone repo, `composer install`, buat `.env`, jalankan MySQL dan buat database `mutiara_florist`, `php artisan key:generate`, `php artisan migrate`, `php artisan mfms:create-admin`, `npm install && npm run build`, lalu `php artisan serve`. PHP harus **>=8.2**.
 
-Setup lokal sudah menjalankan lima migrasi, membuat akun admin, dan **34 tes otomatis Phase 2.2 PASS (193 assertions)**. Kode Pembayaran & Piutang Phase 3.1 menambah form pembayaran, void dan daftar piutang tanpa migrasi baru; **belum ada bukti tes Phase 3.1 di laptop**. `composer.lock` dan `package-lock.json` tersimpan di GitHub. Backup/restore dan uji paralel MariaDB masih pending; jangan memasukkan data pelanggan nyata dulu.
+Setup laptop sudah menjalankan lima migrasi dan **50 tes Phase 3.1 PASS (324 assertions)**. Untuk Phase 3.2, tarik perubahan GitHub lalu jalankan `php artisan migrate`, `npm run build`, dan `php artisan test`. Migration tambahan hanya menambah UUID unik nullable pada `expenses`; jangan gunakan `migrate:fresh`. **Belum ada tes Phase 3.2 yang diverifikasi**. Jangan masukkan data bisnis asli sebelum backup/restore diuji.
 
 ## Dokumentasi
 
@@ -42,6 +42,7 @@ Setup lokal sudah menjalankan lima migrasi, membuat akun admin, dan **34 tes oto
 - [Uji fitur pelanggan Phase 2](docs/CUSTOMERS_PHASE2.md)
 - [Uji pesanan multi-item Phase 2.2](docs/ORDERS_PHASE2.md)
 - [Uji pembayaran & piutang Phase 3.1](docs/PAYMENTS_PHASE3.md)
+- [Uji pengeluaran Phase 3.2](docs/EXPENSES_PHASE3.md)
 - [Log keputusan](docs/DECISIONS.md)
 - [Alur kerja dan use cases](docs/WORKFLOWS.md)
 - [Rancangan pengujian](docs/TEST_PLAN.md)

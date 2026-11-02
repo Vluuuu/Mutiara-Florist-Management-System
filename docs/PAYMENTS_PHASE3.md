@@ -1,6 +1,6 @@
 # Phase 3.1 — Pembayaran & Piutang
 
-**Status (2 November 2026):** Kode backend/UI, autentikasi, transaksi, dan 16 tes fitur baru sudah ditulis di GitHub. **Belum ada hasil eksekusi tes baru di laptop**. Baseline Phase 2.2: 34 PASS / 193 assertions.
+**Status (2 November 2026):** Suite tes pada laptop **50 PASS / 324 assertions** (termasuk 16 tes Pembayaran); QA browser finance, concurrency MariaDB, dan backup/restore masih harus diverifikasi.
 
 ## Cakupan implementasi
 - Menu **Pembayaran & Piutang** di sidebar: `/payments`. Halaman ini berisi **hanya pesanan dengan sisa tagihan positif**, pencarian nomor/pelanggan, pagination, jumlah piutang terkini, dan tautan untuk membayar.
@@ -46,4 +46,4 @@ git status --short
 - Backup terenkripsi beserta uji restore ke database terpisah. Belum boleh memindahkan data pelanggan/transaksi nyata ke sistem.
 
 ## Tahap berikutnya
-Pengembangan **Phase 3.2**: kategori dan pencatatan pengeluaran, void pengeluaran, audit; lalu integrasi dashboard/laporan, ekspor Excel, dan backup/restore.
+Phase 3.2 Kategori & Pengeluaran sudah ditambahkan ke GitHub beserta 15 tes baru dan migrasi UUID; belum diuji pada laptop. Lihat [EXPENSES_PHASE3.md](EXPENSES_PHASE3.md).

@@ -1,5 +1,5 @@
 # Roadmap Pengembangan
-**Status:** Phase 3.1 Pembayaran & Piutang sudah diimplementasikan di GitHub (2 November 2026), dengan 16 tes fitur baru **belum dijalankan di laptop**. Baseline yang terbukti: Phase 2.2, **34 PASS / 193 assertions**, build Vite dan QA browser oleh operator. Tes integrasi paralel MariaDB dan backup/restore masih diperlukan.
+**Status:** Phase 3.1 telah diverifikasi di laptop: **50 PASS / 324 assertions** (2 November 2026). Phase 3.2 Pengeluaran & Kategori: kode, migration dan 15 tes baru tersedia di GitHub, tetapi **belum dijalankan di laptop**. QA concurrency MariaDB dan backup/restore masih terbuka.
 
 ## Phase 0 — Foundation (sedang berlangsung)
 - [x] Inisialisasi repo GitHub private dan README.
@@ -48,10 +48,12 @@
 - [x] **Kode Phase 3.1:** status UNPAID/PARTIAL/PAID dan jumlah piutang dihitung dari nilai order minus pembayaran POSTED, tampil di detail order, dashboard, dan daftar Piutang.
 - [x] **Kode Phase 3.1:** guard pembayaran berlebih, lock baris order yang sama dengan OrderService, idempotency UUID unik, input dengan CSRF/auth, audit per pembayaran.
 - [x] **Kode Phase 3.1:** void pencatatan salah dengan alasan, timestamp dan audit, tanpa menghapus payment asli. **Bukan refund.**
-- [x] Tulis 16 tes baru PaymentManagementTest: DP, pelunasan, overpay, replay idempotency, status piutang, void, akses dan referensi lintas order. **Belum dieksekusi pada laptop.**
-- [ ] Jalankan PHPUnit, QA browser dengan data sintetis dan uji simultan riil pada MariaDB untuk mengonfirmasi race prevention.
+- [x] Tulis dan jalankan 16 tes `PaymentManagementTest`; total suite Phase 3.1 **50 PASS / 324 assertions**.
+- [ ] QA manual seluruh alur pembayaran dengan data fiktif dan uji concurrency MariaDB riil (SQLite PHPUnit belum membuktikannya).
 - [ ] Dukungan pembayaran penuh/DP **bersamaan dengan submit pembuatan order dalam satu transaksi atomik** (T-35); saat ini pembayaran dicatat dari detail setelah order tersimpan.
-- [ ] CRUD kategori serta pencatatan pengeluaran, void kesalahan input pengeluaran dan pengujian. Lihat [PAYMENTS_PHASE3.md](PAYMENTS_PHASE3.md).
+- [x] **Kode Phase 3.2:** kategori tambah/rename/nonaktif/aktif, pengeluaran POSTED, pencarian/filter, void beralasan dan audit; tanpa hard delete.
+- [x] Migration UUID idempotency pengeluaran dan 15 tes baru `ExpenseManagementTest` sudah ditulis; **belum dijalankan**.
+- [ ] Jalankan `php artisan migrate`, build, PHPUnit dan QA browser Phase 3.2 (data fiktif). Lihat [EXPENSES_PHASE3.md](EXPENSES_PHASE3.md).
 
 **Exit gate:** seluruh angka pembayaran/piutang konsisten dan dapat ditelusuri.
 
