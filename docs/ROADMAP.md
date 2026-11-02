@@ -1,5 +1,5 @@
 # Roadmap Pengembangan
-**Status:** Phase 1 sedang berjalan. Kerangka Laravel 12, login, dashboard, dan migrasi telah di-commit ke GitHub; setup runtime lokal belum diverifikasi.
+**Status:** Phase 1 berjalan di XAMPP lokal (2 November 2026): Composer sukses, 4 migrasi DONE, admin dibuat, server berjalan, `/login` dan `/dashboard` diakses. Tes otomatis dan QA browser belum diverifikasi.
 
 ## Phase 0 — Foundation (sedang berlangsung)
 - [x] Inisialisasi repo GitHub private dan README.
@@ -13,16 +13,18 @@
 **Exit gate:** core schema & aturan pembayaran (tanpa DP wajib) cukup sebagai baseline untuk memulai Laravel. Pembatalan/refund sengaja di luar MVP dan bukan blocker setup/migration core. Keputusan lain yang memengaruhi model harus dicatat sebelum perubahan migrasi.
 
 ## Phase 1 — Laravel Foundation
-- [x] Adaptasi scaffold aplikasi ke **Laravel 12**, memakai skeleton dan dependensi kompatibel PHP >=8.2; kode runtime masih perlu diverifikasi di XAMPP.
-- [ ] Konfigurasi MySQL lokal via `.env`; pastikan tidak masuk Git.
-- [x] Tambahkan layout Blade, Tailwind 4, dan Alpine.js (build lokal masih perlu diverifikasi).
+- [x] Adaptasi scaffold aplikasi ke **Laravel 12**, memakai dependensi kompatibel PHP >=8.2; berhasil diinstal pada XAMPP PHP 8.2.12.
+- [x] Konfigurasi MariaDB lokal XAMPP 10.4.32 port **3307** melalui `.env` lokal; migrasi sukses. Jangan unggah password/`.env` ke Git.
+- [x] Tambahkan layout Blade, Tailwind 4, dan Alpine.js; `npm run build` berhasil di laptop.
 - [x] Implementasi awal layout dashboard dan navigasi responsif; modul lain masih placeholder nonaktif.
-- [x] Tulis migration awal untuk **8 tabel inti** termasuk users; belum dijalankan pada MySQL laptop.
-- [ ] Jalankan `php artisan migrate` dan uji rollback pada database pengembangan kosong.
+- [x] Tulis migration awal untuk **8 tabel inti** termasuk users; **keempat migration Laravel berhasil dijalankan** pada MariaDB lokal.
+- [x] Jalankan `php artisan migrate` pada database pengembangan kosong; semua 4 migration DONE.
+- [ ] Uji migrasi ulang dari awal/rollback pada **database uji terpisah**, bukan database lokal yang sudah memiliki akun admin.
 - [x] Tulis login/logout admin tunggal tanpa registrasi publik dan perintah `mfms:create-admin`.
-- [ ] Jalankan tes autentikasi dan dashboard serta uji browser di laptop.
+- [x] Buat akun admin pertama dengan `mfms:create-admin` dan akses `/login` serta `/dashboard` melalui server lokal.
+- [ ] Jalankan PHPUnit serta uji browser login, dashboard, dan logout secara eksplisit.
 
-**Exit gate:** proyek bisa dibuka di browser lokal, tes setup lulus, dan migration bisa dijalankan ulang dari nol. **Belum tercapai** sampai verifikasi lokal dilakukan. Lihat [panduan setup Windows](LOCAL_SETUP.md).
+**Exit gate:** proyek bisa dibuka di browser lokal, tes setup lulus, dan migration bisa dijalankan ulang dari nol. **Sebagian besar setup lokal sudah terbukti; belum selesai** sampai PHPUnit, QA login/logout dan migrasi database uji terverifikasi. Lihat [panduan setup Windows](LOCAL_SETUP.md).
 
 ## Phase 2 — Orders & Customers
 - [ ] CRUD pelanggan.
