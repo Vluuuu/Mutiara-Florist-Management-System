@@ -1,5 +1,5 @@
 # Roadmap Pengembangan
-**Status:** Phase 2 — kode CRUD Pelanggan dan tes feature baru telah ditambahkan pada 2 November 2026, **belum dijalankan pada laptop**. Phase 1 memiliki 7 PASS / 23 assertions, keempat migrasi dasar Ran; QA visual dan rollback pada DB uji masih tersisa.
+**Status:** Phase 2.1 CRUD Pelanggan: migrasi lokal dan `npm run build` berhasil; pengujian otomatis **17 PASS / 83 assertions** pada 2 November 2026. QA browser dan rollback database uji masih belum terverifikasi.
 
 ## Phase 0 — Foundation (sedang berlangsung)
 - [x] Inisialisasi repo GitHub private dan README.
@@ -31,7 +31,8 @@
 ## Phase 2 — Orders & Customers
 - [x] **Implementasi kode** CRUD pelanggan: daftar, cari nama/telepon, tambah, detail, edit, arsip (soft delete hanya jika tidak ada order), audit perubahan.
 - [x] Tulis tes fitur pelanggan (akses, validasi, pencarian, duplikasi telepon, pagination, HTML escaping, audit, perlindungan relasi order).
-- [ ] Jalankan **migrasi soft delete** pelanggan dan `php artisan test` pada laptop; QA manual browser dengan data sintetis. Lihat [CUSTOMERS_PHASE2.md](CUSTOMERS_PHASE2.md).
+- [x] Jalankan **migrasi soft delete** pelanggan dan `php artisan test` di laptop: 17 PASS / 83 assertions; Vite build berhasil.
+- [ ] QA manual browser menggunakan pelanggan sintetis. Lihat [CUSTOMERS_PHASE2.md](CUSTOMERS_PHASE2.md).
 - [ ] CRUD pesanan dan multi-item dengan **tanggal, tujuan, serta ongkir INCLUDED/SEPARATE per item**.
 - [ ] Nomor order unik, validasi input, filter/pencarian.
 - [ ] Status pengerjaan per item dan ringkasan otomatis status order.
