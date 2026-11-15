@@ -7,8 +7,10 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\ExpenseCategoryController;
+use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 Route::get('/', fn () => redirect()->route(Auth::check() ? 'dashboard' : 'login'));
 
@@ -33,6 +35,14 @@ Route::middleware('auth')->group(function () {
     Route::post('/expense-categories', [ExpenseCategoryController::class, 'store'])->name('expense-categories.store');
     Route::put('/expense-categories/{expenseCategory}', [ExpenseCategoryController::class, 'update'])->name('expense-categories.update');
     Route::post('/expense-categories/{expenseCategory}/status', [ExpenseCategoryController::class, 'status'])->name('expense-categories.status');
+
+    // React/Inertia preview is isolated from existing Blade management screens.
+    Route::get('/ui-preview', function () {
+        return Inertia::render('Preview', [
+            'user' => ['name' => request()->user()->name],
+            'dashboardUrl' => route('dashboard'),
+        ]);
+    })->middleware(HandleInertiaRequests::class)->name('ui-preview');
 
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 });
