@@ -1,5 +1,5 @@
 # Roadmap Pengembangan
-**Status:** Phase 3.2 Pengeluaran & Kategori: pengujian lokal **65 PASS / 469 assertions** (3,97s) pada 2 November 2026, migrasi UUID pengeluaran DONE, Vite build PASS. QA browser, uji concurrency MariaDB, dan backup/restore masih terbuka.
+**Status:** Phase 3.3.1 React Dashboard Migration: pengujian lokal **74 PASS / 572 assertions** (3,57s), `npm run typecheck` PASS, `npm run build` PASS, browser QA Playwright 14 PASS / 0 FAIL. Dashboard React aktif di `/ui-dashboard`, terintegrasi dengan `DashboardService` bersama Blade `/dashboard`.
 
 ## Phase 0 — Foundation (sedang berlangsung)
 - [x] Inisialisasi repo GitHub private dan README.
@@ -55,7 +55,23 @@
 - [x] Migrasi UUID pengeluaran DONE pada MariaDB lokal, Vite build PASS, 15 tes ExpenseManagementTest PASS; keseluruhan **65 PASS / 469 assertions**.
 - [ ] QA manual browser kategori, pengeluaran, filter, void, dan dashboard dengan data fiktif. Lihat [EXPENSES_PHASE3.md](EXPENSES_PHASE3.md).
 
-**Exit gate:** seluruh angka pembayaran/piutang konsisten dan dapat ditelusuri.
+### Phase 3.3 — Fondasi React 19 + TypeScript + Inertia.js
+- [x] Scaffold Inertia.js v3, React 19, TypeScript, Tailwind CSS 4, shadcn/ui foundation, Lucide React, dan Vite 8.
+- [x] Route preview terisolasi `/ui-preview` dengan middleware `HandleInertiaRequests`.
+- [x] Dependency lockfile (`composer.lock` & `package-lock.json`) terkunci dan tervalidasi.
+
+### Phase 3.3.1 — Migrasi Dashboard React
+- [x] Ekstraksi perhitungan statistik dashboard ke service bersama `DashboardService` agar angka pada dashboard Blade (`/dashboard`) dan dashboard React (`/ui-dashboard`) 100% konsisten.
+- [x] Hanya transaksi `POSTED` yang dihitung pada uang diterima (`payments`) dan pengeluaran (`expenses`); transaksi `VOIDED` diabaikan dari kas.
+- [x] Piutang dihitung `max(billed - received, 0)` dan tidak pernah negatif.
+- [x] Selisih kas sederhana dihitung dari kas masuk minus keluar dan secara eksplisit tidak disebut sebagai laba bersih.
+- [x] Implementasi layout manajemen modern (`AppLayout`) dengan desktop sidebar, mobile drawer responsif, toggle navigasi, dan identitas user.
+- [x] Implementasi kartu metrik (`StatCard`, `Card`) dengan ikon Lucide dan format rupiah standar Indonesia.
+- [x] Navigasi modul bisnis lama (Pelanggan, Pesanan, Pembayaran, Pengeluaran, Kategori) menggunakan tautan HTML native agar tidak bentrok dengan XHR router Inertia.
+- [x] 7 tes otomatis baru di `UiDashboardTest` (total suite **74 PASS / 572 assertions**).
+- [x] QA browser otomatis Playwright pada viewport desktop dan mobile: 14 PASS / 0 FAIL, bebas error konsol dan tanpa overflow horizontal.
+
+**Exit gate:** seluruh angka pembayaran/piutang konsisten dan dapat ditelusuri. Dashboard React aktif berdampingan dengan dashboard Blade lama tanpa regresi.
 
 ## Phase 4 — Dashboard, Reports & Data Safety
 - [ ] Ringkasan dan grafik per periode.

@@ -7,6 +7,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\ExpenseCategoryController;
+use App\Http\Controllers\UiDashboardController;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -43,6 +44,12 @@ Route::middleware('auth')->group(function () {
             'dashboardUrl' => route('dashboard'),
         ]);
     })->middleware(HandleInertiaRequests::class)->name('ui-preview');
+
+    // Phase 3.3.1: React dashboard on an isolated route. Blade /dashboard stays
+    // until the whole migration is verified, then /ui-dashboard takes over.
+    Route::get('/ui-dashboard', UiDashboardController::class)
+        ->middleware(HandleInertiaRequests::class)
+        ->name('ui-dashboard');
 
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 });
