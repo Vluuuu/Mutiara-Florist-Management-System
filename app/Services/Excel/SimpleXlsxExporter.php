@@ -261,7 +261,7 @@ class SimpleXlsxExporter
 
                 if ($type === 'number' || $type === 'currency' || $type === 'integer') {
                     $numericVal = is_numeric($val) ? $val : 0;
-                    $xml .= '<c r="'.$cellRef.'"'.$styleAttr.'><v>'.$numericVal.'</v></c>';
+                    $xml .= '<c r="'.$cellRef.'"'.$styleAttr.' t="n"><v>'.$numericVal.'</v></c>';
                 } else {
                     // String / text - sanitize and XML escape
                     $strVal = self::xmlEscape(self::sanitizeText((string) $val));

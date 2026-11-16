@@ -49,6 +49,24 @@ return [
             'database' => env('DB_TESTING_DATABASE', database_path('test_restore.sqlite')),
             'prefix' => '',
             'foreign_key_constraints' => false,
+            'is_testing' => true,
+        ],
+
+        'mariadb_testing' => [
+            'driver' => 'mysql',
+            'url' => env('DB_TEST_URL'),
+            'host' => env('DB_TEST_HOST', '127.0.0.1'),
+            'port' => env('DB_TEST_PORT', '3307'),
+            'database' => env('DB_TEST_DATABASE', 'mfms_testing'),
+            'username' => env('DB_TEST_USERNAME', 'root'),
+            'password' => env('DB_TEST_PASSWORD', '123456'),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => 'InnoDB',
+            'is_testing' => true,
         ],
 
         'mysql' => [
