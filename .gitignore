@@ -53,6 +53,10 @@ Thumbs.db
 # User uploads / payment receipts
 /storage/app/private/
 /storage/app/public/uploads/
+/storage/app/backups/*
+!/storage/app/backups/.gitignore
+/storage/app/exports/*
+!/storage/app/exports/.gitignore
 /public/storage
 
 # Avoid committing generated artifacts by default

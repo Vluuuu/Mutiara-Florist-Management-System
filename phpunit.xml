@@ -29,6 +29,9 @@
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
+        <env name="DB_TEST_HOST" value="127.0.0.1"/>
+        <env name="DB_TEST_PORT" value="3307"/>
+        <env name="DB_TEST_DATABASE" value="mfms_testing"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>

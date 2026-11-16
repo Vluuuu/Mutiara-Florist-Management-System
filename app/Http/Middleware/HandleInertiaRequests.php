@@ -20,8 +20,9 @@ class HandleInertiaRequests extends Middleware
                 'error' => fn () => $request->session()->get('error'),
             ],
             'nav' => [
-                'dashboard' => route('ui-dashboard'),
-                'legacyDashboard' => route('dashboard'),
+                'dashboard' => route('dashboard'),
+                'uiDashboard' => route('ui-dashboard'),
+                'legacyDashboard' => route('legacy.dashboard'),
                 'uiCustomers' => route('ui-customers.index'),
                 'customers' => route('customers.index'),
                 'uiOrders' => route('ui-orders.index'),
@@ -32,6 +33,8 @@ class HandleInertiaRequests extends Middleware
                 'expenses' => route('expenses.index'),
                 'uiExpenseCategories' => route('ui-expense-categories.index'),
                 'expenseCategories' => route('expense-categories.index'),
+                'uiReports' => route('ui-reports.index'),
+                'uiReportsExport' => route('ui-reports.export'),
                 'logout' => route('logout'),
             ],
         ]);

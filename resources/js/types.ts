@@ -22,6 +22,8 @@ export type DashboardNav = {
     expenses: string;
     uiExpenseCategories?: string;
     expenseCategories: string;
+    uiReports?: string;
+    uiReportsExport?: string;
     logout: string;
 };
 
@@ -249,3 +251,62 @@ export type ExpenseFilters = {
     from: string | null;
     to: string | null;
 };
+
+export type ReportPreset = 'today' | '7d' | '30d' | 'this_month' | 'last_month' | 'custom';
+
+export type ReportPeriod = {
+    preset: ReportPreset;
+    from: string;
+    to: string;
+    label: string;
+};
+
+export type ReportSummary = {
+    orders_count: number;
+    total_billed: number;
+    flower_total: number;
+    shipping_total: number;
+    cash_in: number;
+    cash_out: number;
+    cash_diff: number;
+    current_outstanding: number;
+    open_receivables_count: number;
+};
+
+export type FulfillmentBreakdown = {
+    NEW: number;
+    PROCESSING: number;
+    READY: number;
+    COMPLETED: number;
+};
+
+export type PaymentBreakdown = {
+    UNPAID: number;
+    PARTIAL: number;
+    PAID: number;
+};
+
+export type DailyTrendItem = {
+    date: string;
+    formatted_date: string;
+    orders_count: number;
+    billed: number;
+    cash_in: number;
+    cash_out: number;
+};
+
+export type ReportNotes = {
+    cash_diff_label: string;
+    cash_diff_disclaimer: string;
+    outstanding_disclaimer: string;
+};
+
+export type FinancialReportData = {
+    period: ReportPeriod;
+    summary: ReportSummary;
+    fulfillment_breakdown: FulfillmentBreakdown;
+    payment_breakdown: PaymentBreakdown;
+    daily_trends: DailyTrendItem[];
+    notes: ReportNotes;
+};
+

@@ -9,6 +9,15 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-screen bg-stone-50 text-stone-900 antialiased">
+    <div class="border-b border-amber-300 bg-amber-50 px-4 py-2 text-xs text-amber-950 flex flex-wrap justify-between items-center gap-2">
+        <div class="flex items-center gap-2">
+            <span class="inline-block size-2 rounded-full bg-amber-500"></span>
+            <span><strong>Mode Fallback Blade Aktif (Rollback Standby)</strong> · Antarmuka klasik dipertahankan untuk pemulihan darurat.</span>
+        </div>
+        <a href="{{ route('dashboard') }}" class="font-semibold text-emerald-950 underline hover:text-emerald-800">
+            Beralih ke Aplikasi Utama (React Modern) →
+        </a>
+    </div>
     <div class="min-h-screen lg:grid lg:grid-cols-[248px_1fr]">
         <aside class="border-b border-stone-200 bg-white lg:border-b-0 lg:border-r">
             <div class="flex items-center gap-3 px-6 py-7">
@@ -38,8 +47,8 @@
                 @foreach (['Laporan'] as $item)
                     <p class="cursor-default rounded-lg px-4 py-2.5 text-sm text-stone-400" aria-disabled="true">{{ $item }}</p>
                 @endforeach
-                <a href="{{ route('ui-dashboard') }}" class="mt-2 flex items-center rounded-lg px-4 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-50">
-                    <span class="mr-2.5">⚛</span> Dashboard React
+                <a href="{{ route('dashboard') }}" class="mt-4 flex items-center justify-center rounded-lg bg-emerald-950 px-4 py-2.5 text-xs font-semibold text-white hover:bg-emerald-900 shadow-xs">
+                    <span class="mr-2">⚛</span> Aplikasi Utama (React)
                 </a>
             </nav>
         </aside>

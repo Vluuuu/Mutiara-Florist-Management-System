@@ -1,5 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
+    BarChart3,
     Flower2,
     LayoutDashboard,
     LogOut,
@@ -25,16 +26,17 @@ type NavItemConfig = {
 };
 
 const mainNavItems: NavItemConfig[] = [
-    { label: 'Dashboard', hrefKey: 'dashboard', defaultHref: '/ui-dashboard', icon: LayoutDashboard },
+    { label: 'Dashboard', hrefKey: 'dashboard', defaultHref: '/dashboard', icon: LayoutDashboard },
     { label: 'Pelanggan', hrefKey: 'uiCustomers', defaultHref: '/ui-customers', icon: Users },
     { label: 'Pesanan', hrefKey: 'uiOrders', defaultHref: '/ui-orders', icon: ShoppingBag },
     { label: 'Pembayaran', hrefKey: 'uiPayments', defaultHref: '/ui-payments', icon: Wallet },
     { label: 'Pengeluaran', hrefKey: 'uiExpenses', defaultHref: '/ui-expenses', icon: ReceiptText },
     { label: 'Kategori Biaya', hrefKey: 'uiExpenseCategories', defaultHref: '/ui-expense-categories', icon: Tags },
+    { label: 'Laporan', hrefKey: 'uiReports', defaultHref: '/ui-reports', icon: BarChart3 },
 ];
 
 const legacyBladeItems: Array<{ label: string; hrefKey: keyof AppPageProps['nav']; defaultHref: string }> = [
-    { label: 'Dashboard Blade', hrefKey: 'legacyDashboard', defaultHref: '/dashboard' },
+    { label: 'Dashboard Blade', hrefKey: 'legacyDashboard', defaultHref: '/legacy/dashboard' },
     { label: 'Pelanggan Blade', hrefKey: 'customers', defaultHref: '/customers' },
     { label: 'Pesanan Blade', hrefKey: 'orders', defaultHref: '/orders' },
     { label: 'Pembayaran Blade', hrefKey: 'payments', defaultHref: '/payments' },
@@ -72,7 +74,8 @@ export function SidebarContent({ onNavigate }: SidebarNavProps) {
                     const path = new URL(href, origin).pathname;
                     const isActive =
                         currentPath === path ||
-                        (path !== '/ui-dashboard' && currentPath.startsWith(path + '/'));
+                        ((path === '/dashboard' || path === '/ui-dashboard') && (currentPath === '/dashboard' || currentPath === '/ui-dashboard')) ||
+                        (path !== '/dashboard' && path !== '/ui-dashboard' && currentPath.startsWith(path + '/'));
 
                     return (
                         <Link
