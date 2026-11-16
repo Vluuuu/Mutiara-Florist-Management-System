@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { usePage } from '@inertiajs/react';
-import { Menu, X } from 'lucide-react';
+import { CheckCircle2, Menu, X, XCircle } from 'lucide-react';
 import { SidebarContent } from '@/components/app-sidebar';
 import type { AppPageProps } from '@/types';
 
@@ -11,7 +11,11 @@ type AppLayoutProps = {
 
 export default function AppLayout({ title, children }: AppLayoutProps) {
     const [mobileOpen, setMobileOpen] = useState(false);
-    const { auth } = usePage<AppPageProps>().props;
+    const { auth, flash, errors } = usePage<AppPageProps>().props;
+    const [dismissFlash, setDismissFlash] = useState(false);
+
+    const successMessage = !dismissFlash ? flash?.success : null;
+    const errorMessage = !dismissFlash ? (flash?.error ?? errors?.customer) : null;
 
     return (
         <div className="min-h-screen bg-stone-50">
@@ -63,14 +67,59 @@ export default function AppLayout({ title, children }: AppLayoutProps) {
                 {/* Desktop header */}
                 <div className="hidden items-center justify-between border-b border-stone-200 bg-white px-8 py-4 lg:flex">
                     <h2 className="text-sm font-semibold text-stone-600">{title}</h2>
-                    {auth.user && (
-                        <span className="flex size-9 items-center justify-center rounded-full bg-emerald-950 text-sm font-semibold text-white">
-                            {auth.user.name.charAt(0).toUpperCase()}
-                        </span>
+                    {auth?.user && (
+                        <div className="flex items-center gap-3">
+                            <span className="text-xs text-stone-500">{auth.user.name}</span>
+                            <span className="flex size-9 items-center justify-center rounded-full bg-emerald-950 text-sm font-semibold text-white">
+                                {auth.user.name.charAt(0).toUpperCase()}
+                            </span>
+                        </div>
                     )}
                 </div>
 
-                <main className="px-4 py-6 sm:px-6 lg:px-8">{children}</main>
+                <main className="px-4 py-6 sm:px-6 lg:px-8">
+                    {successMessage && (
+                        <div
+                            role="status"
+                            className="mb-6 flex items-start justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-950"
+                        >
+                            <div className="flex items-center gap-2">
+                                <CheckCircle2 className="size-5 shrink-0 text-emerald-700" aria-hidden="true" />
+                                <span>{successMessage}</span>
+                            </div>
+                            <button
+                                type="button"
+                                aria-label="Tutup pemberitahuan"
+                                onClick={() => setDismissFlash(true)}
+                                className="rounded p-1 text-emerald-800 hover:bg-emerald-100"
+                            >
+                                <X className="size-4" aria-hidden="true" />
+                            </button>
+                        </div>
+                    )}
+
+                    {errorMessage && (
+                        <div
+                            role="alert"
+                            className="mb-6 flex items-start justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-950"
+                        >
+                            <div className="flex items-center gap-2">
+                                <XCircle className="size-5 shrink-0 text-red-700" aria-hidden="true" />
+                                <span>{errorMessage}</span>
+                            </div>
+                            <button
+                                type="button"
+                                aria-label="Tutup peringatan"
+                                onClick={() => setDismissFlash(true)}
+                                className="rounded p-1 text-red-800 hover:bg-red-100"
+                            >
+                                <X className="size-4" aria-hidden="true" />
+                            </button>
+                        </div>
+                    )}
+
+                    {children}
+                </main>
             </div>
         </div>
     );

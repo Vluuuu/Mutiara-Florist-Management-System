@@ -7,6 +7,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\ExpenseCategoryController;
+use App\Http\Controllers\UiCustomerController;
 use App\Http\Controllers\UiDashboardController;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Support\Facades\Auth;
@@ -50,6 +51,17 @@ Route::middleware('auth')->group(function () {
     Route::get('/ui-dashboard', UiDashboardController::class)
         ->middleware(HandleInertiaRequests::class)
         ->name('ui-dashboard');
+
+    // Phase 3.3.2: React Customer Management on isolated routes
+    Route::prefix('ui-customers')->name('ui-customers.')->middleware(HandleInertiaRequests::class)->group(function () {
+        Route::get('/', [UiCustomerController::class, 'index'])->name('index');
+        Route::get('/create', [UiCustomerController::class, 'create'])->name('create');
+        Route::post('/', [UiCustomerController::class, 'store'])->name('store');
+        Route::get('/{customer}', [UiCustomerController::class, 'show'])->name('show');
+        Route::get('/{customer}/edit', [UiCustomerController::class, 'edit'])->name('edit');
+        Route::put('/{customer}', [UiCustomerController::class, 'update'])->name('update');
+        Route::delete('/{customer}', [UiCustomerController::class, 'destroy'])->name('destroy');
+    });
 
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 });

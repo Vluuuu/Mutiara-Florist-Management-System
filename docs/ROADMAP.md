@@ -1,5 +1,5 @@
 # Roadmap Pengembangan
-**Status:** Phase 3.3.1 React Dashboard Migration: pengujian lokal **74 PASS / 572 assertions** (3,57s), `npm run typecheck` PASS, `npm run build` PASS, browser QA Playwright 14 PASS / 0 FAIL. Dashboard React aktif di `/ui-dashboard`, terintegrasi dengan `DashboardService` bersama Blade `/dashboard`.
+**Status:** Phase 3.3.2 React Customer Management: pengujian lokal **85 PASS / 705 assertions** (4,80s), `npm run typecheck` PASS, `npm run build` PASS, browser QA Playwright 25 PASS / 0 FAIL. Modul Pelanggan React aktif di `/ui-customers`, terintegrasi dengan `CustomerService` bersama modul Blade `/customers`.
 
 ## Phase 0 — Foundation (sedang berlangsung)
 - [x] Inisialisasi repo GitHub private dan README.
@@ -71,7 +71,19 @@
 - [x] 7 tes otomatis baru di `UiDashboardTest` (total suite **74 PASS / 572 assertions**).
 - [x] QA browser otomatis Playwright pada viewport desktop dan mobile: 14 PASS / 0 FAIL, bebas error konsol dan tanpa overflow horizontal.
 
-**Exit gate:** seluruh angka pembayaran/piutang konsisten dan dapat ditelusuri. Dashboard React aktif berdampingan dengan dashboard Blade lama tanpa regresi.
+### Phase 3.3.2 — Migrasi Pelanggan React
+- [x] Ekstraksi operasi bisnis dan audit log pelanggan ke service bersama `CustomerService` (`paginate`, `create`, `update`, `archive`).
+- [x] Perlindungan integritas bisnis: nama wajib, telepon & catatan opsional, telepon duplikat diizinkan, literal escaping untuk `%` dan `_`, pelanggan dengan pesanan dilarang diarsipkan, arsip menggunakan soft delete, pencatatan audit log lengkap.
+- [x] Antarmuka React Inertia lengkap di route terisolasi `/ui-customers`:
+  - `Customers/Index`: tabel responsif, form pencarian nama/telepon dengan tombol reset, paginasi 10 pelanggan per halaman, tautan ke Blade lama.
+  - `Customers/Create`: formulir tambah pelanggan dengan validasi server, pesan error per input, indikator loading, dan pembatalan.
+  - `Customers/Edit`: formulir edit data pelanggan dengan pre-fill data awal dan pencatatan audit field yang berubah.
+  - `Customers/Show`: detail lengkap pelanggan, waktu WIB, total pesanan, kartu proteksi arsip jika memiliki pesanan, serta modal dialog konfirmasi arsip jika tanpa pesanan.
+- [x] Integrasi navigasi sidebar: item aktif pada prefix `/ui-customers`, tautan fallback ke Pelanggan Blade lama.
+- [x] 11 pengujian otomatis baru di `UiCustomerTest` (total suite **85 PASS / 705 assertions**).
+- [x] QA browser otomatis Playwright pada database terisolasi (SQLite) dengan data sintetis: 25 PASS / 0 FAIL (tambah, edit, cari, reset, paginasi, tolak arsip jika ada order, sukses arsip jika tanpa order, verifikasi soft delete, pengujian viewport mobile, 0 error).
+
+**Exit gate:** seluruh alur pelanggan React terverifikasi lengkap berdampingan dengan modul Blade lama tanpa regresi. Database operasional dan password admin tidak tersentuh.
 
 ## Phase 4 — Dashboard, Reports & Data Safety
 - [ ] Ringkasan dan grafik per periode.

@@ -15,6 +15,21 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => fn () => $request->user()?->only(['id', 'name']),
             ],
+            'flash' => [
+                'success' => fn () => $request->session()->get('success'),
+                'error' => fn () => $request->session()->get('error'),
+            ],
+            'nav' => [
+                'dashboard' => route('ui-dashboard'),
+                'legacyDashboard' => route('dashboard'),
+                'uiCustomers' => route('ui-customers.index'),
+                'customers' => route('customers.index'),
+                'orders' => route('orders.index'),
+                'payments' => route('payments.index'),
+                'expenses' => route('expenses.index'),
+                'expenseCategories' => route('expense-categories.index'),
+                'logout' => route('logout'),
+            ],
         ]);
     }
 }

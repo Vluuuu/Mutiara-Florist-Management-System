@@ -17,12 +17,9 @@ type SidebarNavProps = {
     onNavigate?: () => void;
 };
 
-// Item yang menuju layar Blade lama. Tautan ini TIDAK boleh memakai Link
-// Inertia: Inertia meng-intercept kliknya lalu mengirim XHR, dan respons HTML
-// Blade bukan respons Inertia yang valid sehingga Inertia menampilkan dialog
-// error alih-alih berpindah halaman. Anchor biasa melakukan navigasi penuh.
+// Modul yang masih memakai halaman Blade lama. Tautan ini memakai tag <a>
+// biasa agar melakukan navigasi penuh dan tidak di-intercept oleh router Inertia.
 const bladeItems: Array<{ label: string; href: keyof AppPageProps['nav']; icon: LucideIcon }> = [
-    { label: 'Pelanggan', href: 'customers', icon: Users },
     { label: 'Pesanan', href: 'orders', icon: ShoppingBag },
     { label: 'Pembayaran', href: 'payments', icon: Wallet },
     { label: 'Pengeluaran', href: 'expenses', icon: ReceiptText },
@@ -32,12 +29,21 @@ const bladeItems: Array<{ label: string; href: keyof AppPageProps['nav']; icon: 
 export function SidebarContent({ onNavigate }: SidebarNavProps) {
     const { url, props } = usePage<AppPageProps>();
     const nav = props.nav;
-    // route() mengirim URL absolut sedangkan usePage().url berupa pathname,
-    // jadi normalisasi href ke pathname sebelum dibandingkan.
+
     const currentPath = url.split('?')[0];
-    const dashboardPath = new URL(nav.dashboard, window.location.origin).pathname;
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost';
+
+    const dashboardPath = nav?.dashboard ? new URL(nav.dashboard, origin).pathname : '/ui-dashboard';
     const dashboardActive = currentPath === dashboardPath;
-    const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
+
+    const customersHref = nav?.uiCustomers ?? '/ui-customers';
+    const customersPath = new URL(customersHref, origin).pathname;
+    const customersActive = currentPath === customersPath || currentPath.startsWith(customersPath + '/');
+
+    const csrfToken =
+        typeof document !== 'undefined'
+            ? document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? ''
+            : '';
 
     return (
         <div className="flex h-full flex-col">
@@ -53,7 +59,7 @@ export function SidebarContent({ onNavigate }: SidebarNavProps) {
 
             <nav aria-label="Navigasi utama" className="flex-1 space-y-1 px-3">
                 <Link
-                    href={nav.dashboard}
+                    href={nav?.dashboard ?? '/ui-dashboard'}
                     onClick={onNavigate}
                     aria-current={dashboardActive ? 'page' : undefined}
                     className={cn(
@@ -66,10 +72,26 @@ export function SidebarContent({ onNavigate }: SidebarNavProps) {
                     <LayoutDashboard className="size-4.5 shrink-0" aria-hidden="true" />
                     Dashboard
                 </Link>
+
+                <Link
+                    href={customersHref}
+                    onClick={onNavigate}
+                    aria-current={customersActive ? 'page' : undefined}
+                    className={cn(
+                        'flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-semibold transition-colors',
+                        customersActive
+                            ? 'bg-emerald-50 text-emerald-900'
+                            : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900',
+                    )}
+                >
+                    <Users className="size-4.5 shrink-0" aria-hidden="true" />
+                    Pelanggan
+                </Link>
+
                 {bladeItems.map((item) => (
                     <a
                         key={item.label}
-                        href={nav[item.href]}
+                        href={nav ? nav[item.href] : '#'}
                         onClick={onNavigate}
                         className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-semibold text-stone-600 transition-colors hover:bg-stone-50 hover:text-stone-900"
                     >
@@ -81,18 +103,22 @@ export function SidebarContent({ onNavigate }: SidebarNavProps) {
 
             <div className="space-y-1 border-t border-stone-200 px-3 py-4">
                 <a
-                    href={nav.legacyDashboard}
-                    className="flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm text-stone-500 hover:bg-stone-50 hover:text-stone-900"
+                    href={nav?.legacyDashboard ?? '/dashboard'}
+                    className="flex items-center gap-3 rounded-lg px-4 py-2 text-xs text-stone-500 hover:bg-stone-50 hover:text-stone-900"
                 >
                     Dashboard Blade lama
                 </a>
-                {/* Logout sebagai form POST native: respons redirect Blade bukan
-                    respons Inertia, jadi router.post() akan menampilkan dialog
-                    error yang sama dengan tautan Blade. */}
-                <form method="POST" action={nav.logout}>
+                <a
+                    href={nav?.customers ?? '/customers'}
+                    className="flex items-center gap-3 rounded-lg px-4 py-2 text-xs text-stone-500 hover:bg-stone-50 hover:text-stone-900"
+                >
+                    Pelanggan Blade lama
+                </a>
+
+                <form method="POST" action={nav?.logout ?? '/logout'}>
                     <button
                         type="submit"
-                        className="flex w-full items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium text-stone-600 hover:bg-stone-50 hover:text-stone-900"
+                        className="flex w-full items-center gap-3 rounded-lg px-4 py-2 text-sm font-medium text-stone-600 hover:bg-stone-50 hover:text-stone-900"
                     >
                         <LogOut className="size-4.5" aria-hidden="true" />
                         Keluar
