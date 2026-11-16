@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="icon" href="data:,">
     <title>@yield('title', 'Dashboard') — Mutiara Florist</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
@@ -37,6 +38,9 @@
                 @foreach (['Laporan'] as $item)
                     <p class="cursor-default rounded-lg px-4 py-2.5 text-sm text-stone-400" aria-disabled="true">{{ $item }}</p>
                 @endforeach
+                <a href="{{ route('ui-dashboard') }}" class="mt-2 flex items-center rounded-lg px-4 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-50">
+                    <span class="mr-2.5">⚛</span> Dashboard React
+                </a>
             </nav>
         </aside>
         <div class="flex min-h-screen flex-col">

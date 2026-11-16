@@ -4,13 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\CustomerRequest;
 use App\Models\Customer;
+use App\Services\CustomerService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class CustomerController extends Controller
 {
+    public function __construct(
+        private readonly CustomerService $customers,
+    ) {}
+
     public function index(Request $request): View
     {
         $input = $request->validate([
@@ -18,21 +22,7 @@ class CustomerController extends Controller
         ]);
 
         $search = trim((string) ($input['q'] ?? ''));
-        // Treat % and _ as literal customer input, not SQL LIKE wildcards.
-        $escapedSearch = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $search);
-        $pattern = '%'.$escapedSearch.'%';
-
-        $customers = Customer::query()
-            ->withCount('orders')
-            ->when($search !== '', function ($query) use ($pattern): void {
-                $query->where(function ($query) use ($pattern): void {
-                    $query->whereRaw("name LIKE ? ESCAPE '!'", [$pattern])
-                        ->orWhereRaw("phone LIKE ? ESCAPE '!'", [$pattern]);
-                });
-            })
-            ->orderByDesc('id')
-            ->paginate(10)
-            ->withQueryString();
+        $customers = $this->customers->paginate($search);
 
         return view('customers.index', compact('customers', 'search'));
     }
@@ -44,12 +34,7 @@ class CustomerController extends Controller
 
     public function store(CustomerRequest $request): RedirectResponse
     {
-        $customer = DB::transaction(function () use ($request): Customer {
-            $customer = Customer::query()->create($request->validated());
-            $this->audit($request, 'customer.created', $customer, ['fields' => ['name', 'phone', 'notes']]);
-
-            return $customer;
-        });
+        $customer = $this->customers->create($request->validated(), $request->user());
 
         return redirect()->route('customers.show', $customer)
             ->with('success', 'Pelanggan berhasil ditambahkan.');
@@ -69,17 +54,7 @@ class CustomerController extends Controller
 
     public function update(CustomerRequest $request, Customer $customer): RedirectResponse
     {
-        DB::transaction(function () use ($request, $customer): void {
-            $locked = Customer::query()->whereKey($customer->getKey())->lockForUpdate()->firstOrFail();
-            $locked->fill($request->validated());
-
-            $fields = array_keys($locked->getDirty());
-
-            if ($fields !== []) {
-                $locked->save();
-                $this->audit($request, 'customer.updated', $locked, ['changed_fields' => $fields]);
-            }
-        });
+        $this->customers->update($customer, $request->validated(), $request->user());
 
         return redirect()->route('customers.show', $customer)
             ->with('success', 'Data pelanggan berhasil disimpan.');
@@ -87,19 +62,7 @@ class CustomerController extends Controller
 
     public function destroy(Request $request, Customer $customer): RedirectResponse
     {
-        $archived = DB::transaction(function () use ($request, $customer): bool {
-            $locked = Customer::query()->whereKey($customer->getKey())->lockForUpdate()->firstOrFail();
-
-            // Riwayat pesanan tidak boleh kehilangan pelanggan, termasuk order belum dibayar.
-            if ($locked->orders()->exists()) {
-                return false;
-            }
-
-            $locked->delete();
-            $this->audit($request, 'customer.archived', $locked, ['reason' => 'no_orders']);
-
-            return true;
-        });
+        $archived = $this->customers->archive($customer, $request->user());
 
         if (! $archived) {
             return back()->withErrors([
@@ -109,17 +72,5 @@ class CustomerController extends Controller
 
         return redirect()->route('customers.index')
             ->with('success', 'Pelanggan diarsipkan. Data tidak dihapus permanen.');
-    }
-
-    private function audit(Request $request, string $action, Customer $customer, array $summary): void
-    {
-        DB::table('audit_logs')->insert([
-            'actor_user_id' => $request->user()->getAuthIdentifier(),
-            'action' => $action,
-            'subject_type' => 'customer',
-            'subject_id' => $customer->getKey(),
-            'change_summary' => json_encode($summary, JSON_THROW_ON_ERROR),
-            'created_at' => now(),
-        ]);
     }
 }
