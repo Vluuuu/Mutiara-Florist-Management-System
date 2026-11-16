@@ -505,7 +505,79 @@ class DatabaseBackupTest extends TestCase
             ->assertExitCode(0);
 
         $this->artisan('mfms:restore-test', ['--dir' => $this->testBackupDir, '--connection' => 'testing'])
-            ->expectsOutputToContain('UJI RESTORASI BERHASIL: Status SUCCESS')
+            ->expectsOutputToContain('UJI RESTORASI BERHASIL')
             ->assertExitCode(0);
+    }
+
+    public function test_artisan_restore_test_returns_exit_code_1_when_verification_fails(): void
+    {
+        $this->seedSampleData();
+        $result = $this->backupService->createBackup();
+
+        // Create a custom mock BackupService that simulates verification resulting in FAILED
+        $mockService = $this->createMock(BackupService::class);
+        $mockService->method('restoreTest')->willReturn([
+            'status' => 'FAILED',
+            'checksum_verified' => true,
+            'tables_verified' => false,
+            'metrics_verified' => false,
+            'fk_verified' => true,
+            'details' => [],
+        ]);
+
+        $this->app->instance(BackupService::class, $mockService);
+
+        $this->artisan('mfms:restore-test', [
+            'backup_file' => $result['enc_path'],
+            '--dir' => $this->testBackupDir,
+            '--connection' => 'testing',
+        ])
+            ->expectsOutputToContain('UJI RESTORASI GAGAL')
+            ->assertExitCode(1);
+    }
+
+    public function test_artisan_test_payment_worker_strictly_blocks_operational_database(): void
+    {
+        // 1. Block connection 'mysql' (operational database)
+        $this->artisan('mfms:test-payment-worker', [
+            'order_id' => 1,
+            'amount' => 50000,
+            'idempotency_key' => (string) Str::uuid(),
+            '--connection' => 'mysql',
+        ])
+            ->expectsOutputToContain('KEAMANAN DATA')
+            ->assertExitCode(1);
+
+        // 2. Block connection without is_testing => true
+        config(['database.connections.fake_untrusted' => [
+            'driver' => 'sqlite',
+            'database' => ':memory:',
+            'is_testing' => false,
+        ]]);
+
+        $this->artisan('mfms:test-payment-worker', [
+            'order_id' => 1,
+            'amount' => 50000,
+            'idempotency_key' => (string) Str::uuid(),
+            '--connection' => 'fake_untrusted',
+        ])
+            ->expectsOutputToContain('KEAMANAN DATA: Worker pengujian DITOLAK')
+            ->assertExitCode(1);
+
+        // 3. Block connection pointing to operational database name even if flag is forged
+        config(['database.connections.fake_forged' => [
+            'driver' => 'mysql',
+            'database' => 'mutiara_florist',
+            'is_testing' => true,
+        ]]);
+
+        $this->artisan('mfms:test-payment-worker', [
+            'order_id' => 1,
+            'amount' => 50000,
+            'idempotency_key' => (string) Str::uuid(),
+            '--connection' => 'fake_forged',
+        ])
+            ->expectsOutputToContain('KEAMANAN DATA: Target database')
+            ->assertExitCode(1);
     }
 }

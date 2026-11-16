@@ -116,13 +116,20 @@ Artisan::command('mfms:restore-test {backup_file? : Path atau nama file backup .
         $report = $backupService->restoreTest($file, $key !== '' ? $key : null, $targetConn);
 
         $this->newLine();
-        $this->info("✓ UJI RESTORASI BERHASIL: Status {$report['status']}");
         $this->table(['Pemeriksaan Integritas', 'Status'], [
             ['Checksum SHA-256', $report['checksum_verified'] ? 'VALID' : 'INVALID'],
             ['Rekonsiliasi Baris Tabel', $report['tables_verified'] ? 'VALID' : 'MISMATCH'],
             ['Integritas Metrik Keuangan', $report['metrics_verified'] ? 'VALID' : 'MISMATCH'],
             ['Relasi Foreign Key (No Orphans)', $report['fk_verified'] ? 'VALID' : 'ORPHANS FOUND'],
         ]);
+
+        if (($report['status'] ?? '') !== 'SUCCESS') {
+            $this->error('✗ UJI RESTORASI GAGAL: Verifikasi integritas database menghasilkan FAILED.');
+
+            return 1;
+        }
+
+        $this->info('✓ UJI RESTORASI BERHASIL: Seluruh integritas database terverifikasi VALID (SUCCESS).');
 
         return 0;
     } catch (\Throwable $e) {
@@ -134,6 +141,47 @@ Artisan::command('mfms:restore-test {backup_file? : Path atau nama file backup .
 
 Artisan::command('mfms:test-payment-worker {order_id} {amount} {idempotency_key} {--connection=mariadb_testing} {--admin_id=}', function (\App\Services\PaymentService $paymentService): int {
     $conn = (string) $this->option('connection');
+
+    // Strict Testing-Only Guard: Prohibit running against operational databases or in production
+    if (app()->environment('production')) {
+        $this->error('KEAMANAN DATA: Worker pengujian pembayaran DILARANG dijalankan di lingkungan produksi!');
+
+        return 1;
+    }
+
+    $connConfig = config("database.connections.{$conn}");
+    if (! is_array($connConfig)) {
+        $this->error("KEAMANAN DATA: Koneksi target '{$conn}' tidak terdaftar dalam konfigurasi.");
+
+        return 1;
+    }
+
+    if (($connConfig['is_testing'] ?? false) !== true) {
+        $this->error("KEAMANAN DATA: Worker pengujian DITOLAK! Koneksi '{$conn}' tidak memiliki izin eksplisit 'is_testing' => true.");
+
+        return 1;
+    }
+
+    $dbName = (string) ($connConfig['database'] ?? '');
+    $prohibitedDbNames = array_map('strtolower', array_filter([
+        'mfms', 'mutiara_florist', 'laravel',
+        (string) config('database.connections.mysql.database'),
+        (string) config('database.connections.mariadb.database'),
+    ]));
+
+    if (in_array(strtolower($dbName), $prohibitedDbNames, true)) {
+        $this->error("KEAMANAN DATA: Target database '{$dbName}' teridentifikasi sebagai database operasional. Eksekusi dibatalkan!");
+
+        return 1;
+    }
+
+    $isTestDb = ($dbName === ':memory:') || (bool) preg_match('/(_test$|_testing$|test_)/i', $dbName);
+    if (! $isTestDb) {
+        $this->error("KEAMANAN DATA: Nama database target '{$dbName}' harus memiliki penamaan pengujian eksplisit '_test', '_testing', atau 'test_'.");
+
+        return 1;
+    }
+
     config(['database.default' => $conn]);
     \Illuminate\Support\Facades\DB::setDefaultConnection($conn);
 
@@ -176,5 +224,5 @@ Artisan::command('mfms:test-payment-worker {order_id} {amount} {idempotency_key}
 
         return 1;
     }
-})->purpose('Worker khusus untuk pengujian konkurensi pembayaran independen');
+})->purpose('Worker khusus untuk pengujian konkurensi pembayaran independen (HANYA database testing)');
 
