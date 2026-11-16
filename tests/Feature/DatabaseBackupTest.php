@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Services\BackupService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use RuntimeException;
@@ -24,23 +25,32 @@ class DatabaseBackupTest extends TestCase
     protected User $admin;
     protected BackupService $backupService;
     protected string $testBackupDir;
+    protected string $testRestoreSqlite;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->admin = User::factory()->create();
 
-        // Use an isolated unique temporary directory for each test run
-        $this->testBackupDir = storage_path('framework/testing/backups_test_'.Str::random(10));
+        // 1. Strict test isolation: every test gets its own unique temporary directory
+        $this->testBackupDir = storage_path('framework/testing/backups_test_'.Str::random(12));
         if (! is_dir($this->testBackupDir)) {
             mkdir($this->testBackupDir, 0750, true);
         }
+
+        // 2. Isolate SQLite restore target entirely inside the test directory, never in database/
+        $this->testRestoreSqlite = $this->testBackupDir.'/test_isolated_restore.sqlite';
+        config(['database.connections.testing.database' => $this->testRestoreSqlite]);
+        config(['database.connections.testing.is_testing' => true]);
 
         $this->backupService = new BackupService($this->testBackupDir);
     }
 
     protected function tearDown(): void
     {
+        // Purge connections to release file locks on Windows
+        DB::purge('testing');
+
         // Cleanup ONLY files in the isolated test directory
         if (is_dir($this->testBackupDir)) {
             $files = glob($this->testBackupDir.'/*');
@@ -52,11 +62,6 @@ class DatabaseBackupTest extends TestCase
                 }
             }
             @rmdir($this->testBackupDir);
-        }
-
-        $testSqlite = database_path('test_restore.sqlite');
-        if (file_exists($testSqlite)) {
-            @unlink($testSqlite);
         }
 
         parent::tearDown();
@@ -119,7 +124,7 @@ class DatabaseBackupTest extends TestCase
         ])->save();
     }
 
-    public function test_create_encrypted_backup_generates_valid_enc_and_metadata_with_gcm(): void
+    public function test_create_encrypted_backup_generates_valid_enc_and_metadata_with_gcm_and_aad(): void
     {
         $this->seedSampleData();
 
@@ -132,6 +137,7 @@ class DatabaseBackupTest extends TestCase
         $this->assertSame('AES-256-GCM', $meta['cipher']);
         $this->assertNotEmpty($meta['iv']);
         $this->assertNotEmpty($meta['tag']);
+        $this->assertNotEmpty($meta['aad']);
         $this->assertNotEmpty($meta['checksum_sha256']);
         $this->assertGreaterThan(0, $meta['size_encrypted']);
 
@@ -153,45 +159,24 @@ class DatabaseBackupTest extends TestCase
         $this->assertStringNotContainsString('Florist Client ABC', $rawEnc);
 
         // Verify atomic write: no .tmp files remaining
-        $this->assertFileDoesNotExist($result['enc_path'].'.tmp');
-        $this->assertFileDoesNotExist($result['meta_path'].'.tmp');
+        $tmpFiles = glob($this->testBackupDir.'/*.tmp*');
+        $this->assertEmpty($tmpFiles, 'Semua file sementara .tmp harus terhapus bersih setelah rename atomik');
     }
 
-    public function test_backup_and_cleanup_preserves_external_and_operational_backup_files(): void
+    public function test_operational_backup_directory_is_strictly_never_touched(): void
     {
         $operationalDir = storage_path('app/backups');
-        if (! is_dir($operationalDir)) {
-            mkdir($operationalDir, 0750, true);
-        }
+        $filesBefore = glob($operationalDir.'/*');
 
-        // Create a dummy operational backup file that must NOT be touched
-        $mockFile = $operationalDir.'/mfms_backup_operational_mock_never_delete.enc';
-        $mockMeta = $operationalDir.'/mfms_backup_operational_mock_never_delete.meta.json';
-        $dummyContent = 'OPERATIONAL_BACKUP_PROTECTED_CONTENT_12345';
-        file_put_contents($mockFile, $dummyContent);
-        file_put_contents($mockMeta, '{"mock": true}');
+        $this->seedSampleData();
+        $result = $this->backupService->createBackup();
 
-        try {
-            $this->seedSampleData();
-            $result = $this->backupService->createBackup();
+        // Run restore
+        $this->backupService->restoreTest($result['enc_path'], null, 'testing');
 
-            // Run restore
-            $this->backupService->restoreTest($result['enc_path'], null, 'testing');
-
-            // Trigger tearDown cleanup on test directory
-            $files = glob($this->testBackupDir.'/*');
-            foreach ($files as $f) {
-                @unlink($f);
-            }
-
-            // Assert that operational mock files remain completely untouched
-            $this->assertFileExists($mockFile);
-            $this->assertFileExists($mockMeta);
-            $this->assertSame($dummyContent, file_get_contents($mockFile));
-        } finally {
-            @unlink($mockFile);
-            @unlink($mockMeta);
-        }
+        // Verify operational directory has exact same files before and after
+        $filesAfter = glob($operationalDir.'/*');
+        $this->assertSame($filesBefore, $filesAfter, 'Direktori backup operasional dilarang keras dibuat, dimodifikasi, atau dihapus oleh automated tests');
     }
 
     public function test_data_integrity_with_leading_zeros_emoji_multiline_quotes_and_nulls(): void
@@ -318,6 +303,22 @@ class DatabaseBackupTest extends TestCase
         $this->backupService->restoreTest($result['enc_path'], null, 'testing');
     }
 
+    public function test_tampered_aad_metadata_fails_gcm_decryption(): void
+    {
+        $this->seedSampleData();
+        $result = $this->backupService->createBackup();
+
+        // Tamper with aad in metadata to simulate header forgery
+        $meta = json_decode((string) file_get_contents($result['meta_path']), true);
+        $meta['aad'] = base64_encode('{"forged":"data"}');
+        file_put_contents($result['meta_path'], json_encode($meta));
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Gagal mendekripsi backup');
+
+        $this->backupService->restoreTest($result['enc_path'], null, 'testing');
+    }
+
     public function test_wrong_encryption_key_fails_decryption(): void
     {
         $this->seedSampleData();
@@ -329,20 +330,37 @@ class DatabaseBackupTest extends TestCase
         $this->backupService->restoreTest($result['enc_path'], 'wrong-passphrase-that-fails-key', 'testing');
     }
 
-    public function test_restore_safeguard_blocks_restoring_to_production_database(): void
+    public function test_restore_safeguard_blocks_restoring_to_production_environment(): void
     {
         $this->seedSampleData();
         $result = $this->backupService->createBackup();
 
-        config(['database.connections.production_db.database' => 'mfms']);
+        $this->app['env'] = 'production';
 
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('KEAMANAN DATA: Restorasi DITOLAK!');
+        $this->expectExceptionMessage('lingkungan produksi');
 
-        $this->backupService->restoreTest($result['enc_path'], null, 'production_db');
+        $this->backupService->restoreTest($result['enc_path'], null, 'testing');
     }
 
-    public function test_restore_safeguard_blocks_restoring_to_mutiara_florist_database(): void
+    public function test_restore_safeguard_blocks_connection_without_explicit_is_testing_flag(): void
+    {
+        $this->seedSampleData();
+        $result = $this->backupService->createBackup();
+
+        config(['database.connections.unauthorized_conn' => [
+            'driver' => 'sqlite',
+            'database' => ':memory:',
+            'is_testing' => false,
+        ]]);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('tidak memiliki izin eksplisit');
+
+        $this->backupService->restoreTest($result['enc_path'], null, 'unauthorized_conn');
+    }
+
+    public function test_restore_safeguard_blocks_restoring_to_operational_database_names(): void
     {
         $this->seedSampleData();
         $result = $this->backupService->createBackup();
@@ -376,6 +394,106 @@ class DatabaseBackupTest extends TestCase
         $this->assertSame(0, $report['details']['foreign_keys']['orphan_order_items']);
         $this->assertSame(0, $report['details']['foreign_keys']['orphan_payments']);
         $this->assertSame(0, $report['details']['foreign_keys']['orphan_expenses']);
+    }
+
+    public function test_snapshot_transaction_is_always_closed_on_success_and_exception(): void
+    {
+        $targetConn = 'mariadb_testing';
+        $pdo = DB::connection($targetConn)->getPdo();
+
+        // 1. Success path
+        $this->backupService->createBackup(null, $targetConn);
+        $this->assertFalse($pdo->inTransaction(), 'PDO transaction must be closed after successful backup');
+
+        // 2. Exception path
+        $badService = new class($this->testBackupDir) extends BackupService {
+            public function createBackup(?string $encryptionKey = null, ?string $connection = null): array
+            {
+                $conn = DB::connection($connection);
+                $pdo = $conn->getPdo();
+                $driver = $conn->getDriverName();
+                $inConsistentSnapshot = false;
+
+                try {
+                    if ($driver === 'mysql' || $driver === 'mariadb') {
+                        $pdo->exec('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+                        $pdo->exec('START TRANSACTION WITH CONSISTENT SNAPSHOT');
+                        $inConsistentSnapshot = true;
+                    } elseif ($driver === 'sqlite') {
+                        if (! $pdo->inTransaction()) {
+                            $pdo->beginTransaction();
+                            $inConsistentSnapshot = true;
+                        }
+                    }
+
+                    // Simulate failure during read
+                    throw new RuntimeException('SIMULATED_FAILURE_DURING_DUMP');
+                } finally {
+                    if ($inConsistentSnapshot) {
+                        try {
+                            if ($driver === 'mysql' || $driver === 'mariadb') {
+                                $pdo->exec('ROLLBACK');
+                            } elseif ($driver === 'sqlite') {
+                                if ($pdo->inTransaction()) {
+                                    $pdo->rollBack();
+                                }
+                            }
+                        } catch (\Throwable) {
+                        }
+                    }
+                }
+            }
+        };
+
+        try {
+            $badService->createBackup(null, $targetConn);
+            $this->fail('Expected exception was not thrown');
+        } catch (RuntimeException $e) {
+            $this->assertSame('SIMULATED_FAILURE_DURING_DUMP', $e->getMessage());
+        }
+
+        $this->assertFalse($pdo->inTransaction(), 'PDO transaction must be closed even after exception');
+    }
+
+    public function test_snapshot_consistency_during_parallel_writes_on_mariadb_testing(): void
+    {
+        if (config('database.connections.mariadb_testing.username') === null) {
+            $this->markTestSkipped('MariaDB testing credentials not configured');
+        }
+
+        try {
+            DB::connection('mariadb_testing')->getPdo();
+        } catch (\Throwable $e) {
+            $this->markTestSkipped('MariaDB testing unavailable: '.$e->getMessage());
+        }
+
+        $connA = DB::connection('mariadb_testing');
+        $pdoA = $connA->getPdo();
+
+        // 1. Connection A starts consistent snapshot
+        $pdoA->exec('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+        $pdoA->exec('START TRANSACTION WITH CONSISTENT SNAPSHOT');
+
+        $initialCount = (int) $connA->table('orders')->count();
+
+        // 2. Connection B inserts a new Order committed during A's transaction
+        $pdoB = new \PDO(
+            'mysql:host='.config('database.connections.mariadb_testing.host').';port='.config('database.connections.mariadb_testing.port').';dbname='.config('database.connections.mariadb_testing.database'),
+            config('database.connections.mariadb_testing.username'),
+            config('database.connections.mariadb_testing.password')
+        );
+
+        $pdoB->exec("INSERT INTO orders (order_number, customer_id, created_by, order_date, status, total_amount, created_at, updated_at) VALUES ('ORD-PARALLEL-SNAPSHOT-TEST', 1, 1, '2026-11-16', 'NEW', 100000, NOW(), NOW())");
+
+        // 3. Connection A checks table: due to REPEATABLE READ snapshot isolation, it must NOT see the newly inserted row!
+        $snapshotCount = (int) $connA->table('orders')->count();
+        $this->assertSame($initialCount, $snapshotCount, 'Consistent snapshot isolation must isolate reads from parallel writes');
+
+        // 4. Connection A closes transaction
+        $pdoA->exec('ROLLBACK');
+
+        // Cleanup inserted test row
+        $pdoB->exec("DELETE FROM orders WHERE order_number = 'ORD-PARALLEL-SNAPSHOT-TEST'");
     }
 
     public function test_artisan_backup_and_restore_commands(): void

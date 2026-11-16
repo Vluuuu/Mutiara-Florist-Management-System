@@ -38,16 +38,22 @@ Aplikasi MFMS dirancang untuk menyederhanakan pencatatan pesanan karangan bunga,
   5. Sistem akan otomatis menghitung Total Tagihan secara real-time.
   6. Simpan pesanan. Status awal pesanan adalah `NEW`.
 - **Alur Status Pengerjaan (Fulfillment Lifecycle):**
-  Status harus bergerak maju secara berurutan:
-  `NEW` (Baru Diterima) ➔ `PROCESSING` (Sedang Dirangkai) ➔ `READY` (Siap Kirim) ➔ `DELIVERED` (Telah Sampai di Lokasi) ➔ `COMPLETED` (Selesai).
-  *Catatan: Sistem menolak lompatan status (misal dari NEW langsung ke DELIVERED).*
+  Status pada setiap item bunga bergerak maju secara bertahap dan linier:
+  `NEW` (Baru Diterima) ➔ `PROCESSING` (Sedang Dirangkai) ➔ `READY` (Siap Kirim) ➔ `DELIVERED` (Telah Sampai di Lokasi).
+  *Catatan: Sistem menolak lompatan status pada item (misal dari NEW langsung ke DELIVERED).*
+  
+  Status tingkat Pesanan (`Order::status`) merupakan ringkasan agregat otomatis dari seluruh itemnya:
+  - `NEW`: Seluruh item berstatus `NEW`.
+  - `PROCESSING`: Minimal satu item mulai dirangkai atau dalam proses pengiriman.
+  - `READY`: Seluruh item berstatus `READY`.
+  - `COMPLETED`: Seluruh item dalam pesanan telah berhasil terkirim (`DELIVERED`).
 
 ### D. Manajemen Pembayaran & Piutang (`/ui-payments`)
 - Halaman **Piutang (Receivables)** menampilkan daftar pesanan yang masih memiliki sisa tagihan (`outstanding > 0`).
 - **Pencatatan Pembayaran:**
   1. Klik "Catat Pembayaran" pada pesanan terkait.
   2. Pilih Tanggal Pembayaran, Metode (Tunai, Transfer BCA/Mandiri, QRIS), dan Nomor Referensi Transfer jika ada.
-  3. Masukkan Nominal Bayar (bisa Uang Muka/DP, Cicilan, atau Pelunasan).
+  3. Masukkan Nominal Bayar (bisa Uang Muka/DP opsional, Cicilan, atau Pelunasan).
   4. Sistem menerapkan **Anti-Overpayment Guard**: Pembayaran yang melebihi sisa tagihan akan otomatis ditolak dengan pesan peringatan.
   5. Setelah tersimpan, status pesanan otomatis mencerminkan sisa tagihan yang berkurang.
 
@@ -75,13 +81,14 @@ Aplikasi MFMS dirancang untuk menyederhanakan pencatatan pesanan karangan bunga,
    - Operator menerima pesanan via WhatsApp, telepon, atau walk-in.
    - Operator wajib memastikan nomor telepon pelanggan tercatat dengan benar.
    - Operator mencatat detail pesanan ke sistem MFMS sebelum bunga mulai dirangkai di workshop.
-2. **Uang Muka (DP):**
-   - Setiap pesanan wajib menyertakan uang muka (DP) minimal 50% atau pelunasan penuh sebelum pengiriman, terutama untuk karangan papan bunga duka cita atau pernikahan.
-   - Pembayaran DP dicatat pada hari dana diterima dengan melampirkan nomor referensi mutasi bank.
+2. **Uang Muka (DP) & Pembayaran:**
+   - Pembayaran uang muka (DP) bersifat **opsional**. Pesanan dapat dicatat tanpa DP (DP Rp 0 / belum bayar), dengan DP sebagian, ataupun langsung lunas.
+   - Pembayaran dicatat pada hari dana diterima dengan melampirkan nomor referensi mutasi bank.
 3. **Penyelesaian & Pengiriman:**
-   - Saat perangkai selesai merangkai, status pesanan dimajukan ke `READY`.
-   - Kurir membawa surat jalan/tanda terima ke lokasi acara. Setelah foto tanda terima terverifikasi, status diubah menjadi `DELIVERED`.
-   - Setelah tagihan lunas dan barang diterima, status diubah menjadi `COMPLETED`.
+   - Saat perangkai mulai merangkai bunga di workshop, status item dimajukan ke `PROCESSING`.
+   - Setelah rangkaian bunga selesai dan siap dikirim, status item dimajukan ke `READY`.
+   - Setelah kurir mengantarkan bunga ke lokasi acara/penerima, status item diubah menjadi `DELIVERED`.
+   - Ketika seluruh item dalam pesanan telah berstatus `DELIVERED`, sistem secara otomatis meringkas status pesanan menjadi `COMPLETED`.
 
 ---
 

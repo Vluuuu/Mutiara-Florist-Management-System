@@ -59,8 +59,9 @@ class BackupService
     }
 
     /**
-     * Creates an encrypted database backup with AES-256-GCM authenticated encryption
-     * and SHA-256 integrity checksum using a consistent transactional database snapshot.
+     * Creates an encrypted database backup with AES-256-GCM authenticated encryption,
+     * authenticated additional data (AAD) protecting metadata, and SHA-256 integrity checksum
+     * using a consistent transactional database snapshot.
      *
      * @return array{enc_path: string, meta_path: string, meta: array}
      */
@@ -73,28 +74,31 @@ class BackupService
             mkdir($this->backupDirectory, 0750, true);
         }
 
-        $timestamp = Carbon::now('Asia/Jakarta')->format('Y-m-d_His');
-        $baseName = 'mfms_backup_'.$timestamp;
+        // Collision-resistant unique filename with microsecond resolution and random entropy
+        $now = Carbon::now('Asia/Jakarta');
+        $uniqueSuffix = $now->format('Y-m-d_His_u').'_'.bin2hex(random_bytes(4));
+        $baseName = 'mfms_backup_'.$uniqueSuffix;
         $encPath = $this->backupDirectory.'/'.$baseName.'.enc';
         $metaPath = $this->backupDirectory.'/'.$baseName.'.meta.json';
 
-        $encTmpPath = $encPath.'.tmp';
-        $metaTmpPath = $metaPath.'.tmp';
+        $encTmpPath = $encPath.'.tmp.'.bin2hex(random_bytes(4));
+        $metaTmpPath = $metaPath.'.tmp.'.bin2hex(random_bytes(4));
 
-        // 1. Consistent snapshot read
-        // For MySQL / MariaDB (InnoDB), REPEATABLE READ with START TRANSACTION WITH CONSISTENT SNAPSHOT
-        // guarantees an ACID point-in-time snapshot across all tables.
+        // 1. Consistent snapshot read via PDO directly to avoid desynchronizing Laravel's transaction counter
+        $pdo = $conn->getPdo();
         $driver = $conn->getDriverName();
         $inConsistentSnapshot = false;
 
         try {
             if ($driver === 'mysql' || $driver === 'mariadb') {
-                $conn->statement('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
-                $conn->statement('START TRANSACTION WITH CONSISTENT SNAPSHOT');
+                $pdo->exec('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+                $pdo->exec('START TRANSACTION WITH CONSISTENT SNAPSHOT');
                 $inConsistentSnapshot = true;
             } elseif ($driver === 'sqlite') {
-                $conn->beginTransaction();
-                $inConsistentSnapshot = true;
+                if (! $pdo->inTransaction()) {
+                    $pdo->beginTransaction();
+                    $inConsistentSnapshot = true;
+                }
             }
 
             $tableCounts = [];
@@ -119,7 +123,7 @@ class BackupService
                 $tableData[$table] = $rows;
             }
 
-            // Financial invariant metrics captured from the same snapshot
+            // Financial invariant metrics captured within the exact same point-in-time snapshot
             $hasOrders = Schema::connection($connection)->hasTable('orders');
             $hasPayments = Schema::connection($connection)->hasTable('payments');
             $hasExpenses = Schema::connection($connection)->hasTable('expenses');
@@ -132,15 +136,26 @@ class BackupService
             ];
         } finally {
             if ($inConsistentSnapshot) {
-                $conn->rollBack(); // Release read-only snapshot transaction
+                try {
+                    if ($driver === 'mysql' || $driver === 'mariadb') {
+                        $pdo->exec('ROLLBACK');
+                    } elseif ($driver === 'sqlite') {
+                        if ($pdo->inTransaction()) {
+                            $pdo->rollBack();
+                        }
+                    }
+                } catch (\Throwable) {
+                    // Suppress rollback errors during cleanup
+                }
             }
         }
 
         // 2. Canonical serialization preserving exact types, leading zeros, emoji, quotes, etc.
+        $createdAt = $now->toIso8601String();
         $payload = [
             'version' => 2,
             'format' => 'mfms_structured_v2',
-            'created_at' => Carbon::now('Asia/Jakarta')->toIso8601String(),
+            'created_at' => $createdAt,
             'driver' => $driver,
             'tables' => $tableData,
             'metrics' => $metrics,
@@ -154,7 +169,16 @@ class BackupService
         // 3. Compute SHA-256 checksum on plaintext
         $sha256 = hash('sha256', $plainData);
 
-        // 4. Authenticated Encryption with AES-256-GCM
+        // 4. Authenticated Encryption with AES-256-GCM + Additional Authenticated Data (AAD)
+        // AAD cryptographically binds the metadata header to the ciphertext
+        $aadData = json_encode([
+            'version' => 2,
+            'backup_file' => basename($encPath),
+            'created_at' => $createdAt,
+            'tables' => $tableCounts,
+            'metrics' => $metrics,
+        ], JSON_UNESCAPED_SLASHES);
+
         $derivedKey = hash('sha256', $key, true);
         $iv = random_bytes(12); // Standard 96-bit nonce for GCM
         $tag = '';
@@ -166,7 +190,7 @@ class BackupService
             OPENSSL_RAW_DATA,
             $iv,
             $tag,
-            '',
+            $aadData,
             16
         );
 
@@ -181,10 +205,11 @@ class BackupService
 
             $meta = [
                 'backup_file' => basename($encPath),
-                'created_at' => Carbon::now('Asia/Jakarta')->toIso8601String(),
+                'created_at' => $createdAt,
                 'cipher' => 'AES-256-GCM',
                 'iv' => base64_encode($iv),
                 'tag' => base64_encode($tag),
+                'aad' => base64_encode($aadData),
                 'checksum_sha256' => $sha256,
                 'size_plain' => strlen($plainData),
                 'size_encrypted' => strlen($cipherText),
@@ -200,8 +225,12 @@ class BackupService
             rename($encTmpPath, $encPath);
             rename($metaTmpPath, $metaPath);
         } catch (\Throwable $e) {
-            @unlink($encTmpPath);
-            @unlink($metaTmpPath);
+            if (file_exists($encTmpPath)) {
+                @unlink($encTmpPath);
+            }
+            if (file_exists($metaTmpPath)) {
+                @unlink($metaTmpPath);
+            }
             throw $e;
         }
 
@@ -223,6 +252,12 @@ class BackupService
         // -------------------------------------------------------------
         // STRICT SAFETY CHECK: Restorasi DILARANG pada database operasional / non-testing
         // -------------------------------------------------------------
+        if (app()->environment('production')) {
+            throw new InvalidArgumentException(
+                'KEAMANAN DATA: Restorasi DILARANG KERAS dijalankan di lingkungan produksi (production environment)!'
+            );
+        }
+
         $targetConn = $targetConnection ?: 'testing';
         $connConfig = config("database.connections.{$targetConn}");
 
@@ -230,14 +265,10 @@ class BackupService
             throw new InvalidArgumentException("KEAMANAN DATA: Koneksi target '{$targetConn}' tidak terdaftar dalam konfigurasi.");
         }
 
-        // 1. Connection name must be explicitly testing
-        $isExplicitTestingConn = ($targetConn === 'testing')
-            || str_contains(strtolower($targetConn), 'test')
-            || ($connConfig['is_testing'] ?? false) === true;
-
-        if (! $isExplicitTestingConn) {
+        // 1. Connection configuration MUST have explicit boolean permission flag 'is_testing' => true
+        if (($connConfig['is_testing'] ?? false) !== true) {
             throw new InvalidArgumentException(
-                "KEAMANAN DATA: Restorasi DITOLAK! Koneksi '{$targetConn}' bukan koneksi database pengujian yang diizinkan secara eksplisit."
+                "KEAMANAN DATA: Restorasi DITOLAK! Koneksi '{$targetConn}' tidak memiliki izin eksplisit 'is_testing' => true dalam konfigurasi database."
             );
         }
 
@@ -251,25 +282,23 @@ class BackupService
 
         // 3. Dilarang keras menggunakan nama database operasional
         $dbName = (string) ($connConfig['database'] ?? '');
-        $prohibitedDbNames = ['mfms', 'mutiara_florist', 'laravel'];
-        $operationalDb = (string) config('database.connections.mysql.database');
-        if ($operationalDb !== '') {
-            $prohibitedDbNames[] = $operationalDb;
+        $prohibitedDbNames = array_map('strtolower', array_filter([
+            'mfms', 'mutiara_florist', 'laravel',
+            (string) config('database.connections.mysql.database'),
+            (string) config('database.connections.mariadb.database'),
+        ]));
+
+        if (in_array(strtolower($dbName), $prohibitedDbNames, true)) {
+            throw new InvalidArgumentException(
+                "KEAMANAN DATA: Target database '{$dbName}' teridentifikasi sebagai database operasional/utama. Restorasi dibatalkan!"
+            );
         }
 
-        foreach ($prohibitedDbNames as $prohibited) {
-            if (strcasecmp($dbName, $prohibited) === 0) {
-                throw new InvalidArgumentException(
-                    "KEAMANAN DATA: Target database '{$dbName}' teridentifikasi sebagai database operasional/utama. Restorasi dibatalkan!"
-                );
-            }
-        }
-
-        // 4. Target database harus memiliki identitas pengujian ('test' atau ':memory:')
-        $isTestDb = ($dbName === ':memory:') || str_contains(strtolower($dbName), 'test');
+        // 4. Target database harus memiliki identitas pengujian eksplisit (:memory:, _test, _testing, test_)
+        $isTestDb = ($dbName === ':memory:') || (bool) preg_match('/(_test$|_testing$|test_)/i', $dbName);
         if (! $isTestDb) {
             throw new InvalidArgumentException(
-                "KEAMANAN DATA: Nama database target '{$dbName}' tidak memiliki identitas pengujian 'test'. Restorasi dibatalkan!"
+                "KEAMANAN DATA: Nama database target '{$dbName}' harus memiliki penamaan pengujian eksplisit '_test', '_testing', atau 'test_'. Restorasi dibatalkan!"
             );
         }
 
@@ -308,13 +337,18 @@ class BackupService
             if ($tag === '') {
                 throw new RuntimeException('Autentikasi tag AES-256-GCM tidak ditemukan dalam metadata.');
             }
+
+            // Verify AAD if present
+            $aad = isset($meta['aad']) ? base64_decode((string) $meta['aad']) : '';
+
             $plainData = openssl_decrypt(
                 $cipherText,
                 'aes-256-gcm',
                 $derivedKey,
                 OPENSSL_RAW_DATA,
                 $iv,
-                $tag
+                $tag,
+                $aad
             );
         } elseif ($cipher === 'AES-256-CBC') {
             $plainData = openssl_decrypt(
@@ -329,7 +363,7 @@ class BackupService
         }
 
         if ($plainData === false) {
-            throw new RuntimeException('Gagal mendekripsi backup. Kunci enkripsi salah, tag autentikasi gagal, atau file korup.');
+            throw new RuntimeException('Gagal mendekripsi backup. Kunci enkripsi salah, tag/metadata autentikasi gagal, atau file korup.');
         }
 
         // Verify Checksum
