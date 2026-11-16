@@ -223,6 +223,7 @@ export default function CustomersIndex({ customers, filters }: CustomersIndexPro
                                 from={customers.from}
                                 to={customers.to}
                                 total={customers.total}
+                                itemLabel="pelanggan"
                             />
                         </div>
                     </>

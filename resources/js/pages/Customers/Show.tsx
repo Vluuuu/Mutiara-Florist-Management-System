@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import {
     AlertTriangle,
@@ -24,6 +24,23 @@ type CustomerShowProps = {
 export default function CustomersShow({ customer }: CustomerShowProps) {
     const [isArchiving, setIsArchiving] = useState(false);
     const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+    const cancelButtonRef = useRef<HTMLButtonElement>(null);
+
+    useEffect(() => {
+        if (!confirmModalOpen) return;
+
+        // Auto-focus cancel button for safe keyboard accessibility
+        cancelButtonRef.current?.focus();
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && !isArchiving) {
+                setConfirmModalOpen(false);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [confirmModalOpen, isArchiving]);
 
     const handleArchive = () => {
         setIsArchiving(true);
@@ -202,6 +219,7 @@ export default function CustomersShow({ customer }: CustomerShowProps) {
 
                         <div className="mt-6 flex flex-wrap justify-end gap-3">
                             <button
+                                ref={cancelButtonRef}
                                 type="button"
                                 disabled={isArchiving}
                                 onClick={() => setConfirmModalOpen(false)}

@@ -24,6 +24,7 @@ class HandleInertiaRequests extends Middleware
                 'legacyDashboard' => route('dashboard'),
                 'uiCustomers' => route('ui-customers.index'),
                 'customers' => route('customers.index'),
+                'uiOrders' => route('ui-orders.index'),
                 'orders' => route('orders.index'),
                 'payments' => route('payments.index'),
                 'expenses' => route('expenses.index'),

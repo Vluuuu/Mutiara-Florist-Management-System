@@ -83,7 +83,29 @@
 - [x] 11 pengujian otomatis baru di `UiCustomerTest` (total suite **85 PASS / 705 assertions**).
 - [x] QA browser otomatis Playwright pada database terisolasi (SQLite) dengan data sintetis: 25 PASS / 0 FAIL (tambah, edit, cari, reset, paginasi, tolak arsip jika ada order, sukses arsip jika tanpa order, verifikasi soft delete, pengujian viewport mobile, 0 error).
 
-**Exit gate:** seluruh alur pelanggan React terverifikasi lengkap berdampingan dengan modul Blade lama tanpa regresi. Database operasional dan password admin tidak tersentuh.
+### Phase 3.3.3A — Migrasi Daftar & Detail Pesanan React
+- [x] Ekstraksi query daftar dan perakitan representasi detail pesanan ke service bersama `OrderService` (`paginate`, `getOrderDetail`), dipakai konsisten oleh `OrderController` (Blade) dan `UiOrderController` (React).
+- [x] Perlindungan aturan bisnis pesanan:
+  - 1–20 item bunga per pesanan dengan jadwal, penerima, pengirim, lokasi, dan ongkir independen.
+  - Mode ongkir `INCLUDED` (Rp0) vs `SEPARATE` (dihitung satu kali per item, bukan dikalikan jumlah bunga).
+  - Status pengerjaan (`NEW`, `PROCESSING`, `READY`, `COMPLETED`) independen dari status pembayaran (`UNPAID`, `PARTIAL`, `PAID`).
+  - Pesanan hanya berstatus `COMPLETED` bila seluruh item sudah `DELIVERED`.
+  - Hanya pembayaran berstatus `POSTED` yang dihitung ke kas masuk; pembayaran `VOIDED` dikecualikan.
+  - Sisa tagihan (`outstanding`) dihitung `max(total_amount - received, 0)` dan tidak pernah negatif.
+- [x] Antarmuka React Inertia lengkap di route terisolasi `/ui-orders`:
+  - `Orders/Index`: tabel responsif, form pencarian nomor pesanan dan nama pelanggan dengan literal escaping `%` dan `_`, filter status pengerjaan, tombol reset, indikator status pengerjaan & pembayaran berbasis badge, paginasi 10 pesanan per halaman.
+  - `Orders/Show`: detail pesanan lengkap, 4 kartu ringkasan keuangan (total tagihan, uang diterima, sisa tagihan, status pembayaran), kartu status pengerjaan & catatan, daftar bunga per item dengan rincian biaya & ongkir, kartu rekap nilai pesanan, dan riwayat pembayaran (read-only) dengan pemisahan jelas antara pembayaran tercatat (`POSTED`) dan koreksi pencatatan (`VOIDED`).
+- [x] Navigasi silang mulus ke antarmuka Blade untuk operasi mutasi data yang belum dimigrasikan:
+  - Buat pesanan baru: `<a href="/orders/create">`
+  - Edit pesanan: `<a href="/orders/{id}/edit">`
+  - Catat pembayaran / koreksi void: `<a href="/orders/{id}#pembayaran">`
+  - Tampilan Blade lama: `<a href="/orders">` dan `<a href="/orders/{id}">`
+- [x] Integrasi navigasi sidebar: item aktif pada prefix `/ui-orders`, tautan fallback ke "Pesanan Blade lama".
+- [x] 10 pengujian otomatis baru di `UiOrderTest` (total suite **95 PASS / 978 assertions**).
+- [x] QA browser otomatis Playwright pada database terisolasi (SQLite) dengan data sintetis: 56 checks PASS / 0 FAIL (tamu dialihkan, login, desktop index, pencarian, filter status, reset, paginasi halaman 2, detail order multi-item, kalkulasi ongkir separate/included, riwayat pembayaran posted & voided, tautan ke Blade lama, responsive mobile iPhone 13, 0 error konsol).
+- [x] Tangkapan layar QA desktop dan mobile tersimpan di `storage/app/`.
+
+**Exit gate:** halaman daftar dan detail pesanan React terverifikasi lengkap membaca data backend nyata berdampingan dengan modul Blade lama tanpa merusak aturan bisnis atau data operasional.
 
 ## Phase 4 — Dashboard, Reports & Data Safety
 - [ ] Ringkasan dan grafik per periode.

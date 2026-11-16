@@ -9,6 +9,7 @@ use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\ExpenseCategoryController;
 use App\Http\Controllers\UiCustomerController;
 use App\Http\Controllers\UiDashboardController;
+use App\Http\Controllers\UiOrderController;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -61,6 +62,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/{customer}/edit', [UiCustomerController::class, 'edit'])->name('edit');
         Route::put('/{customer}', [UiCustomerController::class, 'update'])->name('update');
         Route::delete('/{customer}', [UiCustomerController::class, 'destroy'])->name('destroy');
+    });
+
+    // Phase 3.3.3A: React Orders List & Detail on isolated routes
+    Route::prefix('ui-orders')->name('ui-orders.')->middleware(HandleInertiaRequests::class)->group(function () {
+        Route::get('/', [UiOrderController::class, 'index'])->name('index');
+        Route::get('/{order}', [UiOrderController::class, 'show'])->name('show');
     });
 
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');

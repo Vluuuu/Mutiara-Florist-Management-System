@@ -13,7 +13,7 @@ use Illuminate\Support\Str;
 
 class OrderController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request, OrderService $service): View
     {
         $filters = $request->validate([
             'q' => ['nullable', 'string', 'max:100'],
@@ -22,23 +22,8 @@ class OrderController extends Controller
 
         $search = trim((string) ($filters['q'] ?? ''));
         $status = $filters['status'] ?? '';
-        $pattern = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $search).'%';
 
-        $orders = Order::query()
-            ->with(['customer:id,name'])
-            ->withCount('items')
-            ->withSum(['payments as paid_amount' => fn ($query) => $query->where('status', 'POSTED')], 'amount')
-            ->when($search !== '', function ($query) use ($pattern): void {
-                $query->where(function ($query) use ($pattern): void {
-                    $query->whereRaw("order_number LIKE ? ESCAPE '!'", [$pattern])
-                        ->orWhereHas('customer', fn ($query) => $query->whereRaw("name LIKE ? ESCAPE '!'", [$pattern]));
-                });
-            })
-            ->when($status !== '', fn ($query) => $query->where('status', $status))
-            ->orderByDesc('order_date')
-            ->orderByDesc('id')
-            ->paginate(10)
-            ->withQueryString();
+        $orders = $service->paginate($search, $status);
 
         return view('orders.index', compact('orders', 'search', 'status'));
     }

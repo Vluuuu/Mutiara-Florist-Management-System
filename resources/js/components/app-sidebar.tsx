@@ -20,7 +20,6 @@ type SidebarNavProps = {
 // Modul yang masih memakai halaman Blade lama. Tautan ini memakai tag <a>
 // biasa agar melakukan navigasi penuh dan tidak di-intercept oleh router Inertia.
 const bladeItems: Array<{ label: string; href: keyof AppPageProps['nav']; icon: LucideIcon }> = [
-    { label: 'Pesanan', href: 'orders', icon: ShoppingBag },
     { label: 'Pembayaran', href: 'payments', icon: Wallet },
     { label: 'Pengeluaran', href: 'expenses', icon: ReceiptText },
     { label: 'Kategori Pengeluaran', href: 'expenseCategories', icon: Tags },
@@ -39,6 +38,10 @@ export function SidebarContent({ onNavigate }: SidebarNavProps) {
     const customersHref = nav?.uiCustomers ?? '/ui-customers';
     const customersPath = new URL(customersHref, origin).pathname;
     const customersActive = currentPath === customersPath || currentPath.startsWith(customersPath + '/');
+
+    const ordersHref = nav?.uiOrders ?? '/ui-orders';
+    const ordersPath = new URL(ordersHref, origin).pathname;
+    const ordersActive = currentPath === ordersPath || currentPath.startsWith(ordersPath + '/');
 
     const csrfToken =
         typeof document !== 'undefined'
@@ -88,6 +91,21 @@ export function SidebarContent({ onNavigate }: SidebarNavProps) {
                     Pelanggan
                 </Link>
 
+                <Link
+                    href={ordersHref}
+                    onClick={onNavigate}
+                    aria-current={ordersActive ? 'page' : undefined}
+                    className={cn(
+                        'flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-semibold transition-colors',
+                        ordersActive
+                            ? 'bg-emerald-50 text-emerald-900'
+                            : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900',
+                    )}
+                >
+                    <ShoppingBag className="size-4.5 shrink-0" aria-hidden="true" />
+                    Pesanan
+                </Link>
+
                 {bladeItems.map((item) => (
                     <a
                         key={item.label}
@@ -113,6 +131,12 @@ export function SidebarContent({ onNavigate }: SidebarNavProps) {
                     className="flex items-center gap-3 rounded-lg px-4 py-2 text-xs text-stone-500 hover:bg-stone-50 hover:text-stone-900"
                 >
                     Pelanggan Blade lama
+                </a>
+                <a
+                    href={nav?.orders ?? '/orders'}
+                    className="flex items-center gap-3 rounded-lg px-4 py-2 text-xs text-stone-500 hover:bg-stone-50 hover:text-stone-900"
+                >
+                    Pesanan Blade lama
                 </a>
 
                 <form method="POST" action={nav?.logout ?? '/logout'}>

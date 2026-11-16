@@ -7,6 +7,7 @@ type PaginationProps = {
     from: number | null;
     to: number | null;
     total: number;
+    itemLabel?: string;
     className?: string;
 };
 
@@ -18,20 +19,20 @@ function formatLabel(label: string): string {
         .replace(/next/gi, 'Berikutnya');
 }
 
-export function Pagination({ links, from, to, total, className }: PaginationProps) {
+export function Pagination({ links, from, to, total, itemLabel = 'data', className }: PaginationProps) {
     if (total === 0 || links.length <= 1) {
         return null;
     }
 
     return (
         <nav
-            aria-label="Paginasi tabel"
+            aria-label="Paginasi"
             className={cn('flex flex-col items-center justify-between gap-4 sm:flex-row', className)}
         >
             <p className="text-xs text-stone-500">
                 Menampilkan <span className="font-medium text-stone-800">{from ?? 0}</span> sampai{' '}
                 <span className="font-medium text-stone-800">{to ?? 0}</span> dari{' '}
-                <span className="font-medium text-stone-800">{total}</span> pelanggan
+                <span className="font-medium text-stone-800">{total}</span> {itemLabel}
             </p>
 
             <ul className="flex flex-wrap items-center gap-1">

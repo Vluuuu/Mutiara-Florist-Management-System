@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\OrderItem;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -12,6 +13,113 @@ use Illuminate\Validation\ValidationException;
 class OrderService
 {
     private const PROGRESS = ['NEW', 'PROCESSING', 'READY', 'DELIVERED'];
+
+    /**
+     * Cari dan paginasi data pesanan (10 per halaman secara default).
+     * Karakter '!', '%', '_' dalam kata kunci pencarian diperlakukan sebagai literal.
+     */
+    public function paginate(?string $search = null, ?string $status = null, int $perPage = 10): LengthAwarePaginator
+    {
+        $search = trim((string) $search);
+        $status = trim((string) $status);
+        $escapedSearch = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $search);
+        $pattern = '%'.$escapedSearch.'%';
+
+        return Order::query()
+            ->with(['customer:id,name'])
+            ->withCount('items')
+            ->withSum(['payments as paid_amount' => fn ($query) => $query->where('status', 'POSTED')], 'amount')
+            ->when($search !== '', function ($query) use ($pattern): void {
+                $query->where(function ($query) use ($pattern): void {
+                    $query->whereRaw("order_number LIKE ? ESCAPE '!'", [$pattern])
+                        ->orWhereHas('customer', fn ($query) => $query->whereRaw("name LIKE ? ESCAPE '!'", [$pattern]));
+                });
+            })
+            ->when($status !== '', fn ($query) => $query->where('status', $status))
+            ->orderByDesc('order_date')
+            ->orderByDesc('id')
+            ->paginate($perPage)
+            ->withQueryString();
+    }
+
+    /**
+     * Siapkan representasi detail pesanan yang lengkap untuk tampilan,
+     * termasuk rincian bunga, ongkir, rekapitulasi keuangan, dan riwayat pembayaran.
+     */
+    public function getOrderDetail(Order $order): array
+    {
+        $order->load([
+            'customer:id,name,phone',
+            'items' => fn ($query) => $query->orderBy('id'),
+            'payments' => fn ($query) => $query->with('recordedBy:id,name')->orderByDesc('id'),
+        ]);
+
+        $received = (int) $order->payments->where('status', 'POSTED')->sum('amount');
+        $outstanding = max((int) $order->total_amount - $received, 0);
+        $flowerTotal = (int) $order->items->sum(fn ($item) => (int) $item->quantity * (int) $item->unit_price);
+        $shippingTotal = (int) $order->items->sum(fn ($item) => $item->shipping_mode === 'SEPARATE' ? (int) $item->shipping_fee : 0);
+
+        $paymentStatus = $received === 0 ? 'UNPAID' : ($received >= (int) $order->total_amount ? 'PAID' : 'PARTIAL');
+        $paymentStatusLabel = $received === 0 ? 'Belum bayar' : ($received >= (int) $order->total_amount ? 'Lunas' : 'Sebagian');
+
+        return [
+            'id' => $order->id,
+            'order_number' => $order->order_number,
+            'order_date' => $order->order_date?->format('d/m/Y'),
+            'order_date_raw' => $order->order_date?->format('Y-m-d'),
+            'status' => $order->status,
+            'notes' => $order->notes,
+            'total_amount' => (int) $order->total_amount,
+            'received' => $received,
+            'outstanding' => $outstanding,
+            'flower_total' => $flowerTotal,
+            'shipping_total' => $shippingTotal,
+            'payment_status' => $paymentStatus,
+            'payment_status_label' => $paymentStatusLabel,
+            'customer' => [
+                'id' => $order->customer->id,
+                'name' => $order->customer->name,
+                'phone' => $order->customer->phone,
+            ],
+            'items' => $order->items->map(fn ($item, $index) => [
+                'id' => $item->id,
+                'item_number' => $index + 1,
+                'flower_type' => $item->flower_type,
+                'recipient' => $item->recipient,
+                'sender_name' => $item->sender_name,
+                'delivery_date' => $item->delivery_date?->format('d/m/Y'),
+                'delivery_date_raw' => $item->delivery_date?->format('Y-m-d'),
+                'delivery_location' => $item->delivery_location,
+                'quantity' => (int) $item->quantity,
+                'unit_price' => (int) $item->unit_price,
+                'subtotal' => (int) $item->quantity * (int) $item->unit_price,
+                'shipping_mode' => $item->shipping_mode,
+                'shipping_fee' => (int) $item->shipping_fee,
+                'effective_shipping_fee' => $item->shipping_mode === 'SEPARATE' ? (int) $item->shipping_fee : 0,
+                'fulfillment_status' => $item->fulfillment_status,
+                'notes' => $item->notes,
+            ])->values()->all(),
+            'payments' => $order->payments->map(fn ($payment) => [
+                'id' => $payment->id,
+                'amount' => (int) $payment->amount,
+                'payment_date' => $payment->payment_date?->format('d/m/Y'),
+                'payment_date_raw' => $payment->payment_date?->format('Y-m-d'),
+                'method' => $payment->method,
+                'method_label' => match ($payment->method) {
+                    'CASH' => 'Tunai',
+                    'TRANSFER' => 'Transfer bank',
+                    'QRIS' => 'QRIS',
+                    default => 'Lainnya',
+                },
+                'status' => $payment->status,
+                'reference' => $payment->reference,
+                'notes' => $payment->notes,
+                'recorded_by' => $payment->recordedBy?->name ?? 'Operator',
+                'void_reason' => $payment->void_reason,
+                'voided_at' => $payment->voided_at?->timezone('Asia/Jakarta')->format('d/m/Y H:i'),
+            ])->values()->all(),
+        ];
+    }
 
     public function create(array $data, int $actorId): Order
     {
