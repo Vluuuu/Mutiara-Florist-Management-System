@@ -13,6 +13,7 @@ use App\Http\Controllers\UiExpenseCategoryController;
 use App\Http\Controllers\UiExpenseController;
 use App\Http\Controllers\UiOrderController;
 use App\Http\Controllers\UiPaymentController;
+use App\Http\Controllers\UiReportController;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -102,6 +103,12 @@ Route::middleware('auth')->group(function () {
         Route::post('/', [UiExpenseCategoryController::class, 'store'])->name('store');
         Route::put('/{expenseCategory}', [UiExpenseCategoryController::class, 'update'])->name('update');
         Route::patch('/{expenseCategory}/status', [UiExpenseCategoryController::class, 'status'])->name('status');
+    });
+
+    // Phase 4: Financial and Operational Reports & Excel Export
+    Route::prefix('ui-reports')->name('ui-reports.')->middleware(HandleInertiaRequests::class)->group(function () {
+        Route::get('/', [UiReportController::class, 'index'])->name('index');
+        Route::get('/export', [UiReportController::class, 'export'])->name('export');
     });
 
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');

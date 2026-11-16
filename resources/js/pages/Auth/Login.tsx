@@ -20,7 +20,7 @@ export default function Login({ errors: initialErrors }: LoginProps) {
 
     return (
         <div className="flex min-h-screen flex-col items-center justify-center bg-stone-50 px-5 py-12 text-stone-900 antialiased">
-            <Head title="Masuk — Mutiara Indah Florist" />
+            <Head title="Masuk — Mutiara Florist Management System" />
 
             <main className="w-full max-w-[420px]">
                 <div className="mb-8 text-center">
@@ -28,10 +28,10 @@ export default function Login({ errors: initialErrors }: LoginProps) {
                         <Flower2 className="size-7" aria-hidden="true" />
                     </span>
                     <h1 className="text-2xl font-bold tracking-tight text-emerald-950">
-                        Mutiara Indah Florist
+                        Mutiara Florist
                     </h1>
                     <p className="mt-1.5 text-sm text-stone-500">
-                        Masuk untuk mengelola pesanan, pelanggan, dan keuangan
+                        Management System · Masuk untuk mengelola pesanan dan operasional
                     </p>
                 </div>
 

@@ -1,5 +1,5 @@
 # Roadmap Pengembangan
-**Status:** Phase 3.3 SELESAI PENUH (Full React Migration & Final QA): pengujian lokal **119 PASS / 1143 assertions** (5,80s), `npm run typecheck` PASS, `npm run build` PASS, browser QA Playwright 21 PASS / 0 FAIL / 0 console error. Seluruh modul utama (Dashboard, Pelanggan, Pesanan, Pembayaran, Pengeluaran, Kategori Pengeluaran, Login) telah selesai dimigrasikan ke React 19 + TypeScript + Inertia.js dengan navigasi sidebar terpadu dan fallback Blade lama tetap terjaga.
+**Status:** Phase 4 SELESAI PENUH (Reports, Excel Export & Data Safety): pengujian lokal **133 PASS / 1236 assertions** (11,02s), `npm run typecheck` PASS, `npm run build` PASS, browser QA Playwright 27 PASS / 0 FAIL / 0 console error. Modul laporan keuangan & operasional React (/ui-reports), ekspor Excel .xlsx sejati dengan proteksi injeksi formula, dan backup database terenkripsi AES-256-CBC dengan SHA-256 checksum serta verifikasi pemulihan database terisolasi telah selesai dan teruji penuh.
 
 ## Phase 0 — Foundation (sedang berlangsung)
 - [x] Inisialisasi repo GitHub private dan README.
@@ -167,14 +167,14 @@
 **Exit gate:** halaman daftar dan detail pesanan React terverifikasi lengkap membaca data backend nyata berdampingan dengan modul Blade lama tanpa merusak aturan bisnis atau data operasional.
 
 ## Phase 4 — Dashboard, Reports & Data Safety
-- [ ] Ringkasan dan grafik per periode.
-- [ ] Ekspor Excel.
-- [ ] Backup konsisten dengan lampiran serta enkripsi.
-- [ ] Salinan backup ke Google Drive (manual atau otomatis sesuai keputusan).
-- [ ] Restore pada database uji dan dokumentasi prosedur.
-- [ ] Evaluasi impor data Sheets/Excel (P1; tidak memblokir MVP bila belum disetujui).
+- [x] Ringkasan dan grafik per periode (Preset: hari ini, 7 hari, 30 hari, bulan ini, bulan lalu, rentang kustom; kartu metrik nilai pesanan, kas masuk riil POSTED, kas keluar riil POSTED, selisih kas dengan disclaimer bukan laba bersih, snapshot piutang berjalan, distribusi status operasional dan pembayaran, tabel tren harian).
+- [x] Ekspor Excel (.xlsx biner standar OpenXML menggunakan ZipArchive, format angka akuntansi Rupiah, proteksi injeksi formula spreadsheet, 4 sheet terstruktur).
+- [x] Backup konsisten 9 tabel inti dengan enkripsi AES-256-CBC dan checksum SHA-256 (storage/app/backups/, tanpa password di log proses).
+- [x] Salinan backup ke Google Drive: didokumentasikan di `docs/BACKUP_RESTORE.md` sebagai opsi lanjutan (deferred/manual upload).
+- [x] Restore pada database uji terisolasi dan dokumentasi prosedur lengkap (`artisan mfms:restore-test`, verifikasi baris tabel, metrik keuangan, dan foreign keys; proteksi ketat agar tidak menimpa database utama/produksi).
+- [x] Evaluasi impor data Sheets/Excel: diputuskan di luar MVP awal agar operator memulai dari baseline transaksi baru yang bersih.
 
-**Exit gate:** laporan sesuai data sumber dan minimal satu backup berhasil dipulihkan.
+**Exit gate Phase 4:** laporan sesuai data sumber (order_date vs payment_date vs expense_date), ekspor Excel valid dan tahan injeksi formula, serta backup terenkripsi berhasil dipulihkan dan diverifikasi integritasnya pada database uji terisolasi. Dokumen prosedur tersedia di [docs/BACKUP_RESTORE.md](BACKUP_RESTORE.md) dan laporan implementasi di [docs/PHASE4_REPORTS_DATA_SAFETY.md](PHASE4_REPORTS_DATA_SAFETY.md).
 
 ## Phase 5 — QA & Handover
 - [ ] Uji alur pembayaran penuh di awal/akhir, DP opsional, serta pesanan selesai namun belum dibayar.

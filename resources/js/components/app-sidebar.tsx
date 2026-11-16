@@ -1,5 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
+    BarChart3,
     Flower2,
     LayoutDashboard,
     LogOut,
@@ -31,6 +32,7 @@ const mainNavItems: NavItemConfig[] = [
     { label: 'Pembayaran', hrefKey: 'uiPayments', defaultHref: '/ui-payments', icon: Wallet },
     { label: 'Pengeluaran', hrefKey: 'uiExpenses', defaultHref: '/ui-expenses', icon: ReceiptText },
     { label: 'Kategori Biaya', hrefKey: 'uiExpenseCategories', defaultHref: '/ui-expense-categories', icon: Tags },
+    { label: 'Laporan', hrefKey: 'uiReports', defaultHref: '/ui-reports', icon: BarChart3 },
 ];
 
 const legacyBladeItems: Array<{ label: string; hrefKey: keyof AppPageProps['nav']; defaultHref: string }> = [

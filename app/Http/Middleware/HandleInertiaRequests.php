@@ -32,6 +32,8 @@ class HandleInertiaRequests extends Middleware
                 'expenses' => route('expenses.index'),
                 'uiExpenseCategories' => route('ui-expense-categories.index'),
                 'expenseCategories' => route('expense-categories.index'),
+                'uiReports' => route('ui-reports.index'),
+                'uiReportsExport' => route('ui-reports.export'),
                 'logout' => route('logout'),
             ],
         ]);

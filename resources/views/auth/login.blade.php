@@ -11,8 +11,8 @@
     <main class="w-full max-w-[420px]">
         <div class="mb-10 text-center">
             <span class="mx-auto mb-5 flex size-14 items-center justify-center rounded-2xl bg-emerald-950 text-2xl font-semibold text-white">M</span>
-            <h1 class="text-2xl font-semibold tracking-tight text-emerald-950">Mutiara Indah Florist</h1>
-            <p class="mt-2 text-sm text-stone-500">Masuk untuk mengelola pesanan dan keuangan</p>
+            <h1 class="text-2xl font-semibold tracking-tight text-emerald-950">Mutiara Florist</h1>
+            <p class="mt-2 text-sm text-stone-500">Management System · Masuk untuk mengelola pesanan dan operasional</p>
         </div>
         <section class="rounded-2xl border border-stone-200 bg-white p-7 shadow-sm">
             <h2 class="mb-6 text-lg font-semibold">Masuk ke dashboard</h2>

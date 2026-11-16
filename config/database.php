@@ -44,6 +44,13 @@ return [
             'transaction_mode' => 'DEFERRED',
         ],
 
+        'testing' => [
+            'driver' => 'sqlite',
+            'database' => env('DB_TESTING_DATABASE', database_path('test_restore.sqlite')),
+            'prefix' => '',
+            'foreign_key_constraints' => false,
+        ],
+
         'mysql' => [
             'driver' => 'mysql',
             'url' => env('DB_URL'),

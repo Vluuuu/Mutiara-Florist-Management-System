@@ -26,7 +26,7 @@ class UiAuthTest extends TestCase
         $this->get(route('login'))
             ->assertOk()
             ->assertSee('Masuk ke dashboard')
-            ->assertSee('Mutiara Indah Florist');
+            ->assertSee('Mutiara Florist');
     }
 
     public function test_inertia_login_authenticates_and_redirects_to_ui_dashboard(): void
