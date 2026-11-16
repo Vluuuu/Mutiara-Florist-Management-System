@@ -1,6 +1,8 @@
-import { Head, Link } from '@inertiajs/react';
+import { useState, useEffect, useRef, type FormEvent } from 'react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
     AlertCircle,
+    AlertTriangle,
     ArrowLeft,
     CheckCircle2,
     Clock3,
@@ -14,11 +16,20 @@ import {
     Truck,
     User,
     Wallet,
+    X,
 } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { Card } from '@/components/ui/card';
 import { formatAmount } from '@/lib/format';
-import type { FulfillmentStatus, OrderDetail, OrderStatus, PaymentStatus } from '@/types';
+import type {
+    AppPageProps,
+    FulfillmentStatus,
+    OrderDetail,
+    OrderPaymentDetail,
+    OrderStatus,
+    PaymentMethod,
+    PaymentStatus,
+} from '@/types';
 
 type OrdersShowProps = {
     order: OrderDetail;
@@ -119,9 +130,98 @@ function PaymentStatusBadge({ status, label }: { status: PaymentStatus; label: s
 }
 
 export default function OrdersShow({ order }: OrdersShowProps) {
-    const editOrderUrl = `/orders/${order.id}/edit`;
+    const { errors } = usePage<AppPageProps>().props;
+    const today = new Date().toISOString().split('T')[0];
+
+    const editOrderUrl = `/ui-orders/${order.id}/edit`;
     const bladeOrderUrl = `/orders/${order.id}`;
     const paymentActionUrl = `/orders/${order.id}#pembayaran`;
+
+    // Payment recording modal state
+    const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+    const [paymentAmount, setPaymentAmount] = useState<number>(order.outstanding);
+    const [paymentDate, setPaymentDate] = useState<string>(today);
+    const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('TRANSFER');
+    const [paymentReference, setPaymentReference] = useState<string>('');
+    const [paymentNotes, setPaymentNotes] = useState<string>('');
+    const [idempotencyKey, setIdempotencyKey] = useState<string>('');
+    const [isSavingPayment, setIsSavingPayment] = useState(false);
+
+    // Payment void modal state
+    const [voidModalOpen, setVoidModalOpen] = useState(false);
+    const [selectedPayment, setSelectedPayment] = useState<OrderPaymentDetail | null>(null);
+    const [voidReason, setVoidReason] = useState<string>('');
+    const [isSavingVoid, setIsSavingVoid] = useState(false);
+
+    // Open Payment Modal
+    const handleOpenPaymentModal = () => {
+        setPaymentAmount(order.outstanding);
+        setPaymentDate(today);
+        setPaymentMethod('TRANSFER');
+        setPaymentReference('');
+        setPaymentNotes('');
+        setIdempotencyKey(crypto.randomUUID ? crypto.randomUUID() : 'idemp-' + Date.now());
+        setPaymentModalOpen(true);
+    };
+
+    // Open Void Modal
+    const handleOpenVoidModal = (payment: OrderPaymentDetail) => {
+        setSelectedPayment(payment);
+        setVoidReason('');
+        setVoidModalOpen(true);
+    };
+
+    // Keyboard Escape listeners for modals
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                if (paymentModalOpen && !isSavingPayment) setPaymentModalOpen(false);
+                if (voidModalOpen && !isSavingVoid) setVoidModalOpen(false);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [paymentModalOpen, voidModalOpen, isSavingPayment, isSavingVoid]);
+
+    const handleRecordPaymentSubmit = (e: FormEvent) => {
+        e.preventDefault();
+        setIsSavingPayment(true);
+
+        router.post(
+            `/ui-orders/${order.id}/payments`,
+            {
+                amount: Number(paymentAmount),
+                payment_date: paymentDate,
+                method: paymentMethod,
+                reference: paymentReference || null,
+                notes: paymentNotes || null,
+                idempotency_key: idempotencyKey,
+            },
+            {
+                preserveScroll: true,
+                onSuccess: () => setPaymentModalOpen(false),
+                onFinish: () => setIsSavingPayment(false),
+            },
+        );
+    };
+
+    const handleVoidPaymentSubmit = (e: FormEvent) => {
+        e.preventDefault();
+        if (!selectedPayment) return;
+        setIsSavingVoid(true);
+
+        router.post(
+            `/ui-orders/${order.id}/payments/${selectedPayment.id}/void`,
+            {
+                void_reason: voidReason,
+            },
+            {
+                preserveScroll: true,
+                onSuccess: () => setVoidModalOpen(false),
+                onFinish: () => setIsSavingVoid(false),
+            },
+        );
+    };
 
     return (
         <AppLayout title={`Pesanan ${order.order_number}`}>
@@ -155,19 +255,22 @@ export default function OrdersShow({ order }: OrdersShowProps) {
                         >
                             Buka di Blade lama
                         </a>
-                        <a
-                            href={paymentActionUrl}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-950 bg-white px-4 py-2.5 text-sm font-semibold text-emerald-950 hover:bg-emerald-50"
-                        >
-                            <Wallet className="size-4" aria-hidden="true" />
-                            + Catat pembayaran
-                        </a>
-                        <a
+                        {order.outstanding > 0 && (
+                            <button
+                                type="button"
+                                onClick={handleOpenPaymentModal}
+                                className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-950 bg-white px-4 py-2.5 text-sm font-semibold text-emerald-950 hover:bg-emerald-50"
+                            >
+                                <Wallet className="size-4" aria-hidden="true" />
+                                + Catat pembayaran
+                            </button>
+                        )}
+                        <Link
                             href={editOrderUrl}
                             className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-900"
                         >
                             Edit pesanan
-                        </a>
+                        </Link>
                     </div>
                 </div>
             </div>
@@ -327,7 +430,7 @@ export default function OrdersShow({ order }: OrdersShowProps) {
                 </p>
             </Card>
 
-            {/* Riwayat pembayaran (Read-only) */}
+            {/* Riwayat pembayaran */}
             <Card className="mt-6 p-5 sm:p-7">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
@@ -336,22 +439,16 @@ export default function OrdersShow({ order }: OrdersShowProps) {
                             POSTED dihitung sebagai uang masuk. VOIDED hanya menandai kesalahan pencatatan, bukan refund.
                         </p>
                     </div>
-                    <a
-                        href={paymentActionUrl}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-900 bg-emerald-950 px-3.5 py-2 text-xs font-semibold text-white hover:bg-emerald-900"
-                    >
-                        <Wallet className="size-3.5" aria-hidden="true" />
-                        Catat / koreksi di Blade
-                    </a>
-                </div>
-
-                <div className="mt-4 rounded-lg border border-emerald-100 bg-emerald-50/50 p-3.5 text-xs text-emerald-900">
-                    <div className="flex items-start gap-2">
-                        <Info className="mt-0.5 size-4 shrink-0 text-emerald-700" aria-hidden="true" />
-                        <p>
-                            Pencatatan pembayaran baru dan koreksi void dilakukan melalui antarmuka Blade lama untuk menjamin validasi idempotensi dan integritas audit.
-                        </p>
-                    </div>
+                    {order.outstanding > 0 && (
+                        <button
+                            type="button"
+                            onClick={handleOpenPaymentModal}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-900 bg-emerald-950 px-3.5 py-2 text-xs font-semibold text-white hover:bg-emerald-900"
+                        >
+                            <Wallet className="size-3.5" aria-hidden="true" />
+                            + Catat pembayaran
+                        </button>
+                    )}
                 </div>
 
                 {order.payments.length === 0 ? (
@@ -361,12 +458,15 @@ export default function OrdersShow({ order }: OrdersShowProps) {
                         <p className="mt-1 text-xs text-stone-500">
                             Pesanan boleh dikerjakan dan diselesaikan meskipun belum lunas.
                         </p>
-                        <a
-                            href={paymentActionUrl}
-                            className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-emerald-800 underline underline-offset-4 hover:text-emerald-900"
-                        >
-                            + Catat pembayaran di Blade
-                        </a>
+                        {order.outstanding > 0 && (
+                            <button
+                                type="button"
+                                onClick={handleOpenPaymentModal}
+                                className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-emerald-800 underline underline-offset-4 hover:text-emerald-900"
+                            >
+                                + Catat pembayaran sekarang
+                            </button>
+                        )}
                     </div>
                 ) : (
                     <div className="mt-5 divide-y divide-stone-200">
@@ -417,12 +517,13 @@ export default function OrdersShow({ order }: OrdersShowProps) {
                                     </div>
                                 ) : (
                                     <div className="mt-3">
-                                        <a
-                                            href={paymentActionUrl}
-                                            className="text-xs font-medium text-stone-500 hover:text-red-700 hover:underline"
+                                        <button
+                                            type="button"
+                                            onClick={() => handleOpenVoidModal(payment)}
+                                            className="text-xs font-medium text-red-700 hover:underline"
                                         >
-                                            Koreksi kesalahan pencatatan di Blade &rarr;
-                                        </a>
+                                            Koreksi kesalahan pencatatan (Void) &rarr;
+                                        </button>
                                     </div>
                                 )}
                             </div>
@@ -430,6 +531,259 @@ export default function OrdersShow({ order }: OrdersShowProps) {
                     </div>
                 )}
             </Card>
+
+            {/* Modal Catat Pembayaran */}
+            {paymentModalOpen && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="record-payment-title"
+                >
+                    <div
+                        className="fixed inset-0 bg-stone-900/50 backdrop-blur-xs transition-opacity"
+                        onClick={() => !isSavingPayment && setPaymentModalOpen(false)}
+                    />
+                    <div className="relative z-10 w-full max-w-lg rounded-2xl border border-stone-200 bg-white p-6 shadow-xl sm:p-7">
+                        <div className="flex items-center justify-between border-b border-stone-100 pb-4">
+                            <div>
+                                <h3
+                                    id="record-payment-title"
+                                    className="text-lg font-semibold text-emerald-950"
+                                >
+                                    Catat Penerimaan Pembayaran
+                                </h3>
+                                <p className="mt-1 text-xs text-stone-500">
+                                    Sisa tagihan pesanan: Rp{formatAmount(order.outstanding)}
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                disabled={isSavingPayment}
+                                onClick={() => setPaymentModalOpen(false)}
+                                className="rounded-lg p-1.5 text-stone-400 hover:bg-stone-50 hover:text-stone-600"
+                            >
+                                <X className="size-5" />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleRecordPaymentSubmit} noValidate className="mt-5 space-y-4">
+                            {errors && Object.keys(errors).length > 0 && (
+                                <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800">
+                                    <p className="font-semibold">Pembayaran belum tersimpan:</p>
+                                    <ul className="mt-1 list-inside list-disc">
+                                        {Object.entries(errors).map(([k, v]) => (
+                                            <li key={k}>{v}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
+                            <div>
+                                <label
+                                    htmlFor="modal_amount"
+                                    className="mb-1.5 block text-xs font-medium text-stone-700"
+                                >
+                                    Jumlah diterima (Rp) <span className="text-red-700">*</span>
+                                </label>
+                                <input
+                                    id="modal_amount"
+                                    type="number"
+                                    min={1}
+                                    max={order.outstanding}
+                                    required
+                                    value={paymentAmount}
+                                    onChange={(e) => setPaymentAmount(Number(e.target.value) || 0)}
+                                    className="w-full rounded-lg border border-stone-300 bg-white px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/10"
+                                />
+                                <p className="mt-1 text-xs text-stone-400">
+                                    Nilai default diisi untuk pelunasan penuh. Ganti jika hanya menerima DP/cicilan.
+                                </p>
+                            </div>
+
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <div>
+                                    <label
+                                        htmlFor="modal_date"
+                                        className="mb-1.5 block text-xs font-medium text-stone-700"
+                                    >
+                                        Tanggal uang diterima <span className="text-red-700">*</span>
+                                    </label>
+                                    <input
+                                        id="modal_date"
+                                        type="date"
+                                        required
+                                        value={paymentDate}
+                                        onChange={(e) => setPaymentDate(e.target.value)}
+                                        className="w-full rounded-lg border border-stone-300 bg-white px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/10"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label
+                                        htmlFor="modal_method"
+                                        className="mb-1.5 block text-xs font-medium text-stone-700"
+                                    >
+                                        Metode pembayaran <span className="text-red-700">*</span>
+                                    </label>
+                                    <select
+                                        id="modal_method"
+                                        value={paymentMethod}
+                                        onChange={(e) =>
+                                            setPaymentMethod(e.target.value as PaymentMethod)
+                                        }
+                                        className="w-full rounded-lg border border-stone-300 bg-white px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/10"
+                                    >
+                                        <option value="TRANSFER">Transfer bank</option>
+                                        <option value="CASH">Tunai</option>
+                                        <option value="QRIS">QRIS</option>
+                                        <option value="OTHER">Lainnya</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label
+                                    htmlFor="modal_ref"
+                                    className="mb-1.5 block text-xs font-medium text-stone-700"
+                                >
+                                    Referensi transaksi (opsional)
+                                </label>
+                                <input
+                                    id="modal_ref"
+                                    type="text"
+                                    maxLength={255}
+                                    value={paymentReference}
+                                    onChange={(e) => setPaymentReference(e.target.value)}
+                                    placeholder="Contoh: Nomor resi transfer atau bukti bayar"
+                                    className="w-full rounded-lg border border-stone-300 bg-white px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/10"
+                                />
+                            </div>
+
+                            <div>
+                                <label
+                                    htmlFor="modal_notes"
+                                    className="mb-1.5 block text-xs font-medium text-stone-700"
+                                >
+                                    Catatan tambahan (opsional)
+                                </label>
+                                <textarea
+                                    id="modal_notes"
+                                    rows={2}
+                                    maxLength={2000}
+                                    value={paymentNotes}
+                                    onChange={(e) => setPaymentNotes(e.target.value)}
+                                    className="w-full rounded-lg border border-stone-300 bg-white px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/10"
+                                />
+                            </div>
+
+                            <div className="mt-6 flex justify-end gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    disabled={isSavingPayment}
+                                    onClick={() => setPaymentModalOpen(false)}
+                                    className="rounded-lg border border-stone-200 px-4 py-2.5 text-sm font-medium text-stone-600 hover:bg-stone-50"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={
+                                        isSavingPayment ||
+                                        paymentAmount <= 0 ||
+                                        paymentAmount > order.outstanding
+                                    }
+                                    className="inline-flex items-center gap-2 rounded-lg bg-emerald-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    {isSavingPayment ? 'Menyimpan...' : 'Simpan Pembayaran'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Void Pembayaran */}
+            {voidModalOpen && selectedPayment && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="void-payment-title"
+                >
+                    <div
+                        className="fixed inset-0 bg-stone-900/50 backdrop-blur-xs transition-opacity"
+                        onClick={() => !isSavingVoid && setVoidModalOpen(false)}
+                    />
+                    <div className="relative z-10 w-full max-w-lg rounded-2xl border border-red-200 bg-white p-6 shadow-xl sm:p-7">
+                        <div className="flex items-start gap-3">
+                            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-700">
+                                <AlertCircle className="size-5" />
+                            </span>
+                            <div>
+                                <h3
+                                    id="void-payment-title"
+                                    className="text-lg font-semibold text-stone-900"
+                                >
+                                    Koreksi Kesalahan Pencatatan (Void)
+                                </h3>
+                                <p className="mt-1 text-xs text-stone-500">
+                                    Membatalkan pencatatan pembayaran Rp{formatAmount(selectedPayment.amount)} (
+                                    {selectedPayment.method_label}).
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="mt-4 rounded-lg bg-amber-50 p-3 text-xs text-amber-900">
+                            <strong>Perhatian:</strong> Void adalah koreksi audit akuntansi kesalahan entri data dan <em>bukan pengembalian uang (refund)</em> kepada pelanggan. Baris pembayaran tetap tersimpan di riwayat.
+                        </div>
+
+                        <form onSubmit={handleVoidPaymentSubmit} noValidate className="mt-4 space-y-4">
+                            <div>
+                                <label
+                                    htmlFor="void_reason"
+                                    className="mb-1.5 block text-xs font-semibold text-stone-700"
+                                >
+                                    Alasan koreksi (minimal 10 karakter) <span className="text-red-700">*</span>
+                                </label>
+                                <textarea
+                                    id="void_reason"
+                                    name="void_reason"
+                                    required
+                                    rows={3}
+                                    minLength={10}
+                                    maxLength={1000}
+                                    value={voidReason}
+                                    onChange={(e) => setVoidReason(e.target.value)}
+                                    placeholder="Contoh: Kasir salah memasukkan nominal, pembayaran akan dicatat ulang"
+                                    className="w-full rounded-lg border border-stone-300 bg-white px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-red-600 focus:ring-2 focus:ring-red-600/10"
+                                />
+                                {errors?.void_reason && (
+                                    <p className="mt-1 text-xs text-red-700">{errors.void_reason}</p>
+                                )}
+                            </div>
+
+                            <div className="mt-6 flex justify-end gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    disabled={isSavingVoid}
+                                    onClick={() => setVoidModalOpen(false)}
+                                    className="rounded-lg border border-stone-200 px-4 py-2.5 text-sm font-medium text-stone-600 hover:bg-stone-50"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isSavingVoid || voidReason.trim().length < 10}
+                                    className="inline-flex items-center gap-2 rounded-lg bg-red-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    {isSavingVoid ? 'Memproses...' : 'Void Pencatatan'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </AppLayout>
     );
 }

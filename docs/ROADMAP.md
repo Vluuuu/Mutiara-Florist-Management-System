@@ -1,5 +1,5 @@
 # Roadmap Pengembangan
-**Status:** Phase 3.3.2 React Customer Management: pengujian lokal **85 PASS / 705 assertions** (4,80s), `npm run typecheck` PASS, `npm run build` PASS, browser QA Playwright 25 PASS / 0 FAIL. Modul Pelanggan React aktif di `/ui-customers`, terintegrasi dengan `CustomerService` bersama modul Blade `/customers`.
+**Status:** Phase 3.3 SELESAI PENUH (Full React Migration & Final QA): pengujian lokal **119 PASS / 1143 assertions** (5,80s), `npm run typecheck` PASS, `npm run build` PASS, browser QA Playwright 21 PASS / 0 FAIL / 0 console error. Seluruh modul utama (Dashboard, Pelanggan, Pesanan, Pembayaran, Pengeluaran, Kategori Pengeluaran, Login) telah selesai dimigrasikan ke React 19 + TypeScript + Inertia.js dengan navigasi sidebar terpadu dan fallback Blade lama tetap terjaga.
 
 ## Phase 0 — Foundation (sedang berlangsung)
 - [x] Inisialisasi repo GitHub private dan README.
@@ -104,6 +104,65 @@
 - [x] 10 pengujian otomatis baru di `UiOrderTest` (total suite **95 PASS / 978 assertions**).
 - [x] QA browser otomatis Playwright pada database terisolasi (SQLite) dengan data sintetis: 56 checks PASS / 0 FAIL (tamu dialihkan, login, desktop index, pencarian, filter status, reset, paginasi halaman 2, detail order multi-item, kalkulasi ongkir separate/included, riwayat pembayaran posted & voided, tautan ke Blade lama, responsive mobile iPhone 13, 0 error konsol).
 - [x] Tangkapan layar QA desktop dan mobile tersimpan di `storage/app/`.
+
+### Phase 3.3.3B — Migrasi Formulir Buat & Edit Pesanan React
+- [x] Form buat pesanan multi-item (1–20 item bunga) di `/ui-orders/create` dengan pemilihan pelanggan aktif, kalkulasi subtotal live, mode ongkir `INCLUDED` dan `SEPARATE`.
+- [x] Form edit pesanan di `/ui-orders/{order}/edit`:
+  - Enforce status progression step: item hanya boleh tetap atau maju satu tahap (`NEW` -> `PROCESSING` -> `READY` -> `DELIVERED`).
+  - Proteksi item yang sudah diproses: item dengan status bukan `NEW` dilarang dihapus.
+  - Kunci pergantian pelanggan jika pesanan sudah memiliki pembayaran tercatat.
+  - Kewajiban `change_reason` bila nilai keuangan berubah setelah pembayaran, dan nilai pesanan baru dilarang berada di bawah akumulasi uang diterima (`received`).
+- [x] 6 tes otomatis baru di `UiOrderMutationTest`.
+
+### Phase 3.3.4 — Migrasi Pembayaran & Piutang React
+- [x] Ekstraksi fungsi daftar piutang ke service bersama `PaymentService::getReceivables` dengan filter pencarian dan kalkulasi sisa piutang.
+- [x] Halaman daftar piutang di `/ui-payments` (`Payments/Index`): metrik total piutang usaha, filter pencarian nomor order / nama pelanggan, paginasi 10 item per halaman, dan quick action "Lihat & Catat".
+- [x] Modal terpadu "Catat Penerimaan Pembayaran" pada detail pesanan (`Orders/Show`):
+  - Dukungan metode `TRANSFER`, `CASH`, `QRIS`, `OTHER`.
+  - Guard pembayaran berlebih (maksimal saldo tagihan).
+  - Idempotency key UUID unik per transaksi.
+  - Audit log `payment.posted`.
+- [x] Modal terpadu "Koreksi Kesalahan Pencatatan (Void)" pada riwayat transaksi pesanan:
+  - Validasi alasan minimal 10 karakter.
+  - Update status `VOIDED`, timestamp pembatalan, audit log `payment.voided`.
+  - Nilai transaksi `VOIDED` otomatis dikeluarkan dari uang masuk dan mengembalikan outstanding pesanan.
+- [x] 7 tes otomatis baru di `UiPaymentTest`.
+
+### Phase 3.3.5 — Migrasi Pengeluaran & Kategori Biaya React
+- [x] Halaman daftar pengeluaran di `/ui-expenses` (`Expenses/Index`):
+  - Kartu metrik total pengeluaran POSTED (VOIDED tidak dihitung).
+  - Filter pencarian keterangan (dengan literal escaping), kategori biaya, status (`POSTED`/`VOIDED`), dan rentang tanggal.
+  - Modal koreksi void pengeluaran dengan alasan min. 10 karakter.
+- [x] Halaman catat pengeluaran di `/ui-expenses/create` (`Expenses/Create`):
+  - Seleksi kategori aktif, tanggal transaksi, nominal, keterangan, dan kunci idempoten.
+  - Peringatan integritas bahwa pengeluaran tidak dapat dihapus permanen.
+- [x] Halaman manajemen kategori di `/ui-expense-categories` (`ExpenseCategories/Index`):
+  - Daftar kategori biaya dengan badge status aktif/nonaktif dan jumlah pengeluaran tercatat.
+  - Tambah kategori baru dengan validasi nama unik.
+  - Edit/rename nama kategori langsung.
+  - Toggle aktif/nonaktif kategori dengan konfirmasi.
+- [x] 6 tes otomatis baru di `UiExpenseTest`.
+
+### Phase 3.3.6 — Halaman Login & Navigasi Sidebar Terpadu
+- [x] Antarmuka React untuk login di `/ui-login` dan respons Inertia login (`Auth/Login`): desain kartu modern, input email/password, proteksi CSRF, pesan error validasi, dan loading state.
+- [x] Navigasi sidebar terpadu (`AppSidebar`) yang mengintegrasikan seluruh 6 modul React:
+  - Dashboard (`/ui-dashboard`)
+  - Pelanggan (`/ui-customers`)
+  - Pesanan (`/ui-orders`)
+  - Pembayaran (`/ui-payments`)
+  - Pengeluaran (`/ui-expenses`)
+  - Kategori Biaya (`/ui-expense-categories`)
+- [x] Fallback Blade lama tetap tersedia di bagian bawah/footer sidebar (`/dashboard`, `/customers`, `/orders`, `/payments`, `/expenses`, `/expense-categories`) dan tombol logout.
+- [x] 5 tes otomatis baru di `UiAuthTest`.
+
+### Hasil QA Komprehensif Phase 3.3 Final
+- **PHPUnit / Pest Test Suite:** 119 PASS / 1143 assertions (100% lulus, 0 fail).
+- **TypeScript Static Analysis:** `npm run typecheck` PASS (0 errors).
+- **Vite Production Bundler:** `npm run build` PASS (0 errors).
+- **Playwright Browser E2E:** 21 PASS / 0 FAIL / 0 console errors (Desktop 1280x800 & Mobile 375x812).
+- **Database Safety:** Seluruh pengujian dijalankan pada database terisolasi (`:memory:` dan `database/qa_browser.sqlite`). Database MariaDB operasional lokal tetap 100% utuh tanpa modifikasi data nyata.
+
+**Exit gate Phase 3.3:** Seluruh modul operasional dan keuangan MFMS sukses berjalan pada arsitektur React 19 + TypeScript + Inertia.js dengan kestabilan transaksi tinggi dan konsistensi data penuh.
 
 **Exit gate:** halaman daftar dan detail pesanan React terverifikasi lengkap membaca data backend nyata berdampingan dengan modul Blade lama tanpa merusak aturan bisnis atau data operasional.
 

@@ -10,6 +10,58 @@ use Illuminate\Validation\ValidationException;
 class PaymentService
 {
     /**
+     * Piutang merupakan snapshot tagihan terbuka saat ini (total_amount > paid_amount).
+     * Karakter '!', '%', '_' dalam kata kunci pencarian diperlakukan sebagai literal.
+     */
+    public function getReceivables(?string $search = null, int $perPage = 10): array
+    {
+        $search = trim((string) $search);
+        $pattern = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $search).'%';
+
+        $posted = DB::table('payments')
+            ->select('order_id')
+            ->selectRaw('SUM(amount) AS paid_amount')
+            ->where('status', 'POSTED')
+            ->groupBy('order_id');
+
+        $base = DB::table('orders')
+            ->join('customers', 'orders.customer_id', '=', 'customers.id')
+            ->leftJoinSub($posted, 'received', fn ($join) => $join->on('orders.id', '=', 'received.order_id'))
+            ->whereRaw('orders.total_amount > COALESCE(received.paid_amount, 0)')
+            ->when($search !== '', function ($query) use ($pattern): void {
+                $query->where(function ($query) use ($pattern): void {
+                    $query->whereRaw("orders.order_number LIKE ? ESCAPE '!'", [$pattern])
+                        ->orWhereRaw("customers.name LIKE ? ESCAPE '!'", [$pattern]);
+                });
+            });
+
+        $totals = (clone $base)
+            ->selectRaw('COALESCE(SUM(orders.total_amount - COALESCE(received.paid_amount, 0)), 0) AS outstanding')
+            ->first();
+        $outstanding = (int) ($totals->outstanding ?? 0);
+
+        $orders = $base
+            ->select([
+                'orders.id',
+                'orders.order_number',
+                'orders.order_date',
+                'orders.total_amount',
+                'orders.status',
+                'customers.name AS customer_name',
+            ])
+            ->selectRaw('COALESCE(received.paid_amount, 0) AS paid_amount')
+            ->orderByDesc('orders.order_date')
+            ->orderByDesc('orders.id')
+            ->paginate($perPage)
+            ->withQueryString();
+
+        return [
+            'orders' => $orders,
+            'outstanding' => $outstanding,
+        ];
+    }
+
+    /**
      * Lock the order row for ALL balance writers (also OrderService::update).
      * The unique idempotency key prevents duplicate inserts on retries.
      */

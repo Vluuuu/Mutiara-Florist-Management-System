@@ -18,50 +18,16 @@ class PaymentController extends Controller
      * Receivables are current snapshots, not historical revenue by date.
      * Only POSTED payments count toward cash/remaining balance.
      */
-    public function index(Request $request): View
+    public function index(Request $request, PaymentService $service): View
     {
         $filters = $request->validate([
             'q' => ['nullable', 'string', 'max:100'],
         ]);
         $search = trim((string) ($filters['q'] ?? ''));
-        $pattern = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $search).'%';
 
-        $posted = DB::table('payments')
-            ->select('order_id')
-            ->selectRaw('SUM(amount) AS paid_amount')
-            ->where('status', 'POSTED')
-            ->groupBy('order_id');
-
-        $base = DB::table('orders')
-            ->join('customers', 'orders.customer_id', '=', 'customers.id')
-            ->leftJoinSub($posted, 'received', fn ($join) => $join->on('orders.id', '=', 'received.order_id'))
-            ->whereRaw('orders.total_amount > COALESCE(received.paid_amount, 0)')
-            ->when($search !== '', function ($query) use ($pattern): void {
-                $query->where(function ($query) use ($pattern): void {
-                    $query->whereRaw("orders.order_number LIKE ? ESCAPE '!'", [$pattern])
-                        ->orWhereRaw("customers.name LIKE ? ESCAPE '!'", [$pattern]);
-                });
-            });
-
-        $totals = (clone $base)
-            ->selectRaw('COALESCE(SUM(orders.total_amount - COALESCE(received.paid_amount, 0)), 0) AS outstanding')
-            ->first();
-        $outstanding = (int) ($totals->outstanding ?? 0);
-
-        $orders = $base
-            ->select([
-                'orders.id',
-                'orders.order_number',
-                'orders.order_date',
-                'orders.total_amount',
-                'orders.status',
-                'customers.name AS customer_name',
-            ])
-            ->selectRaw('COALESCE(received.paid_amount, 0) AS paid_amount')
-            ->orderByDesc('orders.order_date')
-            ->orderByDesc('orders.id')
-            ->paginate(10)
-            ->withQueryString();
+        $result = $service->getReceivables($search, 10);
+        $orders = $result['orders'];
+        $outstanding = $result['outstanding'];
 
         return view('payments.index', compact('orders', 'outstanding', 'search'));
     }

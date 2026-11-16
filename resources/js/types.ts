@@ -16,8 +16,11 @@ export type DashboardNav = {
     customers: string;
     uiOrders?: string;
     orders: string;
+    uiPayments?: string;
     payments: string;
+    uiExpenses?: string;
     expenses: string;
+    uiExpenseCategories?: string;
     expenseCategories: string;
     logout: string;
 };
@@ -77,6 +80,65 @@ export type FulfillmentStatus = 'NEW' | 'PROCESSING' | 'READY' | 'DELIVERED';
 export type PaymentMethod = 'CASH' | 'TRANSFER' | 'QRIS' | 'OTHER';
 export type PaymentRecordStatus = 'POSTED' | 'VOIDED';
 export type PaymentStatus = 'UNPAID' | 'PARTIAL' | 'PAID';
+
+export type OrderCustomerOption = {
+    id: number;
+    name: string;
+    phone: string | null;
+};
+
+export type OrderFormItem = {
+    _key: number;
+    id?: number | null;
+    flower_type: string;
+    recipient: string;
+    sender_name: string;
+    delivery_date: string;
+    delivery_location: string;
+    quantity: number;
+    unit_price: number;
+    shipping_mode: 'INCLUDED' | 'SEPARATE';
+    shipping_fee: number;
+    fulfillment_status?: FulfillmentStatus;
+    _initialStatus?: FulfillmentStatus;
+    notes: string;
+};
+
+export type OrderEditData = {
+    id: number;
+    order_number: string;
+    customer_id: number;
+    order_date: string;
+    notes: string;
+    status: OrderStatus;
+    total_amount: number;
+    received: number;
+    items: Array<{
+        id: number;
+        flower_type: string;
+        recipient: string;
+        sender_name: string;
+        delivery_date: string;
+        delivery_location: string;
+        quantity: number;
+        unit_price: number;
+        shipping_mode: 'INCLUDED' | 'SEPARATE';
+        shipping_fee: number;
+        fulfillment_status: FulfillmentStatus;
+        notes: string;
+    }>;
+};
+
+export type ReceivableOrder = {
+    id: number;
+    order_number: string;
+    order_date: string;
+    total_amount: number;
+    paid_amount: number;
+    outstanding: number;
+    status: OrderStatus;
+    customer_name: string;
+};
 
 export type OrderListItem = {
     id: number;
@@ -150,4 +212,40 @@ export type OrderDetail = {
     };
     items: OrderItemDetail[];
     payments: OrderPaymentDetail[];
+};
+
+export type ExpenseCategoryItem = {
+    id: number;
+    name: string;
+    is_active: boolean;
+    expenses_count?: number;
+};
+
+export type ExpenseItem = {
+    id: number;
+    expense_category_id: number;
+    recorded_by: number;
+    expense_date: string;
+    amount: number;
+    description: string;
+    idempotency_key: string;
+    status: 'POSTED' | 'VOIDED';
+    void_reason: string | null;
+    voided_at: string | null;
+    category?: {
+        id: number;
+        name: string;
+    };
+    recorded_by_user?: {
+        id: number;
+        name: string;
+    };
+};
+
+export type ExpenseFilters = {
+    q: string;
+    category_id: number | null;
+    status: 'POSTED' | 'VOIDED' | null;
+    from: string | null;
+    to: string | null;
 };

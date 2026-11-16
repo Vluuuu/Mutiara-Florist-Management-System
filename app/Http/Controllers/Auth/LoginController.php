@@ -7,11 +7,17 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class LoginController extends Controller
 {
-    public function show(): View
+    public function show(Request $request): View|Response
     {
+        if ($request->header('X-Inertia') || $request->routeIs('ui-login')) {
+            return Inertia::render('Auth/Login');
+        }
+
         return view('auth.login');
     }
 
@@ -30,7 +36,11 @@ class LoginController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        $target = $request->header('X-Inertia')
+            ? route('ui-dashboard', absolute: false)
+            : route('dashboard', absolute: false);
+
+        return redirect()->intended($target);
     }
 
     public function destroy(Request $request): RedirectResponse

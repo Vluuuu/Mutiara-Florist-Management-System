@@ -141,13 +141,13 @@ export default function OrdersIndex({ orders, filters }: OrdersIndexProps) {
                     >
                         Tampilan Blade lama
                     </a>
-                    <a
-                        href="/orders/create"
+                    <Link
+                        href="/ui-orders/create"
                         className="inline-flex items-center gap-2 rounded-lg bg-emerald-950 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-900"
                     >
                         <Plus className="size-4" aria-hidden="true" />
                         + Buat pesanan
-                    </a>
+                    </Link>
                 </div>
             </div>
 
@@ -248,13 +248,13 @@ export default function OrdersIndex({ orders, filters }: OrdersIndexProps) {
                                 : 'Mulai dengan membuat pesanan dari pelanggan yang sudah tercatat.'}
                         </p>
                         {!isFiltered && (
-                            <a
-                                href="/orders/create"
+                            <Link
+                                href="/ui-orders/create"
                                 className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-800 underline underline-offset-4 hover:text-emerald-900"
                             >
                                 <Plus className="size-4" aria-hidden="true" />
                                 + Buat pesanan
-                            </a>
+                            </Link>
                         )}
                     </div>
                 ) : (

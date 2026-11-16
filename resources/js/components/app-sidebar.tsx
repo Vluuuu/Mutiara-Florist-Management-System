@@ -17,12 +17,29 @@ type SidebarNavProps = {
     onNavigate?: () => void;
 };
 
-// Modul yang masih memakai halaman Blade lama. Tautan ini memakai tag <a>
-// biasa agar melakukan navigasi penuh dan tidak di-intercept oleh router Inertia.
-const bladeItems: Array<{ label: string; href: keyof AppPageProps['nav']; icon: LucideIcon }> = [
-    { label: 'Pembayaran', href: 'payments', icon: Wallet },
-    { label: 'Pengeluaran', href: 'expenses', icon: ReceiptText },
-    { label: 'Kategori Pengeluaran', href: 'expenseCategories', icon: Tags },
+type NavItemConfig = {
+    label: string;
+    hrefKey: keyof AppPageProps['nav'];
+    defaultHref: string;
+    icon: LucideIcon;
+};
+
+const mainNavItems: NavItemConfig[] = [
+    { label: 'Dashboard', hrefKey: 'dashboard', defaultHref: '/ui-dashboard', icon: LayoutDashboard },
+    { label: 'Pelanggan', hrefKey: 'uiCustomers', defaultHref: '/ui-customers', icon: Users },
+    { label: 'Pesanan', hrefKey: 'uiOrders', defaultHref: '/ui-orders', icon: ShoppingBag },
+    { label: 'Pembayaran', hrefKey: 'uiPayments', defaultHref: '/ui-payments', icon: Wallet },
+    { label: 'Pengeluaran', hrefKey: 'uiExpenses', defaultHref: '/ui-expenses', icon: ReceiptText },
+    { label: 'Kategori Biaya', hrefKey: 'uiExpenseCategories', defaultHref: '/ui-expense-categories', icon: Tags },
+];
+
+const legacyBladeItems: Array<{ label: string; hrefKey: keyof AppPageProps['nav']; defaultHref: string }> = [
+    { label: 'Dashboard Blade', hrefKey: 'legacyDashboard', defaultHref: '/dashboard' },
+    { label: 'Pelanggan Blade', hrefKey: 'customers', defaultHref: '/customers' },
+    { label: 'Pesanan Blade', hrefKey: 'orders', defaultHref: '/orders' },
+    { label: 'Pembayaran Blade', hrefKey: 'payments', defaultHref: '/payments' },
+    { label: 'Pengeluaran Blade', hrefKey: 'expenses', defaultHref: '/expenses' },
+    { label: 'Kategori Biaya Blade', hrefKey: 'expenseCategories', defaultHref: '/expense-categories' },
 ];
 
 export function SidebarContent({ onNavigate }: SidebarNavProps) {
@@ -32,17 +49,6 @@ export function SidebarContent({ onNavigate }: SidebarNavProps) {
     const currentPath = url.split('?')[0];
     const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost';
 
-    const dashboardPath = nav?.dashboard ? new URL(nav.dashboard, origin).pathname : '/ui-dashboard';
-    const dashboardActive = currentPath === dashboardPath;
-
-    const customersHref = nav?.uiCustomers ?? '/ui-customers';
-    const customersPath = new URL(customersHref, origin).pathname;
-    const customersActive = currentPath === customersPath || currentPath.startsWith(customersPath + '/');
-
-    const ordersHref = nav?.uiOrders ?? '/ui-orders';
-    const ordersPath = new URL(ordersHref, origin).pathname;
-    const ordersActive = currentPath === ordersPath || currentPath.startsWith(ordersPath + '/');
-
     const csrfToken =
         typeof document !== 'undefined'
             ? document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? ''
@@ -51,7 +57,7 @@ export function SidebarContent({ onNavigate }: SidebarNavProps) {
     return (
         <div className="flex h-full flex-col">
             <div className="flex items-center gap-3 px-5 py-6">
-                <span className="flex size-10 items-center justify-center rounded-xl bg-emerald-950 text-white">
+                <span className="flex size-10 items-center justify-center rounded-xl bg-emerald-950 text-white shadow-xs">
                     <Flower2 className="size-5" aria-hidden="true" />
                 </span>
                 <div>
@@ -61,95 +67,70 @@ export function SidebarContent({ onNavigate }: SidebarNavProps) {
             </div>
 
             <nav aria-label="Navigasi utama" className="flex-1 space-y-1 px-3">
-                <Link
-                    href={nav?.dashboard ?? '/ui-dashboard'}
-                    onClick={onNavigate}
-                    aria-current={dashboardActive ? 'page' : undefined}
-                    className={cn(
-                        'flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-semibold transition-colors',
-                        dashboardActive
-                            ? 'bg-emerald-50 text-emerald-900'
-                            : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900',
-                    )}
-                >
-                    <LayoutDashboard className="size-4.5 shrink-0" aria-hidden="true" />
-                    Dashboard
-                </Link>
+                {mainNavItems.map((item) => {
+                    const href = (nav && nav[item.hrefKey]) || item.defaultHref;
+                    const path = new URL(href, origin).pathname;
+                    const isActive =
+                        currentPath === path ||
+                        (path !== '/ui-dashboard' && currentPath.startsWith(path + '/'));
 
-                <Link
-                    href={customersHref}
-                    onClick={onNavigate}
-                    aria-current={customersActive ? 'page' : undefined}
-                    className={cn(
-                        'flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-semibold transition-colors',
-                        customersActive
-                            ? 'bg-emerald-50 text-emerald-900'
-                            : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900',
-                    )}
-                >
-                    <Users className="size-4.5 shrink-0" aria-hidden="true" />
-                    Pelanggan
-                </Link>
-
-                <Link
-                    href={ordersHref}
-                    onClick={onNavigate}
-                    aria-current={ordersActive ? 'page' : undefined}
-                    className={cn(
-                        'flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-semibold transition-colors',
-                        ordersActive
-                            ? 'bg-emerald-50 text-emerald-900'
-                            : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900',
-                    )}
-                >
-                    <ShoppingBag className="size-4.5 shrink-0" aria-hidden="true" />
-                    Pesanan
-                </Link>
-
-                {bladeItems.map((item) => (
-                    <a
-                        key={item.label}
-                        href={nav ? nav[item.href] : '#'}
-                        onClick={onNavigate}
-                        className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-semibold text-stone-600 transition-colors hover:bg-stone-50 hover:text-stone-900"
-                    >
-                        <item.icon className="size-4.5 shrink-0" aria-hidden="true" />
-                        {item.label}
-                    </a>
-                ))}
+                    return (
+                        <Link
+                            key={item.label}
+                            href={href}
+                            onClick={onNavigate}
+                            aria-current={isActive ? 'page' : undefined}
+                            className={cn(
+                                'flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-semibold transition-colors',
+                                isActive
+                                    ? 'bg-emerald-50 text-emerald-900 font-bold'
+                                    : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900',
+                            )}
+                        >
+                            <item.icon className="size-4.5 shrink-0" aria-hidden="true" />
+                            {item.label}
+                        </Link>
+                    );
+                })}
             </nav>
 
             <div className="space-y-1 border-t border-stone-200 px-3 py-4">
-                <a
-                    href={nav?.legacyDashboard ?? '/dashboard'}
-                    className="flex items-center gap-3 rounded-lg px-4 py-2 text-xs text-stone-500 hover:bg-stone-50 hover:text-stone-900"
-                >
-                    Dashboard Blade lama
-                </a>
-                <a
-                    href={nav?.customers ?? '/customers'}
-                    className="flex items-center gap-3 rounded-lg px-4 py-2 text-xs text-stone-500 hover:bg-stone-50 hover:text-stone-900"
-                >
-                    Pelanggan Blade lama
-                </a>
-                <a
-                    href={nav?.orders ?? '/orders'}
-                    className="flex items-center gap-3 rounded-lg px-4 py-2 text-xs text-stone-500 hover:bg-stone-50 hover:text-stone-900"
-                >
-                    Pesanan Blade lama
-                </a>
+                <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-stone-400">
+                    Fallback Blade Lama
+                </p>
+                <div className="grid grid-cols-2 gap-1">
+                    {legacyBladeItems.map((item) => (
+                        <a
+                            key={item.label}
+                            href={(nav && nav[item.hrefKey]) || item.defaultHref}
+                            className="rounded px-2.5 py-1 text-[11px] text-stone-500 hover:bg-stone-100 hover:text-stone-800"
+                        >
+                            {item.label}
+                        </a>
+                    ))}
+                </div>
 
-                <form method="POST" action={nav?.logout ?? '/logout'}>
-                    <button
-                        type="submit"
-                        className="flex w-full items-center gap-3 rounded-lg px-4 py-2 text-sm font-medium text-stone-600 hover:bg-stone-50 hover:text-stone-900"
-                    >
-                        <LogOut className="size-4.5" aria-hidden="true" />
-                        Keluar
-                    </button>
-                    <input type="hidden" name="_token" value={csrfToken} />
-                </form>
+                <div className="pt-2">
+                    <form method="POST" action={nav?.logout ?? '/logout'}>
+                        <button
+                            type="submit"
+                            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-xs font-semibold text-stone-600 hover:bg-stone-100 hover:text-stone-900"
+                        >
+                            <LogOut className="size-4" aria-hidden="true" />
+                            Keluar
+                        </button>
+                        <input type="hidden" name="_token" value={csrfToken} />
+                    </form>
+                </div>
             </div>
         </div>
+    );
+}
+
+export function AppSidebar() {
+    return (
+        <aside className="hidden w-64 shrink-0 border-r border-stone-200 bg-white md:block">
+            <SidebarContent />
+        </aside>
     );
 }
