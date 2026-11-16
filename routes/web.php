@@ -24,11 +24,25 @@ Route::get('/', fn () => redirect()->route(Auth::check() ? 'dashboard' : 'login'
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'show'])->middleware(HandleInertiaRequests::class)->name('login');
     Route::get('/ui-login', [LoginController::class, 'show'])->middleware(HandleInertiaRequests::class)->name('ui-login');
+    Route::get('/blade-login', [LoginController::class, 'showBlade'])->name('blade-login');
     Route::post('/login', [LoginController::class, 'store'])->middleware('throttle:6,1')->name('login.store');
 });
 
 Route::middleware('auth')->group(function () {
-    Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    // Release Candidate: React Dashboard is now the primary /dashboard route.
+    Route::get('/dashboard', UiDashboardController::class)
+        ->middleware(HandleInertiaRequests::class)
+        ->name('dashboard');
+
+    // Retain /ui-dashboard for backwards compatibility and direct navigation
+    Route::get('/ui-dashboard', UiDashboardController::class)
+        ->middleware(HandleInertiaRequests::class)
+        ->name('ui-dashboard');
+
+    // Fallback Blade Dashboard for emergency rollback
+    Route::get('/legacy/dashboard', DashboardController::class)->name('legacy.dashboard');
+    Route::get('/blade-dashboard', DashboardController::class)->name('blade.dashboard');
+
     Route::resource('customers', CustomerController::class);
     Route::resource('orders', OrderController::class)->except(['destroy']);
     Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
@@ -51,12 +65,6 @@ Route::middleware('auth')->group(function () {
             'dashboardUrl' => route('dashboard'),
         ]);
     })->middleware(HandleInertiaRequests::class)->name('ui-preview');
-
-    // Phase 3.3.1: React dashboard on an isolated route. Blade /dashboard stays
-    // until the whole migration is verified, then /ui-dashboard takes over.
-    Route::get('/ui-dashboard', UiDashboardController::class)
-        ->middleware(HandleInertiaRequests::class)
-        ->name('ui-dashboard');
 
     // Phase 3.3.2: React Customer Management on isolated routes
     Route::prefix('ui-customers')->name('ui-customers.')->middleware(HandleInertiaRequests::class)->group(function () {

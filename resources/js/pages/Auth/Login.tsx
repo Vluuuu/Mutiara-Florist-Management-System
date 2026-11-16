@@ -108,6 +108,14 @@ export default function Login({ errors: initialErrors }: LoginProps) {
                             {processing ? 'Memproses...' : 'Masuk'}
                         </button>
                     </form>
+                    <div className="mt-4 border-t border-stone-100 pt-4 text-center">
+                        <a
+                            href="/login?fallback=blade"
+                            className="text-xs text-stone-500 hover:text-stone-700 hover:underline"
+                        >
+                            Tampilan Login Klasik (Blade Fallback) →
+                        </a>
+                    </div>
                 </Card>
 
                 <p className="mt-6 text-center text-xs text-stone-400">

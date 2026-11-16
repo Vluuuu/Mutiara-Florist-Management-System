@@ -30,6 +30,11 @@
                 </div>
                 <button type="submit" class="w-full rounded-lg bg-emerald-950 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700">Masuk</button>
             </form>
+            <div class="mt-4 border-t border-stone-100 pt-4 text-center">
+                <a href="{{ route('login') }}" class="text-xs font-medium text-emerald-800 hover:underline">
+                    ← Beralih ke Tampilan Login Utama (React)
+                </a>
+            </div>
         </section>
         <p class="mt-6 text-center text-xs text-stone-500">Aplikasi internal · Tidak tersedia pendaftaran publik</p>
     </main>

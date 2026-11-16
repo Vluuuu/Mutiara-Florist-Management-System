@@ -20,8 +20,9 @@ class HandleInertiaRequests extends Middleware
                 'error' => fn () => $request->session()->get('error'),
             ],
             'nav' => [
-                'dashboard' => route('ui-dashboard'),
-                'legacyDashboard' => route('dashboard'),
+                'dashboard' => route('dashboard'),
+                'uiDashboard' => route('ui-dashboard'),
+                'legacyDashboard' => route('legacy.dashboard'),
                 'uiCustomers' => route('ui-customers.index'),
                 'customers' => route('customers.index'),
                 'uiOrders' => route('ui-orders.index'),

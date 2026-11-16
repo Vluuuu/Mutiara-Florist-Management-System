@@ -15,11 +15,22 @@ class UiDashboardController extends Controller
      */
     public function __invoke(DashboardService $dashboard): Response
     {
+        $stats = $dashboard->stats();
+
         return Inertia::render('Dashboard', [
-            'stats' => $dashboard->stats(),
+            'stats' => $stats,
+            'summary_formatted' => [
+                'billed' => 'Rp'.number_format($stats['billed'], 0, ',', '.'),
+                'received' => 'Rp'.number_format($stats['received'], 0, ',', '.'),
+                'outstanding' => 'Rp'.number_format($stats['outstanding'], 0, ',', '.'),
+                'expenses' => 'Rp'.number_format($stats['expenses'], 0, ',', '.'),
+                'cash_flow' => 'Rp'.number_format($stats['cash_flow'], 0, ',', '.'),
+                'zero' => 'Rp0',
+            ],
             'nav' => [
-                'dashboard' => route('ui-dashboard'),
-                'legacyDashboard' => route('dashboard'),
+                'dashboard' => route('dashboard'),
+                'uiDashboard' => route('ui-dashboard'),
+                'legacyDashboard' => route('legacy.dashboard'),
                 'customers' => route('customers.index'),
                 'orders' => route('orders.index'),
                 'payments' => route('payments.index'),

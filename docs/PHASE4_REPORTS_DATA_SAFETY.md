@@ -38,7 +38,7 @@ Phase 4 mengimplementasikan kemampuan pelaporan komprehensif, ekspor dokumen spr
 4. **Keamanan Data & Pencadangan Terenkripsi (Encrypted Backup & Safe Restore):**
    - Pencadangan konsisten untuk 9 tabel inti (`users`, `customers`, `orders`, `order_items`, `payments`, `expense_categories`, `expenses`, `audit_logs`, `migrations`).
    - Ekstraksi SQL murni berbasis PDO tanpa memanggil shell eksternal sehingga tidak ada password database yang bocor di log proses OS.
-   - Enkripsi kuat AES-256-CBC dengan IV 16-byte unik per file dan verifikasi integritas checksum SHA-256.
+   - Enkripsi terotentikasi kuat AES-256-GCM dengan tag autentikasi 16-byte, metadata terikat AAD (Additional Authenticated Data), dan verifikasi integritas checksum SHA-256.
    - File cadangan disimpan di direktori privat `storage/app/backups/` dan diabaikan dari Git.
    - **Mekanisme Perlindungan Restorasi (Safety Guard):** Sistem menolak keras pemulihan ke database operasional utama/produksi (`mfms`). Pemulihan hanya diizinkan ke database pengujian terisolasi (`testing`).
    - Otomatisasi pengujian pemulihan merekonsiliasi jumlah baris per tabel, keutuhan metrik keuangan, dan ketiadaan relasi yatim (foreign key orphans).
@@ -145,4 +145,4 @@ Seluruh acceptance criteria Phase 4 telah terpenuhi secara paripurna:
 1. Laporan keuangan dan operasional backend Laravel menjadi sumber kebenaran perhitungan tunggal.
 2. Nilai pesanan, arus kas riil, selisih kas, dan snapshot piutang berjalan ditampilkan secara transparan dan akurat.
 3. Ekspor Excel biner `.xlsx` teruji valid dan kebal injeksi formula spreadsheet.
-4. Mekanisme backup terenkripsi AES-256-CBC dengan checksum SHA-256 terbukti aman dan sukses diuji coba pemulihannya pada lingkungan terisolasi tanpa menyentuh data produksi.
+4. Mekanisme backup terenkripsi authenticated AES-256-GCM dengan AAD dan checksum SHA-256 terbukti aman dan sukses diuji coba pemulihannya pada lingkungan terisolasi tanpa menyentuh data operasional.

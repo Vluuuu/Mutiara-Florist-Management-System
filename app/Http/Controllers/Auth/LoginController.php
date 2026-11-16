@@ -14,10 +14,18 @@ class LoginController extends Controller
 {
     public function show(Request $request): View|Response
     {
-        if ($request->header('X-Inertia') || $request->routeIs('ui-login')) {
-            return Inertia::render('Auth/Login');
+        if ($request->query('fallback') === 'blade' || $request->routeIs('blade-login')) {
+            return view('auth.login');
         }
 
+        return Inertia::render('Auth/Login', [
+            'heading' => 'Masuk ke dashboard',
+            'brand' => 'Mutiara Florist',
+        ]);
+    }
+
+    public function showBlade(): View
+    {
         return view('auth.login');
     }
 
