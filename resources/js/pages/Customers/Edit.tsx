@@ -1,8 +1,10 @@
 import type { FormEvent } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { ArrowLeft, Loader2, Save } from 'lucide-react';
+import { ArrowLeft, Save } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
+import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { FormField, Input, Textarea } from '@/components/ui/input';
 
 type CustomerEditProps = {
     customer: {
@@ -29,37 +31,28 @@ export default function CustomersEdit({ customer }: CustomerEditProps) {
         <AppLayout title="Edit Pelanggan">
             <Head title={`Edit ${customer.name}`} />
 
-            <div className="mb-6">
+            <div className="mb-5">
                 <Link
                     href={`/ui-customers/${customer.id}`}
-                    className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-800 hover:underline"
+                    className="inline-flex min-h-[44px] items-center gap-1.5 text-sm font-semibold text-[#143326] hover:underline"
                 >
                     <ArrowLeft className="size-4" aria-hidden="true" />
                     Detail pelanggan
                 </Link>
-                <div className="mt-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-800">
-                        Perubahan Data
-                    </p>
-                    <h1 className="break-words text-3xl font-semibold tracking-tight text-emerald-950">
+                <div className="mt-2">
+                    <h1 className="break-words font-[var(--font-display)] text-[clamp(20px,2.2vw,25px)] font-semibold leading-tight tracking-[-0.015em] text-[#1E2420]">
                         Edit: {customer.name}
                     </h1>
-                    <p className="mt-1.5 text-sm text-stone-500">
+                    <p className="mt-1 text-sm text-[#525B54]">
                         Perubahan akan tercatat pada riwayat audit sistem.
                     </p>
                 </div>
             </div>
 
-            <Card className="max-w-2xl p-6">
-                <form noValidate onSubmit={handleSubmit} className="space-y-6">
-                    <div>
-                        <label
-                            htmlFor="name"
-                            className="mb-1.5 block text-sm font-medium text-stone-800"
-                        >
-                            Nama pelanggan <span className="text-red-700">*</span>
-                        </label>
-                        <input
+            <Card className="max-w-2xl border-[#E3DED4] p-5 sm:p-6">
+                <form noValidate onSubmit={handleSubmit} className="space-y-5">
+                    <FormField id="name" label="Nama pelanggan" required error={errors.name}>
+                        <Input
                             type="text"
                             id="name"
                             name="name"
@@ -69,23 +62,17 @@ export default function CustomersEdit({ customer }: CustomerEditProps) {
                             required
                             autoFocus
                             autoComplete="name"
-                            className="w-full rounded-lg border border-stone-300 px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/10"
+                            invalid={Boolean(errors.name)}
                         />
-                        {errors.name && (
-                            <p role="alert" className="mt-1.5 text-xs text-red-700">
-                                {errors.name}
-                            </p>
-                        )}
-                    </div>
+                    </FormField>
 
-                    <div>
-                        <label
-                            htmlFor="phone"
-                            className="mb-1.5 block text-sm font-medium text-stone-800"
-                        >
-                            Nomor telepon <span className="font-normal text-stone-400">(opsional)</span>
-                        </label>
-                        <input
+                    <FormField
+                        id="phone"
+                        label="Nomor telepon (opsional)"
+                        hint="Nomor telepon tidak harus unik. Dua pelanggan boleh menggunakan nomor yang sama."
+                        error={errors.phone}
+                    >
+                        <Input
                             type="tel"
                             id="phone"
                             name="phone"
@@ -94,26 +81,12 @@ export default function CustomersEdit({ customer }: CustomerEditProps) {
                             maxLength={50}
                             autoComplete="tel"
                             placeholder="Contoh: 081234567890"
-                            className="w-full rounded-lg border border-stone-300 px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/10"
+                            invalid={Boolean(errors.phone)}
                         />
-                        <p className="mt-1.5 text-xs text-stone-500">
-                            Nomor telepon tidak harus unik. Dua pelanggan boleh menggunakan nomor yang sama.
-                        </p>
-                        {errors.phone && (
-                            <p role="alert" className="mt-1.5 text-xs text-red-700">
-                                {errors.phone}
-                            </p>
-                        )}
-                    </div>
+                    </FormField>
 
-                    <div>
-                        <label
-                            htmlFor="notes"
-                            className="mb-1.5 block text-sm font-medium text-stone-800"
-                        >
-                            Catatan <span className="font-normal text-stone-400">(opsional)</span>
-                        </label>
-                        <textarea
+                    <FormField id="notes" label="Catatan (opsional)" error={errors.notes}>
+                        <Textarea
                             id="notes"
                             name="notes"
                             value={data.notes}
@@ -121,34 +94,18 @@ export default function CustomersEdit({ customer }: CustomerEditProps) {
                             maxLength={2000}
                             rows={4}
                             placeholder="Contoh: instruksi khusus pelanggan"
-                            className="w-full rounded-lg border border-stone-300 px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/10"
+                            invalid={Boolean(errors.notes)}
                         />
-                        {errors.notes && (
-                            <p role="alert" className="mt-1.5 text-xs text-red-700">
-                                {errors.notes}
-                            </p>
-                        )}
-                    </div>
+                    </FormField>
 
-                    <div className="flex flex-wrap items-center gap-3 border-t border-stone-200 pt-5">
-                        <button
-                            type="submit"
-                            disabled={processing}
-                            className="inline-flex items-center gap-2 rounded-lg bg-emerald-950 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-900 disabled:opacity-50"
-                        >
-                            {processing ? (
-                                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                            ) : (
-                                <Save className="size-4" aria-hidden="true" />
-                            )}
-                            Simpan perubahan
-                        </button>
-                        <Link
-                            href={`/ui-customers/${customer.id}`}
-                            className="rounded-lg border border-stone-200 px-5 py-2.5 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-50"
-                        >
-                            Batal
-                        </Link>
+                    <div className="flex flex-wrap items-center gap-3 border-t border-[#E3DED4] pt-5">
+                        <Button type="submit" variant="primary" disabled={processing}>
+                            <Save className="size-4" aria-hidden="true" />
+                            {processing ? 'Menyimpan...' : 'Simpan perubahan'}
+                        </Button>
+                        <Button asChild variant="secondary">
+                            <Link href={`/ui-customers/${customer.id}`}>Batal</Link>
+                        </Button>
                     </div>
                 </form>
             </Card>

@@ -1,5 +1,38 @@
 import type { PageProps } from '@inertiajs/core';
 
+export type DashboardQueueItem = {
+    item_id: number;
+    order_id: number;
+    order_number: string;
+    customer_name: string;
+    flower_type: string;
+    recipient: string;
+    delivery_location: string;
+    delivery_date: string;
+    delivery_date_raw: string;
+    quantity: number;
+    fulfillment_status: FulfillmentStatus;
+    next_status: FulfillmentStatus | null;
+    urgency: 'overdue' | 'today' | 'upcoming';
+};
+
+export type DashboardQueueSummary = {
+    total_count: number;
+    overdue_count: number;
+    today_count: number;
+};
+
+export type DashboardReceivableItem = {
+    id: number;
+    order_number: string;
+    order_date: string;
+    customer_name: string;
+    total_amount: number;
+    paid_amount: number;
+    outstanding: number;
+    payment_status: PaymentStatus;
+};
+
 export type DashboardStats = {
     orders: number;
     billed: number;
@@ -101,9 +134,9 @@ export type OrderFormItem = {
     delivery_date: string;
     delivery_location: string;
     quantity: number;
-    unit_price: number;
+    unit_price: number | null;
     shipping_mode: 'INCLUDED' | 'SEPARATE';
-    shipping_fee: number;
+    shipping_fee: number | null;
     fulfillment_status?: FulfillmentStatus;
     _initialStatus?: FulfillmentStatus;
     notes: string;
@@ -150,6 +183,9 @@ export type OrderListItem = {
     order_number: string;
     order_date: string;
     order_date_raw?: string;
+    earliest_delivery_date?: string | null;
+    earliest_delivery_date_raw?: string | null;
+    first_flower?: string | null;
     customer: {
         id: number;
         name: string;
@@ -160,6 +196,20 @@ export type OrderListItem = {
     payment_status: PaymentStatus;
     payment_status_label: string;
     items_count: number;
+};
+
+export type CustomerOrderHistoryItem = {
+    id: number;
+    order_number: string;
+    order_date: string | null;
+    status: OrderStatus;
+    total_amount: number;
+    paid_amount: number;
+    outstanding: number;
+    payment_status: PaymentStatus;
+    items_count: number;
+    first_flower: string | null;
+    earliest_delivery_date: string | null;
 };
 
 export type OrderItemDetail = {

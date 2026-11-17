@@ -19,6 +19,9 @@ function formatLabel(label: string): string {
         .replace(/next/gi, 'Berikutnya');
 }
 
+/**
+ * Kontrol paginasi Botanical Studio dengan target sentuh minimal 44x44px.
+ */
 export function Pagination({ links, from, to, total, itemLabel = 'data', className }: PaginationProps) {
     if (total === 0 || links.length <= 1) {
         return null;
@@ -27,25 +30,28 @@ export function Pagination({ links, from, to, total, itemLabel = 'data', classNa
     return (
         <nav
             aria-label="Paginasi"
-            className={cn('flex flex-col items-center justify-between gap-4 sm:flex-row', className)}
+            className={cn('flex flex-col items-center justify-between gap-3 sm:flex-row', className)}
         >
-            <p className="text-xs text-stone-500">
-                Menampilkan <span className="font-medium text-stone-800">{from ?? 0}</span> sampai{' '}
-                <span className="font-medium text-stone-800">{to ?? 0}</span> dari{' '}
-                <span className="font-medium text-stone-800">{total}</span> {itemLabel}
+            <p className="text-[13px] text-[#525B54] tabular-nums">
+                Menampilkan <span className="font-semibold text-[#1E2420]">{from ?? 0}</span> sampai{' '}
+                <span className="font-semibold text-[#1E2420]">{to ?? 0}</span> dari{' '}
+                <span className="font-semibold text-[#1E2420]">{total}</span> {itemLabel}
             </p>
 
-            <ul className="flex flex-wrap items-center gap-1">
+            <ul className="flex flex-wrap items-center gap-1.5">
                 {links.map((link, index) => {
                     const label = formatLabel(link.label);
-                    const isPrevNext = link.label.includes('&laquo;') || link.label.includes('&raquo;') || /previous|next/i.test(link.label);
+                    const isPrevNext =
+                        link.label.includes('&laquo;') ||
+                        link.label.includes('&raquo;') ||
+                        /previous|next/i.test(link.label);
 
                     if (!link.url) {
                         return (
                             <li key={index}>
                                 <span
                                     aria-disabled="true"
-                                    className="inline-flex min-h-9 min-w-9 items-center justify-center rounded-lg px-3 py-1.5 text-xs text-stone-300"
+                                    className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md px-3 py-2 text-xs font-medium text-[#525B54]/45"
                                 >
                                     {label}
                                 </span>
@@ -61,11 +67,11 @@ export function Pagination({ links, from, to, total, itemLabel = 'data', classNa
                                 preserveState
                                 aria-current={link.active ? 'page' : undefined}
                                 className={cn(
-                                    'inline-flex min-h-9 min-w-9 items-center justify-center rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
+                                    'inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md px-3 py-2 text-xs transition-colors',
                                     link.active
-                                        ? 'bg-emerald-950 font-semibold text-white'
-                                        : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900',
-                                    isPrevNext && 'border border-stone-200 bg-white hover:bg-stone-50',
+                                        ? 'bg-[#143326] font-bold text-white'
+                                        : 'font-semibold text-[#1E2420] hover:bg-[#F1EDE6]',
+                                    isPrevNext && !link.active && 'border border-[#858E87] bg-white',
                                 )}
                             >
                                 {label}

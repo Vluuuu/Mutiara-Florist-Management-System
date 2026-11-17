@@ -1,11 +1,14 @@
-import { useState, type FormEvent } from 'react';
-import { Head, Link, router } from '@inertiajs/react';
-import { Plus, Search, User, Users, X } from 'lucide-react';
+import { useEffect, useState, type FormEvent } from 'react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import { AlertCircle, Plus, Search, Users, X } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
-import { Card } from '@/components/ui/card';
 import { Pagination } from '@/components/pagination';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { ResponsiveDataList, type DataColumn } from '@/components/ui/responsive-data-list';
 import { formatAmount } from '@/lib/format';
-import type { CustomerItem, PaginatedData } from '@/types';
+import type { AppPageProps, CustomerItem, PaginatedData } from '@/types';
 
 type CustomersIndexProps = {
     customers: PaginatedData<CustomerItem>;
@@ -15,14 +18,29 @@ type CustomersIndexProps = {
 };
 
 export default function CustomersIndex({ customers, filters }: CustomersIndexProps) {
+    const { errors } = usePage<AppPageProps>().props;
     const [search, setSearch] = useState(filters.q ?? '');
+    const [isLoading, setIsLoading] = useState(false);
     const isSearching = (filters.q ?? '').trim() !== '';
+
+    useEffect(() => {
+        setSearch(filters.q ?? '');
+    }, [filters.q]);
+
+    useEffect(() => {
+        const stopStart = router.on('start', () => setIsLoading(true));
+        const stopFinish = router.on('finish', () => setIsLoading(false));
+        return () => {
+            stopStart();
+            stopFinish();
+        };
+    }, []);
 
     const handleSearch = (e: FormEvent) => {
         e.preventDefault();
         router.get(
             '/ui-customers',
-            { q: search },
+            search.trim() ? { q: search.trim() } : {},
             {
                 preserveState: true,
                 preserveScroll: true,
@@ -44,183 +62,247 @@ export default function CustomersIndex({ customers, filters }: CustomersIndexPro
         );
     };
 
+    const columns: DataColumn<CustomerItem>[] = [
+        {
+            key: 'name',
+            header: 'Nama Pelanggan',
+            render: (customer) => (
+                <div>
+                    <Link
+                        href={`/ui-customers/${customer.id}`}
+                        className="inline-flex min-h-[44px] items-center font-bold text-[#143326] hover:underline"
+                    >
+                        {customer.name}
+                    </Link>
+                    {customer.notes && (
+                        <p className="mt-0.5 line-clamp-1 text-xs text-[#525B54]">
+                            {customer.notes}
+                        </p>
+                    )}
+                </div>
+            ),
+        },
+        {
+            key: 'phone',
+            header: 'No. Telepon / WA',
+            cellClassName: 'whitespace-nowrap',
+            render: (customer) => (
+                <span className="font-[var(--font-mono)] text-[13px] text-[#1E2420] tabular-nums">
+                    {customer.phone || '-'}
+                </span>
+            ),
+        },
+        {
+            key: 'orders_count',
+            header: 'Total Pesanan',
+            align: 'right',
+            cellClassName: 'whitespace-nowrap',
+            render: (customer) => (
+                <span className="font-semibold text-[#1E2420] tabular-nums">
+                    {formatAmount(customer.orders_count)} pesanan
+                </span>
+            ),
+        },
+        {
+            key: 'actions',
+            header: 'Aksi',
+            align: 'right',
+            cellClassName: 'whitespace-nowrap',
+            render: (customer) => (
+                <div className="inline-flex items-center justify-end gap-2">
+                    <Button asChild variant="secondary" size="sm">
+                        <Link href={`/ui-orders/create?customer_id=${customer.id}`}>+ Pesan</Link>
+                    </Button>
+                    <Button asChild variant="ghost" size="sm">
+                        <Link href={`/ui-customers/${customer.id}`}>Detail</Link>
+                    </Button>
+                </div>
+            ),
+        },
+    ];
+
+    const searchError = errors?.q;
+
     return (
         <AppLayout title="Pelanggan">
             <Head title="Pelanggan" />
 
-            <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+            <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
                 <div>
-                    <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-800">
-                        Direktori
-                    </p>
-                    <h1 className="text-3xl font-semibold tracking-tight text-emerald-950">
-                        Pelanggan
+                    <h1 className="font-[var(--font-display)] text-[clamp(20px,2.2vw,25px)] font-semibold leading-tight tracking-[-0.015em] text-[#1E2420]">
+                        Direktori Pelanggan
                     </h1>
-                    <p className="mt-2 text-sm text-stone-500">
-                        Cari dan kelola data pemesan bunga.
+                    <p className="mt-1 text-sm text-[#525B54]">
+                        Cari nama atau nomor telepon pemesan, lihat riwayat nota, atau buat pesanan baru.
                     </p>
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
-                    <Link
-                        href="/ui-customers/create"
-                        className="inline-flex min-h-[44px] items-center gap-2 rounded-md bg-[#143326] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0E251B]"
-                    >
-                        <Plus className="size-4" aria-hidden="true" />
-                        Tambah pelanggan
-                    </Link>
+                <div>
+                    <Button asChild variant="primary">
+                        <Link href="/ui-customers/create">
+                            <Plus className="size-4" aria-hidden="true" />
+                            Tambah Pelanggan
+                        </Link>
+                    </Button>
                 </div>
             </div>
 
-            <Card className="overflow-hidden">
+            {searchError && (
+                <div
+                    role="alert"
+                    className="mb-4 flex items-start gap-2.5 rounded-md border border-[#991B1B]/40 bg-[#FEE2E2] p-3.5 text-sm font-medium text-[#991B1B]"
+                >
+                    <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                    <span>{searchError}</span>
+                </div>
+            )}
+
+            <Card className="overflow-hidden border-[#E3DED4]">
                 <form
                     onSubmit={handleSearch}
                     role="search"
-                    className="flex flex-col gap-3 border-b border-stone-200 p-4 sm:flex-row sm:items-end"
+                    className="flex flex-col gap-3 border-b border-[#E3DED4] bg-[#FAF8F4]/60 p-4 sm:flex-row sm:items-end"
                 >
                     <div className="w-full sm:max-w-md">
                         <label
                             htmlFor="q"
-                            className="mb-1.5 block text-xs font-semibold text-stone-600"
+                            className="mb-1.5 block text-sm font-semibold text-[#1E2420]"
                         >
                             Cari nama atau nomor telepon
                         </label>
-                        <div className="relative">
-                            <input
+                        <div className="relative flex items-center">
+                            <Input
                                 id="q"
                                 name="q"
                                 type="search"
                                 maxLength={100}
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Contoh: Bu Ani atau 0812..."
-                                className="w-full rounded-lg border border-stone-300 bg-white px-3.5 py-2.5 pr-9 text-sm outline-none transition-colors focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/10"
+                                placeholder="Contoh: Ibu Ratna atau 0812..."
+                                className={search ? 'pr-12' : undefined}
                             />
                             {search && (
                                 <button
                                     type="button"
                                     onClick={handleReset}
-                                    aria-label="Hapus kata kunci"
-                                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-stone-400 hover:text-stone-600"
+                                    aria-label="Hapus kata kunci pencarian"
+                                    className="absolute right-0 inline-flex size-11 items-center justify-center rounded text-[#525B54] hover:bg-[#F1EDE6] hover:text-[#1E2420]"
                                 >
                                     <X className="size-4" aria-hidden="true" />
                                 </button>
                             )}
                         </div>
                     </div>
-                    <div className="flex gap-2">
-                        <button
-                            type="submit"
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-900 bg-emerald-950 px-4 py-2.5 text-sm font-medium text-white hover:bg-emerald-900"
-                        >
+                    <div className="flex flex-wrap gap-2">
+                        <Button type="submit" variant="primary" disabled={isLoading}>
                             <Search className="size-4" aria-hidden="true" />
-                            Cari
-                        </button>
+                            {isLoading ? 'Mencari...' : 'Cari'}
+                        </Button>
                         {isSearching && (
-                            <button
-                                type="button"
-                                onClick={handleReset}
-                                className="rounded-lg border border-stone-200 px-4 py-2.5 text-sm font-medium text-stone-600 hover:bg-stone-50"
-                            >
-                                Reset
-                            </button>
+                            <Button type="button" variant="secondary" onClick={handleReset}>
+                                Reset Filter
+                            </Button>
                         )}
                     </div>
                 </form>
 
-                {customers.data.length === 0 ? (
-                    <div className="px-6 py-16 text-center">
-                        <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-stone-100 text-stone-400">
-                            {isSearching ? (
-                                <Search className="size-6" aria-hidden="true" />
-                            ) : (
-                                <Users className="size-6" aria-hidden="true" />
-                            )}
-                        </div>
-                        <h2 className="text-base font-semibold text-stone-800">
-                            {isSearching ? 'Pelanggan tidak ditemukan' : 'Belum ada pelanggan'}
-                        </h2>
-                        <p className="mt-2 text-sm text-stone-500">
-                            {isSearching
-                                ? 'Coba kata kunci lain atau reset pencarian.'
-                                : 'Tambahkan pelanggan pertama untuk mulai mencatat pesanan.'}
-                        </p>
-                        {!isSearching && (
-                            <Link
-                                href="/ui-customers/create"
-                                className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-800 underline underline-offset-4 hover:text-emerald-900"
-                            >
-                                <Plus className="size-4" aria-hidden="true" />
-                                Tambah pelanggan
-                            </Link>
-                        )}
+                {isLoading && (
+                    <div
+                        aria-busy="true"
+                        className="border-b border-[#E3DED4] bg-[#F1EDE6]/60 px-4 py-2 text-xs font-semibold text-[#525B54]"
+                    >
+                        Memuat daftar pelanggan terbaru...
                     </div>
-                ) : (
-                    <>
-                        <div className="overflow-x-auto">
-                            <table className="w-full min-w-[620px] text-left text-sm">
-                                <thead className="bg-stone-50 text-xs uppercase tracking-wide text-stone-500">
-                                    <tr>
-                                        <th scope="col" className="px-5 py-3 font-semibold">
-                                            Nama pelanggan
-                                        </th>
-                                        <th scope="col" className="px-5 py-3 font-semibold">
-                                            Telepon
-                                        </th>
-                                        <th scope="col" className="px-5 py-3 font-semibold">
-                                            Pesanan
-                                        </th>
-                                        <th scope="col" className="px-5 py-3 text-right font-semibold">
-                                            Aksi
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-stone-100">
-                                    {customers.data.map((customer) => (
-                                        <tr key={customer.id} className="hover:bg-stone-50/80">
-                                            <td className="px-5 py-4 font-medium text-stone-900">
-                                                <div className="flex items-center gap-2.5">
-                                                    <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-xs font-semibold text-emerald-900">
-                                                        <User className="size-3.5" aria-hidden="true" />
-                                                    </span>
-                                                    <span className="break-words">{customer.name}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-5 py-4 text-stone-600">
-                                                {customer.phone || '—'}
-                                            </td>
-                                            <td className="px-5 py-4 text-stone-600">
-                                                {formatAmount(customer.orders_count)}
-                                            </td>
-                                            <td className="px-5 py-4 text-right">
-                                                <Link
-                                                    href={`/ui-customers/${customer.id}`}
-                                                    className="font-medium text-emerald-800 hover:underline"
-                                                >
-                                                    Lihat
-                                                </Link>
-                                                <Link
-                                                    href={`/ui-customers/${customer.id}/edit`}
-                                                    className="ml-4 font-medium text-stone-600 hover:underline"
-                                                >
-                                                    Edit
-                                                </Link>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                )}
 
-                        <div className="border-t border-stone-200 px-5 py-4">
-                            <Pagination
-                                links={customers.links}
-                                from={customers.from}
-                                to={customers.to}
-                                total={customers.total}
-                                itemLabel="pelanggan"
-                            />
-                        </div>
-                    </>
+                <div className="p-3 lg:p-0">
+                    <ResponsiveDataList
+                        items={customers.data}
+                        columns={columns}
+                        keyExtractor={(customer) => customer.id}
+                        tableAriaLabel="Daftar pelanggan Mutiara Florist"
+                        renderMobileCard={(customer) => (
+                            <article className="flex flex-col gap-3 rounded-lg border border-[#E3DED4] bg-white p-3.5">
+                                <div className="flex items-start justify-between gap-2">
+                                    <div className="min-w-0">
+                                        <Link
+                                            href={`/ui-customers/${customer.id}`}
+                                            className="inline-flex min-h-[44px] items-center text-[15px] font-bold text-[#143326] hover:underline"
+                                        >
+                                            {customer.name}
+                                        </Link>
+                                        <p className="mt-0.5 font-[var(--font-mono)] text-[13px] text-[#525B54] tabular-nums">
+                                            {customer.phone || 'Nomor telepon belum diisi'}
+                                        </p>
+                                    </div>
+                                    <span className="shrink-0 rounded-full bg-[#F1EDE6] px-2.5 py-1 text-xs font-bold text-[#1E2420] tabular-nums">
+                                        {formatAmount(customer.orders_count)} pesanan
+                                    </span>
+                                </div>
+
+                                {customer.notes && (
+                                    <p className="line-clamp-2 text-[13px] text-[#525B54]">
+                                        {customer.notes}
+                                    </p>
+                                )}
+
+                                <div className="grid grid-cols-2 gap-2 pt-1">
+                                    <Button asChild variant="secondary" size="default">
+                                        <Link href={`/ui-customers/${customer.id}`}>Detail</Link>
+                                    </Button>
+                                    <Button asChild variant="primary" size="default">
+                                        <Link href={`/ui-orders/create?customer_id=${customer.id}`}>
+                                            + Pesan
+                                        </Link>
+                                    </Button>
+                                </div>
+                            </article>
+                        )}
+                        emptyState={
+                            <div className="px-6 py-14 text-center">
+                                <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-[#F1EDE6] text-[#525B54]">
+                                    {isSearching ? (
+                                        <Search className="size-6" aria-hidden="true" />
+                                    ) : (
+                                        <Users className="size-6" aria-hidden="true" />
+                                    )}
+                                </div>
+                                <h2 className="text-base font-bold text-[#1E2420]">
+                                    {isSearching ? 'Pelanggan tidak ditemukan' : 'Belum ada pelanggan'}
+                                </h2>
+                                <p className="mt-1.5 text-sm text-[#525B54]">
+                                    {isSearching
+                                        ? 'Coba kata kunci lain atau reset filter pencarian.'
+                                        : 'Tambahkan pelanggan pertama untuk mulai mencatat pesanan.'}
+                                </p>
+                                <div className="mt-5">
+                                    {isSearching ? (
+                                        <Button type="button" variant="secondary" onClick={handleReset}>
+                                            Reset Filter
+                                        </Button>
+                                    ) : (
+                                        <Button asChild variant="primary">
+                                            <Link href="/ui-customers/create">
+                                                <Plus className="size-4" aria-hidden="true" />
+                                                Tambah Pelanggan
+                                            </Link>
+                                        </Button>
+                                    )}
+                                </div>
+                            </div>
+                        }
+                    />
+                </div>
+
+                {customers.last_page > 1 && (
+                    <div className="border-t border-[#E3DED4] bg-[#FAF8F4]/50 px-4 py-3.5">
+                        <Pagination
+                            links={customers.links}
+                            from={customers.from}
+                            to={customers.to}
+                            total={customers.total}
+                            itemLabel="pelanggan"
+                        />
+                    </div>
                 )}
             </Card>
         </AppLayout>

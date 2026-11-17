@@ -16,9 +16,21 @@ class UiDashboardController extends Controller
     public function __invoke(DashboardService $dashboard): Response
     {
         $stats = $dashboard->stats();
+        $queue = $dashboard->activeDeliveryQueue();
+        $receivables = $dashboard->openReceivables();
+        $nowWib = now('Asia/Jakarta');
 
         return Inertia::render('Dashboard', [
             'stats' => $stats,
+            'deliveryQueue' => $queue['items'],
+            'queueSummary' => [
+                'total_count' => $queue['total_count'],
+                'overdue_count' => $queue['overdue_count'],
+                'today_count' => $queue['today_count'],
+            ],
+            'receivables' => $receivables,
+            'todayIso' => $nowWib->toDateString(),
+            'todayDisplay' => $nowWib->locale('id')->translatedFormat('l, d/m/Y'),
             'summary_formatted' => [
                 'billed' => 'Rp'.number_format($stats['billed'], 0, ',', '.'),
                 'received' => 'Rp'.number_format($stats['received'], 0, ',', '.'),
