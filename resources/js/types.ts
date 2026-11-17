@@ -11,10 +11,12 @@ export type DashboardStats = {
 
 export type DashboardNav = {
     dashboard: string;
+    uiDashboard?: string;
     legacyDashboard: string;
     uiCustomers?: string;
     customers: string;
     uiOrders?: string;
+    uiOrdersCreate?: string;
     orders: string;
     uiPayments?: string;
     payments: string;

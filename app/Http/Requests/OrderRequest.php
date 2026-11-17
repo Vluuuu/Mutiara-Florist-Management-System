@@ -71,4 +71,75 @@ class OrderRequest extends FormRequest
             }
         });
     }
+
+    public function attributes(): array
+    {
+        $attributes = [
+            'customer_id' => 'pelanggan',
+            'order_date' => 'tanggal pesanan',
+            'notes' => 'catatan pesanan',
+            'change_reason' => 'alasan perubahan',
+            'items' => 'daftar rangkaian bunga',
+            'items.*.id' => 'item pesanan',
+            'items.*.flower_type' => 'jenis bunga',
+            'items.*.recipient' => 'nama penerima',
+            'items.*.sender_name' => 'nama pengirim ucapan',
+            'items.*.delivery_date' => 'tanggal kirim',
+            'items.*.delivery_location' => 'lokasi pengiriman',
+            'items.*.quantity' => 'jumlah bunga',
+            'items.*.unit_price' => 'harga satuan',
+            'items.*.shipping_mode' => 'skema ongkos kirim',
+            'items.*.shipping_fee' => 'biaya ongkir',
+            'items.*.fulfillment_status' => 'status pengerjaan',
+            'items.*.notes' => 'catatan item',
+        ];
+
+        $items = $this->input('items');
+        if (is_array($items)) {
+            $itemFields = [
+                'id' => 'referensi item',
+                'flower_type' => 'jenis bunga',
+                'recipient' => 'nama penerima',
+                'sender_name' => 'nama pengirim ucapan',
+                'delivery_date' => 'tanggal kirim',
+                'delivery_location' => 'lokasi pengiriman',
+                'quantity' => 'jumlah bunga',
+                'unit_price' => 'harga satuan',
+                'shipping_mode' => 'skema ongkos kirim',
+                'shipping_fee' => 'biaya ongkir',
+                'fulfillment_status' => 'status pengerjaan',
+                'notes' => 'catatan item',
+            ];
+
+            foreach (array_keys($items) as $index) {
+                if (! is_int($index) && ! ctype_digit((string) $index)) {
+                    continue;
+                }
+                $num = ((int) $index) + 1;
+                foreach ($itemFields as $field => $label) {
+                    $attributes["items.{$index}.{$field}"] = "Bunga #{$num} ({$label})";
+                }
+            }
+        }
+
+        return $attributes;
+    }
+
+    public function messages(): array
+    {
+        return [
+            'required' => ':Attribute wajib diisi.',
+            'array' => ':Attribute harus berupa daftar item.',
+            'items.min' => 'Pesanan wajib memiliki minimal :min rangkaian bunga.',
+            'items.max' => 'Pesanan maksimal terdiri dari :max rangkaian bunga.',
+            'exists' => ':Attribute tidak ditemukan atau sudah tidak aktif.',
+            'date_format' => 'Format :attribute harus YYYY-MM-DD.',
+            'integer' => ':Attribute harus berupa angka bulat.',
+            'string' => ':Attribute harus berupa teks.',
+            'min' => ':Attribute minimal :min.',
+            'max' => ':Attribute melebihi batas maksimal (:max).',
+            'in' => ':Attribute yang dipilih tidak valid.',
+            'distinct' => 'Terdapat duplikasi pada :attribute.',
+        ];
+    }
 }

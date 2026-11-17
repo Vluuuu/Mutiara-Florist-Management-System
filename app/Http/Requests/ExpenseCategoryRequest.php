@@ -22,4 +22,22 @@ class ExpenseCategoryRequest extends FormRequest
             ],
         ];
     }
+
+    public function attributes(): array
+    {
+        return [
+            'name' => 'nama kategori biaya',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'required' => ':Attribute wajib diisi.',
+            'string' => ':Attribute harus berupa teks.',
+            'min' => ':Attribute minimal :min karakter.',
+            'max' => ':Attribute maksimal :max karakter.',
+            'unique' => ':Attribute sudah terdaftar.',
+        ];
+    }
 }

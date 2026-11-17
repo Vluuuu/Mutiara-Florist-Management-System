@@ -19,4 +19,22 @@ class CustomerRequest extends FormRequest
             'notes' => ['nullable', 'string', 'max:2000'],
         ];
     }
+
+    public function attributes(): array
+    {
+        return [
+            'name' => 'nama pelanggan',
+            'phone' => 'nomor telepon',
+            'notes' => 'catatan pelanggan',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'required' => ':Attribute wajib diisi.',
+            'string' => ':Attribute harus berupa teks.',
+            'max' => ':Attribute maksimal :max karakter.',
+        ];
+    }
 }

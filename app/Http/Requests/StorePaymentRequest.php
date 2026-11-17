@@ -23,4 +23,30 @@ class StorePaymentRequest extends FormRequest
             'idempotency_key' => ['required', 'uuid'],
         ];
     }
+
+    public function attributes(): array
+    {
+        return [
+            'payment_date' => 'tanggal pembayaran',
+            'amount' => 'nominal pembayaran',
+            'method' => 'metode pembayaran',
+            'reference' => 'nomor referensi',
+            'notes' => 'catatan pembayaran',
+            'idempotency_key' => 'kunci transaksi',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'required' => ':Attribute wajib diisi.',
+            'date_format' => 'Format :attribute harus YYYY-MM-DD.',
+            'integer' => ':Attribute harus berupa angka Rupiah bulat.',
+            'min' => ':Attribute minimal :min.',
+            'max' => ':Attribute melebihi batas maksimal.',
+            'in' => ':Attribute yang dipilih tidak valid.',
+            'string' => ':Attribute harus berupa teks.',
+            'uuid' => ':Attribute tidak valid. Muat ulang halaman lalu coba lagi.',
+        ];
+    }
 }

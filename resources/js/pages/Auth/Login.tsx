@@ -1,13 +1,16 @@
 import { useState, type FormEvent } from 'react';
 import { Head, useForm } from '@inertiajs/react';
-import { Flower2, Lock, LogIn, Mail } from 'lucide-react';
+import { Eye, EyeOff, Lock, LogIn, Mail } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 
 type LoginProps = {
     errors?: Record<string, string>;
 };
 
-export default function Login({ errors: initialErrors }: LoginProps) {
+export default function Login(_props: LoginProps) {
+    const [showPassword, setShowPassword] = useState(false);
+
     const { data, setData, post, processing, errors } = useForm({
         email: '',
         password: '',
@@ -19,45 +22,50 @@ export default function Login({ errors: initialErrors }: LoginProps) {
     };
 
     return (
-        <div className="flex min-h-screen flex-col items-center justify-center bg-stone-50 px-5 py-12 text-stone-900 antialiased">
-            <Head title="Masuk — Mutiara Florist Management System" />
+        <div className="flex min-h-screen flex-col items-center justify-center bg-[#FBF9F6] px-4 py-10 text-[#1E2420] antialiased">
+            <Head title="Masuk" />
 
             <main className="w-full max-w-[420px]">
-                <div className="mb-8 text-center">
-                    <span className="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-emerald-950 text-white shadow-md">
-                        <Flower2 className="size-7" aria-hidden="true" />
+                <div className="mb-7 text-center">
+                    <span
+                        aria-hidden="true"
+                        className="mx-auto mb-3.5 grid size-12 place-items-center rounded-xl bg-[#143326] font-[var(--font-display)] text-2xl font-semibold text-[#E6EFEA]"
+                    >
+                        M
                     </span>
-                    <h1 className="text-2xl font-bold tracking-tight text-emerald-950">
+                    <h1 className="font-[var(--font-display)] text-2xl font-semibold tracking-tight text-[#1E2420]">
                         Mutiara Florist
                     </h1>
-                    <p className="mt-1.5 text-sm text-stone-500">
-                        Management System · Masuk untuk mengelola pesanan dan operasional
+                    <p className="mt-1 text-sm text-[#525B54]">
+                        Masuk untuk mengelola pesanan, pengiriman, dan kas toko
                     </p>
                 </div>
 
-                <Card className="border border-stone-200 bg-white p-7 shadow-sm sm:p-8">
-                    <h2 className="mb-6 text-lg font-semibold text-stone-900">
-                        Masuk ke dashboard
-                    </h2>
+                <Card className="p-6 sm:p-7">
+                    <h2 className="mb-5 text-base font-bold text-[#1E2420]">Masuk ke Akun Admin</h2>
 
                     {errors.email && (
                         <div
                             role="alert"
-                            className="mb-5 rounded-lg border border-red-200 bg-red-50 p-3.5 text-xs text-red-800"
+                            className="mb-4 rounded-md border border-[#991B1B]/40 bg-[#FEE2E2] p-3 text-sm font-medium text-[#991B1B]"
                         >
                             {errors.email}
                         </div>
                     )}
 
-                    <form onSubmit={handleSubmit} className="space-y-5">
+                    <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
                             <label
                                 htmlFor="email"
-                                className="mb-1.5 block text-xs font-semibold text-stone-700"
+                                className="mb-1.5 block text-sm font-semibold text-[#1E2420]"
                             >
                                 Email admin
                             </label>
                             <div className="relative">
+                                <Mail
+                                    className="pointer-events-none absolute left-3 top-3.5 size-4 text-[#525B54]"
+                                    aria-hidden="true"
+                                />
                                 <input
                                     id="email"
                                     type="email"
@@ -67,60 +75,62 @@ export default function Login({ errors: initialErrors }: LoginProps) {
                                     autoComplete="username"
                                     value={data.email}
                                     onChange={(e) => setData('email', e.target.value)}
-                                    placeholder="admin@example.com"
-                                    className="w-full rounded-lg border border-stone-300 bg-white py-2.5 pl-9 pr-3 text-sm focus:border-emerald-800 focus:outline-none focus:ring-1 focus:ring-emerald-800"
+                                    placeholder="admin@mutiaraflorist.com"
+                                    aria-invalid={errors.email ? true : undefined}
+                                    className="min-h-[44px] w-full rounded-md border-[1.5px] border-[#858E87] bg-white py-2 pl-9 pr-3 text-[15px] text-[#1E2420] placeholder:text-[#525B54]/75 focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[#143326]"
                                 />
-                                <Mail className="pointer-events-none absolute left-3 top-3 size-4 text-stone-400" />
                             </div>
                         </div>
 
                         <div>
                             <label
                                 htmlFor="password"
-                                className="mb-1.5 block text-xs font-semibold text-stone-700"
+                                className="mb-1.5 block text-sm font-semibold text-[#1E2420]"
                             >
                                 Password
                             </label>
-                            <div className="relative">
+                            <div className="relative flex items-center">
+                                <Lock
+                                    className="pointer-events-none absolute left-3 size-4 text-[#525B54]"
+                                    aria-hidden="true"
+                                />
                                 <input
                                     id="password"
-                                    type="password"
+                                    type={showPassword ? 'text' : 'password'}
                                     name="password"
                                     required
                                     autoComplete="current-password"
                                     value={data.password}
                                     onChange={(e) => setData('password', e.target.value)}
-                                    className="w-full rounded-lg border border-stone-300 bg-white py-2.5 pl-9 pr-3 text-sm focus:border-emerald-800 focus:outline-none focus:ring-1 focus:ring-emerald-800"
+                                    aria-invalid={errors.password ? true : undefined}
+                                    className="min-h-[44px] w-full rounded-md border-[1.5px] border-[#858E87] bg-white py-2 pl-9 pr-12 text-[15px] text-[#1E2420] focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[#143326]"
                                 />
-                                <Lock className="pointer-events-none absolute left-3 top-3 size-4 text-stone-400" />
+                                <button
+                                    type="button"
+                                    aria-label={showPassword ? 'Sembunyikan password' : 'Lihat password'}
+                                    onClick={() => setShowPassword((prev) => !prev)}
+                                    className="absolute right-1.5 inline-flex size-9 items-center justify-center rounded text-[#525B54] hover:bg-[#F1EDE6] hover:text-[#1E2420]"
+                                >
+                                    {showPassword ? (
+                                        <EyeOff className="size-4" aria-hidden="true" />
+                                    ) : (
+                                        <Eye className="size-4" aria-hidden="true" />
+                                    )}
+                                </button>
                             </div>
                             {errors.password && (
-                                <p className="mt-1 text-xs text-red-600">{errors.password}</p>
+                                <p role="alert" className="mt-1 text-xs font-semibold text-[#991B1B]">
+                                    {errors.password}
+                                </p>
                             )}
                         </div>
 
-                        <button
-                            type="submit"
-                            disabled={processing}
-                            className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-950 px-4 py-3 text-sm font-semibold text-white shadow-xs transition-colors hover:bg-emerald-900 disabled:opacity-50"
-                        >
-                            <LogIn className="size-4" />
-                            {processing ? 'Memproses...' : 'Masuk'}
-                        </button>
+                        <Button type="submit" disabled={processing} className="w-full">
+                            <LogIn className="size-4" aria-hidden="true" />
+                            <span>{processing ? 'Memproses...' : 'Masuk'}</span>
+                        </Button>
                     </form>
-                    <div className="mt-4 border-t border-stone-100 pt-4 text-center">
-                        <a
-                            href="/login?fallback=blade"
-                            className="text-xs text-stone-500 hover:text-stone-700 hover:underline"
-                        >
-                            Tampilan Login Klasik (Blade Fallback) →
-                        </a>
-                    </div>
                 </Card>
-
-                <p className="mt-6 text-center text-xs text-stone-400">
-                    Aplikasi internal · Tidak tersedia pendaftaran publik
-                </p>
             </main>
         </div>
     );

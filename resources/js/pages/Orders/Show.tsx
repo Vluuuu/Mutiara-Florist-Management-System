@@ -177,7 +177,6 @@ export default function OrdersShow({ order }: OrdersShowProps) {
     const today = new Date().toISOString().split('T')[0];
 
     const editOrderUrl = `/ui-orders/${order.id}/edit`;
-    const bladeOrderUrl = `/orders/${order.id}`;
     const paymentActionUrl = `/orders/${order.id}#pembayaran`;
 
     // Payment recording modal state
@@ -326,12 +325,6 @@ export default function OrdersShow({ order }: OrdersShowProps) {
                         </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                        <a
-                            href={bladeOrderUrl}
-                            className="rounded-lg border border-stone-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-stone-600 hover:bg-stone-50"
-                        >
-                            Buka di Blade lama
-                        </a>
                         {order.outstanding > 0 && (
                             <button
                                 type="button"

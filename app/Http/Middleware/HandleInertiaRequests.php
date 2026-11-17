@@ -27,6 +27,7 @@ class HandleInertiaRequests extends Middleware
                 'uiCustomers' => route('ui-customers.index'),
                 'customers' => route('customers.index'),
                 'uiOrders' => route('ui-orders.index'),
+                'uiOrdersCreate' => route('ui-orders.create'),
                 'orders' => route('orders.index'),
                 'uiPayments' => route('ui-payments.index'),
                 'payments' => route('payments.index'),

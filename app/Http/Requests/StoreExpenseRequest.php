@@ -25,4 +25,31 @@ class StoreExpenseRequest extends FormRequest
             'idempotency_key' => ['required', 'uuid'],
         ];
     }
+
+    public function attributes(): array
+    {
+        return [
+            'expense_category_id' => 'kategori biaya',
+            'expense_date' => 'tanggal pengeluaran',
+            'amount' => 'nominal pengeluaran',
+            'description' => 'keterangan pengeluaran',
+            'idempotency_key' => 'kunci transaksi',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'required' => ':Attribute wajib diisi.',
+            'integer' => ':Attribute harus berupa angka Rupiah bulat.',
+            'exists' => ':Attribute yang dipilih tidak aktif atau tidak ditemukan.',
+            'date_format' => 'Format :attribute harus YYYY-MM-DD.',
+            'min' => ':Attribute minimal :min.',
+            'amount.min' => 'Nominal pengeluaran minimal Rp1.',
+            'description.min' => 'Keterangan pengeluaran minimal :min karakter.',
+            'max' => ':Attribute melebihi batas maksimal.',
+            'string' => ':Attribute harus berupa teks.',
+            'uuid' => ':Attribute tidak valid. Muat ulang halaman lalu coba lagi.',
+        ];
+    }
 }
