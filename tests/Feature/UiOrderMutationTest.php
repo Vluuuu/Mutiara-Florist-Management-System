@@ -333,4 +333,222 @@ class UiOrderMutationTest extends TestCase
             ])
             ->assertSessionHasErrors('items');
     }
+
+    public function test_admin_can_advance_item_fulfillment_status_monotonically(): void
+    {
+        $order = new Order();
+        $order->forceFill([
+            'order_number' => 'ORD-TEST-FULFILL',
+            'customer_id' => $this->customer->id,
+            'created_by' => $this->admin->id,
+            'order_date' => now()->toDateString(),
+            'status' => 'NEW',
+            'total_amount' => 1200000,
+        ])->save();
+
+        $item1 = new OrderItem();
+        $item1->forceFill([
+            'order_id' => $order->id,
+            'flower_type' => 'Bunga Meja Anggrek',
+            'recipient' => 'Dr. Rina',
+            'sender_name' => 'Keluarga Pasien',
+            'delivery_date' => now()->toDateString(),
+            'delivery_location' => 'RS Siloam',
+            'quantity' => 1,
+            'unit_price' => 600000,
+            'shipping_mode' => 'INCLUDED',
+            'shipping_fee' => 0,
+            'fulfillment_status' => 'NEW',
+        ])->save();
+
+        $item2 = new OrderItem();
+        $item2->forceFill([
+            'order_id' => $order->id,
+            'flower_type' => 'Standing Flower Lily',
+            'recipient' => 'Ibu Maria',
+            'sender_name' => 'Rekan Kantor',
+            'delivery_date' => now()->toDateString(),
+            'delivery_location' => 'Gedung Kesenian',
+            'quantity' => 1,
+            'unit_price' => 600000,
+            'shipping_mode' => 'INCLUDED',
+            'shipping_fee' => 0,
+            'fulfillment_status' => 'NEW',
+        ])->save();
+
+        // 1. Advance item1: NEW -> PROCESSING
+        $this->actingAs($this->admin)
+            ->post(route('ui-orders.items.status', ['order' => $order, 'item' => $item1]), [
+                'target_status' => 'PROCESSING',
+            ])
+            ->assertRedirect(route('ui-orders.show', $order))
+            ->assertSessionHas('success');
+
+        $this->assertSame('PROCESSING', $item1->fresh()->fulfillment_status);
+        $this->assertSame('NEW', $item2->fresh()->fulfillment_status);
+        $this->assertSame('PROCESSING', $order->fresh()->status);
+        $this->assertSame(1200000, (int) $order->fresh()->total_amount);
+
+        // Verify audit log entry
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'order.item_fulfillment_updated',
+            'subject_id' => $order->id,
+        ]);
+
+        // 2. Advance item2: NEW -> PROCESSING
+        $this->actingAs($this->admin)
+            ->post(route('ui-orders.items.status', ['order' => $order, 'item' => $item2]), [
+                'target_status' => 'PROCESSING',
+            ])
+            ->assertRedirect(route('ui-orders.show', $order));
+
+        $this->assertSame('PROCESSING', $item2->fresh()->fulfillment_status);
+        $this->assertSame('PROCESSING', $order->fresh()->status);
+
+        // 3. Advance both to READY
+        $this->actingAs($this->admin)
+            ->post(route('ui-orders.items.status', ['order' => $order, 'item' => $item1]), ['target_status' => 'READY']);
+        $this->actingAs($this->admin)
+            ->post(route('ui-orders.items.status', ['order' => $order, 'item' => $item2]), ['target_status' => 'READY']);
+
+        $this->assertSame('READY', $item1->fresh()->fulfillment_status);
+        $this->assertSame('READY', $item2->fresh()->fulfillment_status);
+        $this->assertSame('READY', $order->fresh()->status);
+
+        // 4. Advance item1 to DELIVERED
+        $this->actingAs($this->admin)
+            ->post(route('ui-orders.items.status', ['order' => $order, 'item' => $item1]), ['target_status' => 'DELIVERED']);
+        $this->assertSame('DELIVERED', $item1->fresh()->fulfillment_status);
+        $this->assertSame('PROCESSING', $order->fresh()->status); // Not all delivered yet
+
+        // 5. Advance item2 to DELIVERED -> Order must become COMPLETED automatically!
+        $this->actingAs($this->admin)
+            ->post(route('ui-orders.items.status', ['order' => $order, 'item' => $item2]), ['target_status' => 'DELIVERED']);
+        $this->assertSame('DELIVERED', $item2->fresh()->fulfillment_status);
+        $this->assertSame('COMPLETED', $order->fresh()->status);
+        $this->assertSame(1200000, (int) $order->fresh()->total_amount);
+    }
+
+    public function test_advance_item_fulfillment_rejects_non_linear_progression(): void
+    {
+        $order = new Order();
+        $order->forceFill([
+            'order_number' => 'ORD-TEST-SKIP',
+            'customer_id' => $this->customer->id,
+            'created_by' => $this->admin->id,
+            'order_date' => now()->toDateString(),
+            'status' => 'NEW',
+            'total_amount' => 500000,
+        ])->save();
+
+        $item = new OrderItem();
+        $item->forceFill([
+            'order_id' => $order->id,
+            'flower_type' => 'Buket Mawar',
+            'recipient' => 'Siti',
+            'sender_name' => 'Budi',
+            'delivery_date' => now()->toDateString(),
+            'delivery_location' => 'Bekasi',
+            'quantity' => 1,
+            'unit_price' => 500000,
+            'shipping_mode' => 'INCLUDED',
+            'shipping_fee' => 0,
+            'fulfillment_status' => 'NEW',
+        ])->save();
+
+        // Attempting to skip to READY directly from NEW must fail
+        $this->actingAs($this->admin)
+            ->post(route('ui-orders.items.status', ['order' => $order, 'item' => $item]), [
+                'target_status' => 'READY',
+            ])
+            ->assertSessionHasErrors('target_status');
+
+        $this->assertSame('NEW', $item->fresh()->fulfillment_status);
+
+        // Attempting to skip to DELIVERED directly from NEW must fail
+        $this->actingAs($this->admin)
+            ->post(route('ui-orders.items.status', ['order' => $order, 'item' => $item]), [
+                'target_status' => 'DELIVERED',
+            ])
+            ->assertSessionHasErrors('target_status');
+
+        $this->assertSame('NEW', $item->fresh()->fulfillment_status);
+    }
+
+    public function test_advance_item_fulfillment_rejects_foreign_order_item(): void
+    {
+        $order1 = new Order();
+        $order1->forceFill([
+            'order_number' => 'ORD-111',
+            'customer_id' => $this->customer->id,
+            'created_by' => $this->admin->id,
+            'order_date' => now()->toDateString(),
+            'status' => 'NEW',
+            'total_amount' => 100000,
+        ])->save();
+
+        $order2 = new Order();
+        $order2->forceFill([
+            'order_number' => 'ORD-222',
+            'customer_id' => $this->customer->id,
+            'created_by' => $this->admin->id,
+            'order_date' => now()->toDateString(),
+            'status' => 'NEW',
+            'total_amount' => 200000,
+        ])->save();
+
+        $item2 = new OrderItem();
+        $item2->forceFill([
+            'order_id' => $order2->id,
+            'flower_type' => 'Item Milik Order 2',
+            'recipient' => 'Target',
+            'sender_name' => 'Pengirim',
+            'delivery_date' => now()->toDateString(),
+            'delivery_location' => 'Tangerang',
+            'quantity' => 1,
+            'unit_price' => 200000,
+            'shipping_mode' => 'INCLUDED',
+            'shipping_fee' => 0,
+            'fulfillment_status' => 'NEW',
+        ])->save();
+
+        // Attempting to update item2 via order1 route must return 404
+        $this->actingAs($this->admin)
+            ->post(route('ui-orders.items.status', ['order' => $order1, 'item' => $item2]), [
+                'target_status' => 'PROCESSING',
+            ])
+            ->assertNotFound();
+    }
+
+    public function test_guest_cannot_advance_item_fulfillment(): void
+    {
+        $order = new Order();
+        $order->forceFill([
+            'order_number' => 'ORD-GUEST',
+            'customer_id' => $this->customer->id,
+            'created_by' => $this->admin->id,
+            'order_date' => now()->toDateString(),
+            'status' => 'NEW',
+            'total_amount' => 100000,
+        ])->save();
+
+        $item = new OrderItem();
+        $item->forceFill([
+            'order_id' => $order->id,
+            'flower_type' => 'Buket Melati',
+            'recipient' => 'Target',
+            'sender_name' => 'Pengirim',
+            'delivery_date' => now()->toDateString(),
+            'delivery_location' => 'Bogor',
+            'quantity' => 1,
+            'unit_price' => 100000,
+            'shipping_mode' => 'INCLUDED',
+            'shipping_fee' => 0,
+            'fulfillment_status' => 'NEW',
+        ])->save();
+
+        $this->post(route('ui-orders.items.status', ['order' => $order, 'item' => $item]), [
+            'target_status' => 'PROCESSING',
+        ])->assertRedirect(route('login'));
+    }
 }

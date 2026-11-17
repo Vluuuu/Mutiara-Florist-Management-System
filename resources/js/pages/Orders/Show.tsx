@@ -13,6 +13,7 @@ import {
     Package,
     Plus,
     ReceiptText,
+    RefreshCw,
     Truck,
     User,
     Wallet,
@@ -21,10 +22,12 @@ import {
 import AppLayout from '@/layouts/app-layout';
 import { Card } from '@/components/ui/card';
 import { formatAmount } from '@/lib/format';
+import { cn } from '@/lib/utils';
 import type {
     AppPageProps,
     FulfillmentStatus,
     OrderDetail,
+    OrderItemDetail,
     OrderPaymentDetail,
     OrderStatus,
     PaymentMethod,
@@ -129,6 +132,46 @@ function PaymentStatusBadge({ status, label }: { status: PaymentStatus; label: s
     }
 }
 
+const FULFILLMENT_CONFIG: Record<
+    FulfillmentStatus,
+    {
+        label: string;
+        nextStatus: FulfillmentStatus | null;
+        actionLabel: string;
+        actionDescription: string;
+        buttonStyle: string;
+    }
+> = {
+    NEW: {
+        label: 'Baru',
+        nextStatus: 'PROCESSING',
+        actionLabel: 'Rangkai / Proses Bunga →',
+        actionDescription: 'Mulai proses perangkaian bunga oleh tim florist.',
+        buttonStyle: 'bg-amber-600 hover:bg-amber-700 text-white',
+    },
+    PROCESSING: {
+        label: 'Diproses',
+        nextStatus: 'READY',
+        actionLabel: 'Bunga Siap Kirim →',
+        actionDescription: 'Rangkaian bunga telah selesai dan siap diantar kurir.',
+        buttonStyle: 'bg-blue-600 hover:bg-blue-700 text-white',
+    },
+    READY: {
+        label: 'Siap kirim',
+        nextStatus: 'DELIVERED',
+        actionLabel: 'Konfirmasi Terkirim di Lokasi ✓',
+        actionDescription: 'Pesanan telah diterima oleh penerima di alamat tujuan.',
+        buttonStyle: 'bg-emerald-800 hover:bg-emerald-900 text-white',
+    },
+    DELIVERED: {
+        label: 'Terkirim',
+        nextStatus: null,
+        actionLabel: '✓ Sudah Terkirim ke Penerima',
+        actionDescription: 'Pengerjaan & pengiriman item ini telah selesai tuntas.',
+        buttonStyle: 'bg-emerald-50 text-emerald-800 border-emerald-200 cursor-default',
+    },
+};
+
 export default function OrdersShow({ order }: OrdersShowProps) {
     const { errors } = usePage<AppPageProps>().props;
     const today = new Date().toISOString().split('T')[0];
@@ -152,6 +195,39 @@ export default function OrdersShow({ order }: OrdersShowProps) {
     const [selectedPayment, setSelectedPayment] = useState<OrderPaymentDetail | null>(null);
     const [voidReason, setVoidReason] = useState<string>('');
     const [isSavingVoid, setIsSavingVoid] = useState(false);
+
+    // Fulfillment advancement modal state
+    const [fulfillmentModalOpen, setFulfillmentModalOpen] = useState(false);
+    const [selectedFulfillmentItem, setSelectedFulfillmentItem] = useState<OrderItemDetail | null>(null);
+    const [targetFulfillmentStatus, setTargetFulfillmentStatus] = useState<FulfillmentStatus | null>(null);
+    const [isSavingFulfillment, setIsSavingFulfillment] = useState(false);
+
+    const handleOpenFulfillmentModal = (item: OrderItemDetail, nextStatus: FulfillmentStatus) => {
+        setSelectedFulfillmentItem(item);
+        setTargetFulfillmentStatus(nextStatus);
+        setFulfillmentModalOpen(true);
+    };
+
+    const handleConfirmFulfillmentSubmit = () => {
+        if (!selectedFulfillmentItem || !targetFulfillmentStatus || isSavingFulfillment) return;
+        setIsSavingFulfillment(true);
+
+        router.post(
+            `/ui-orders/${order.id}/items/${selectedFulfillmentItem.id}/status`,
+            {
+                target_status: targetFulfillmentStatus,
+            },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setFulfillmentModalOpen(false);
+                    setSelectedFulfillmentItem(null);
+                    setTargetFulfillmentStatus(null);
+                },
+                onFinish: () => setIsSavingFulfillment(false),
+            },
+        );
+    };
 
     // Open Payment Modal
     const handleOpenPaymentModal = () => {
@@ -177,11 +253,12 @@ export default function OrdersShow({ order }: OrdersShowProps) {
             if (e.key === 'Escape') {
                 if (paymentModalOpen && !isSavingPayment) setPaymentModalOpen(false);
                 if (voidModalOpen && !isSavingVoid) setVoidModalOpen(false);
+                if (fulfillmentModalOpen && !isSavingFulfillment) setFulfillmentModalOpen(false);
             }
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [paymentModalOpen, voidModalOpen, isSavingPayment, isSavingVoid]);
+    }, [paymentModalOpen, voidModalOpen, fulfillmentModalOpen, isSavingPayment, isSavingVoid, isSavingFulfillment]);
 
     const handleRecordPaymentSubmit = (e: FormEvent) => {
         e.preventDefault();
@@ -400,6 +477,57 @@ export default function OrdersShow({ order }: OrdersShowProps) {
                                 </strong>
                             </div>
                         </div>
+
+                        {/* Kontrol Alur Pengerjaan & Pengiriman (Fulfillment) */}
+                        {(() => {
+                            const cfg = FULFILLMENT_CONFIG[item.fulfillment_status] ?? FULFILLMENT_CONFIG.NEW;
+                            return (
+                                <div className="mt-5 rounded-xl border border-stone-200 bg-stone-50/80 p-4 sm:p-5">
+                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs font-semibold uppercase tracking-wider text-stone-600">
+                                                    Status Pengerjaan:
+                                                </span>
+                                                <ItemFulfillmentBadge status={item.fulfillment_status} />
+                                            </div>
+                                            <p className="mt-1 text-xs text-stone-500">
+                                                {cfg.actionDescription}
+                                            </p>
+                                        </div>
+
+                                        <div className="shrink-0">
+                                            {cfg.nextStatus ? (
+                                                <button
+                                                    type="button"
+                                                    disabled={isSavingFulfillment}
+                                                    onClick={() => handleOpenFulfillmentModal(item, cfg.nextStatus!)}
+                                                    className={cn(
+                                                        'inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-semibold shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-offset-2',
+                                                        cfg.buttonStyle,
+                                                        isSavingFulfillment && 'cursor-not-allowed opacity-60'
+                                                    )}
+                                                >
+                                                    {isSavingFulfillment && selectedFulfillmentItem?.id === item.id ? (
+                                                        <>
+                                                            <RefreshCw className="size-3.5 animate-spin" />
+                                                            <span>Memproses...</span>
+                                                        </>
+                                                    ) : (
+                                                        <span>{cfg.actionLabel}</span>
+                                                    )}
+                                                </button>
+                                            ) : (
+                                                <span className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-100 px-3.5 py-2 text-xs font-semibold text-emerald-900">
+                                                    <CheckCircle2 className="size-4 text-emerald-700" />
+                                                    ✓ Sudah Terkirim ke Penerima
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })()}
                     </Card>
                 ))}
             </div>
@@ -781,6 +909,94 @@ export default function OrdersShow({ order }: OrdersShowProps) {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Konfirmasi Kemajuan Status Fulfillment */}
+            {fulfillmentModalOpen && selectedFulfillmentItem && targetFulfillmentStatus && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="fulfillment-modal-title"
+                >
+                    <div
+                        className="fixed inset-0 bg-stone-900/50 backdrop-blur-xs transition-opacity"
+                        onClick={() => !isSavingFulfillment && setFulfillmentModalOpen(false)}
+                    />
+                    <div className="relative z-10 w-full max-w-md rounded-2xl border border-stone-200 bg-white p-6 shadow-xl sm:p-7">
+                        <div className="flex items-start justify-between gap-4">
+                            <div>
+                                <h3
+                                    id="fulfillment-modal-title"
+                                    className="text-lg font-semibold text-stone-900"
+                                >
+                                    Konfirmasi Status Bunga
+                                </h3>
+                                <p className="mt-1 text-xs text-stone-500">
+                                    Pastikan fisik pengerjaan atau pengiriman bunga sudah sesuai tahap berikut.
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => !isSavingFulfillment && setFulfillmentModalOpen(false)}
+                                disabled={isSavingFulfillment}
+                                className="rounded p-1 text-stone-400 hover:text-stone-600"
+                                aria-label="Tutup"
+                            >
+                                <X className="size-4" />
+                            </button>
+                        </div>
+
+                        <div className="mt-4 rounded-lg border border-stone-200 bg-stone-50 p-3.5 text-xs text-stone-700 space-y-2">
+                            <div>
+                                <span className="font-medium text-stone-500">Item: </span>
+                                <strong className="font-semibold text-stone-900">
+                                    Bunga #{selectedFulfillmentItem.item_number} — {selectedFulfillmentItem.flower_type}
+                                </strong>
+                            </div>
+                            <div>
+                                <span className="font-medium text-stone-500">Penerima: </span>
+                                <span className="text-stone-900">{selectedFulfillmentItem.recipient}</span>
+                                <span className="text-stone-500"> ({selectedFulfillmentItem.delivery_location})</span>
+                            </div>
+                            <div className="flex items-center gap-2 pt-1 font-medium">
+                                <span className="rounded bg-stone-200 px-2 py-0.5 text-stone-800">
+                                    {FULFILLMENT_CONFIG[selectedFulfillmentItem.fulfillment_status]?.label}
+                                </span>
+                                <span className="text-stone-400 font-bold">→</span>
+                                <span className="rounded bg-emerald-100 px-2 py-0.5 text-emerald-900 font-bold">
+                                    {FULFILLMENT_CONFIG[targetFulfillmentStatus as FulfillmentStatus]?.label}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="mt-6 flex justify-end gap-3 pt-2">
+                            <button
+                                type="button"
+                                disabled={isSavingFulfillment}
+                                onClick={() => setFulfillmentModalOpen(false)}
+                                className="rounded-lg border border-stone-200 px-4 py-2.5 text-sm font-medium text-stone-600 hover:bg-stone-50"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                type="button"
+                                disabled={isSavingFulfillment}
+                                onClick={handleConfirmFulfillmentSubmit}
+                                className="inline-flex items-center gap-2 rounded-lg bg-emerald-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                {isSavingFulfillment ? (
+                                    <>
+                                        <RefreshCw className="size-4 animate-spin" />
+                                        <span>Memproses...</span>
+                                    </>
+                                ) : (
+                                    <span>Ya, Majukan Status</span>
+                                )}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

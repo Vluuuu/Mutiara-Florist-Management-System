@@ -30,11 +30,13 @@ class SimpleXlsxExporter
     }
 
     /**
-     * XML entities escaping.
+     * XML entities escaping with illegal control characters stripped.
      */
     public static function xmlEscape(string $value): string
     {
-        return htmlspecialchars($value, ENT_QUOTES | ENT_XML1, 'UTF-8');
+        $clean = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $value) ?? '';
+
+        return htmlspecialchars($clean, ENT_QUOTES | ENT_XML1, 'UTF-8');
     }
 
     /**
@@ -71,30 +73,36 @@ class SimpleXlsxExporter
             return false;
         }
 
-        // 1. [Content_Types].xml
+        // 1. [Content_Types].xml (OPC Package Content Types)
         $contentTypesXml = $this->buildContentTypesXml();
         $zip->addFromString('[Content_Types].xml', $contentTypesXml);
 
-        // 2. _rels/.rels
+        // 2. _rels/.rels (Package Relationships)
         $relsXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             .'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
             .'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'
+            .'<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>'
+            .'<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/>'
             .'</Relationships>';
         $zip->addFromString('_rels/.rels', $relsXml);
 
-        // 3. xl/_rels/workbook.xml.rels
+        // 3. docProps/core.xml & docProps/app.xml
+        $zip->addFromString('docProps/core.xml', $this->buildCorePropsXml());
+        $zip->addFromString('docProps/app.xml', $this->buildAppPropsXml());
+
+        // 4. xl/_rels/workbook.xml.rels
         $workbookRelsXml = $this->buildWorkbookRelsXml();
         $zip->addFromString('xl/_rels/workbook.xml.rels', $workbookRelsXml);
 
-        // 4. xl/workbook.xml
+        // 5. xl/workbook.xml
         $workbookXml = $this->buildWorkbookXml();
         $zip->addFromString('xl/workbook.xml', $workbookXml);
 
-        // 5. xl/styles.xml
+        // 6. xl/styles.xml
         $stylesXml = $this->buildStylesXml();
         $zip->addFromString('xl/styles.xml', $stylesXml);
 
-        // 6. Worksheets
+        // 7. Worksheets
         $sheetIndex = 1;
         foreach ($this->sheets as $sheetData) {
             $sheetXml = $this->buildWorksheetXml($sheetData['rows'], $sheetData['colWidths']);
@@ -108,9 +116,11 @@ class SimpleXlsxExporter
     protected function buildContentTypesXml(): string
     {
         $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            .'<Types xmlns="http://schemas.openxmlformats.org/package/2006/types">'
+            .'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
             .'<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
             .'<Default Extension="xml" ContentType="application/xml"/>'
+            .'<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>'
+            .'<Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>'
             .'<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
             .'<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>';
 
@@ -123,6 +133,43 @@ class SimpleXlsxExporter
         $xml .= '</Types>';
 
         return $xml;
+    }
+
+    protected function buildCorePropsXml(): string
+    {
+        $now = gmdate('Y-m-d\TH:i:s\Z');
+
+        return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            .'<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" '
+            .'xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" '
+            .'xmlns:dcmitype="http://purl.org/dc/dcmitype/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">'
+            .'<dc:creator>Mutiara Florist Management System</dc:creator>'
+            .'<cp:lastModifiedBy>Mutiara Florist Management System</cp:lastModifiedBy>'
+            .'<dcterms:created xsi:type="dcterms:W3CDTF">'.$now.'</dcterms:created>'
+            .'<dcterms:modified xsi:type="dcterms:W3CDTF">'.$now.'</dcterms:modified>'
+            .'</cp:coreProperties>';
+    }
+
+    protected function buildAppPropsXml(): string
+    {
+        $sheetCount = count($this->sheets);
+        $titlesXml = '';
+        foreach (array_keys($this->sheets) as $title) {
+            $titlesXml .= '<vt:lpstr>'.self::xmlEscape($title).'</vt:lpstr>';
+        }
+
+        return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            .'<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" '
+            .'xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">'
+            .'<Application>Mutiara Florist Management System</Application>'
+            .'<DocSecurity>0</DocSecurity>'
+            .'<ScaleCrop>false</ScaleCrop>'
+            .'<HeadingPairs><vt:vector size="2" baseType="variant">'
+            .'<vt:variant><vt:lpstr>Worksheets</vt:lpstr></vt:variant>'
+            .'<vt:variant><vt:i4>'.$sheetCount.'</vt:i4></vt:variant>'
+            .'</vt:vector></HeadingPairs>'
+            .'<TitlesOfParts><vt:vector size="'.$sheetCount.'" baseType="lpstr">'.$titlesXml.'</vt:vector></TitlesOfParts>'
+            .'</Properties>';
     }
 
     protected function buildWorkbookRelsXml(): string
@@ -250,6 +297,12 @@ class SimpleXlsxExporter
 
         $rowIndex = 1;
         foreach ($rows as $row) {
+            if (empty($row)) {
+                $xml .= '<row r="'.$rowIndex.'"/>';
+                $rowIndex++;
+                continue;
+            }
+
             $xml .= '<row r="'.$rowIndex.'">';
             $colIndex = 1;
             foreach ($row as $cell) {
@@ -265,7 +318,11 @@ class SimpleXlsxExporter
                 } else {
                     // String / text - sanitize and XML escape
                     $strVal = self::xmlEscape(self::sanitizeText((string) $val));
-                    $xml .= '<c r="'.$cellRef.'"'.$styleAttr.' t="inlineStr"><is><t>'.$strVal.'</t></is></c>';
+                    if ($strVal === '') {
+                        $xml .= '<c r="'.$cellRef.'"'.$styleAttr.'/>';
+                    } else {
+                        $xml .= '<c r="'.$cellRef.'"'.$styleAttr.' t="inlineStr"><is><t xml:space="preserve">'.$strVal.'</t></is></c>';
+                    }
                 }
 
                 $colIndex++;

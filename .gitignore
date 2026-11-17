@@ -61,3 +61,4 @@ Thumbs.db
 
 # Avoid committing generated artifacts by default
 /coverage/
+/docs/screenshots/
