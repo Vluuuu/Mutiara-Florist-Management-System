@@ -1,8 +1,8 @@
 # DRAFT DESIGN SYSTEM: Mutiara Florist Management System (MFMS)
 
-- **Status:** **PENDING OWNER VISUAL APPROVAL (Phase 8.2: Pilih Arah 1 *Warm Atelier Workspace* atau Arah 2 *Botanical Studio Workspace*)**
-- **Arah Dasar:** *"Warm Florist Ledger & Workshop Desk"* (disempurnakan pada Phase 8.2 berdasarkan riset Shopify Polaris, Material 3, Atlassian, GOV.UK, Square POS, dan NN/g)
-- **Cakupan:** Token warna terukur WCAG AA, sistem navigasi 5-breakpoint (`360px` s.d. `1440px`), komponen form anti-error, pola tabel/kartu adaptif, dan spesifikasi halaman untuk Phase 9. Bagian token final akan dikunci setelah pemilik menyetujui arah visual.
+- **Status:** **PENDING OWNER FINAL DESIGN APPROVAL (Kandidat Utama: Arah 2 *Botanical Studio Workspace* setelah Revisi Phase 8.2)**
+- **Arah Dasar:** *"Warm Florist Ledger & Workshop Desk"* (dipadukan dengan riset Shopify Polaris, Material 3, Atlassian, GOV.UK, Square POS, NN/g, serta diselaraskan 1:1 terhadap `OrderRequest`, `OrderService`, dan `PaymentService`)
+- **Cakupan:** Token warna terukur WCAG AA, sistem navigasi 5-breakpoint (`360px` s.d. `1440px`), kontrak field form tanpa kehilangan data wajib backend, larangan kode enum mentah di teks UI, serta spesifikasi halaman untuk Phase 9. Bagian token final baru dikunci setelah pemilik memberi persetujuan akhir.
 
 ---
 
@@ -61,11 +61,14 @@ Seluruh pasangan warna di bawah telah diuji memakai `.agents/skills/antislop-hum
 - **Keluarga Font (Local-First, Tanpa CDN Wajib):**
   - *Opsi A Heading (`h1`, `h2` bagian):* `Georgia, 'Times New Roman', serif` (memberi suara editorial buku catatan florist yang bekerja offline 100%).
   - *Opsi B & C + Seluruh UI Body/Form/Tabel:* `'Segoe UI', ui-sans-serif, system-ui, -apple-system, sans-serif`.
-- **Skala Tipografi Responsif:**
-  - `h1` Halaman: `clamp(1.5rem, 2.5vw, 2rem)` (`24px` mobile -> `32px` desktop), `line-height: 1.2`, bobot `700`. Hanya satu `<h1>` per halaman, tanpa `<h2>` topbar di atasnya.
-  - `h2` Seksi/Kartu: `1.125rem - 1.25rem` (`18px - 20px`), bobot `700`.
-  - Body & Input: `0.9375rem` (`15px`) atau `0.875rem` (`14px`), minimal `16px` pada input mobile iOS/Android atau cukup jelas agar tidak auto-zoom paksa.
-  - Keterangan / Hint: minimal `0.75rem` (`12px`), dilarang teks `< 12px` pada konten informasi utama.
+- **Skala Tipografi Bisnis Profesional (Revisi Phase 8.2):**
+  - `h1` Halaman: `Fraunces` atau serif sistem hanya pada judul halaman dengan ukuran terkontrol `clamp(20px, 2.2vw, 25px)` (`20px` mobile -> `25px` desktop), `line-height: 1.25`, `font-weight: 600`, `letter-spacing: -0.015em` agar terasa seperti aplikasi operasional bisnis dan tidak terkesan blog/dekoratif. Hanya satu `<h1>` per halaman.
+  - `h2` Seksi/Kartu: Sans-serif `1rem` (`16px`), bobot `700`.
+  - Body & Input: `0.9375rem` (`15px`) atau `0.875rem` (`14px`).
+  - Keterangan / Hint: minimal `0.75rem - 0.8125rem` (`12px - 13px`).
+- **Kepatuhan Bahasa Operator (P1):**
+  - Kode teknis internal (`POSTED`, `VOIDED`, `SEPARATE`, `INCLUDED`, `NEW`, `PROCESSING`, `READY`, `DELIVERED`) hanya dipakai di payload/value kode, **tidak pernah** ditampilkan sebagai kata teks kepada operator. Gunakan istilah alami: `Tercatat`, `Dibatalkan`, `Ditagih terpisah`, `Sudah termasuk harga bunga`, `Baru`, `Diproses`, `Siap kirim`, `Terkirim`.
+  - Karena `order_items.delivery_date` bertipe `DATE` tanpa jam, dilarang menampilkan klaim jam/menit (`13:00 WIB`, `Lewat 30 mnt`) di antarmuka; gunakan status berbasis tanggal (`Terlambat (16/11/2026)`, `Kirim hari ini (17/11/2026)`).
 - **Aturan Angka & Mata Uang (`tabular-nums` Wajib):**
   - Seluruh angka harga, kuantitas, kode pesanan, dan tanggal tabel wajib memakai `font-variant-numeric: tabular-nums`.
   - **Fungsi Tunggal `formatRupiah(amount)`:**
@@ -158,23 +161,22 @@ Seluruh pasangan warna di bawah telah diuji memakai `.agents/skills/antislop-hum
 1. **Login (`/login`):**
    - `<Head title="Masuk" />` (tab: `Masuk - MFMS`), hapus tautan Blade fallback, tambahkan toggle lihat/sembunyikan password (`aria-label`), fokus otomatis pada email, dan pesan error throttling/kredensial dalam bahasa jelas.
 2. **Dashboard (`/dashboard` & `/ui-dashboard`):**
-   - Hapus badge `Phase 3.3 · React` dan kartu `Pengembangan berikutnya`. Samakan props `nav` antara `UiDashboardController` dan `HandleInertiaRequests`.
-   - Tampilkan CTA cepat (`+ Buat Pesanan`, `+ Catat Pengeluaran`), Agenda Pengiriman Hari Ini & Besok (dari `OrderItem` dengan `delivery_date` dekat dan belum `DELIVERED`), serta Ringkasan Kas & Piutang yang membedakan jelas `Uang Diterima`, `Piutang Saat Ini`, dan `Selisih Kas Sederhana (Bukan laba bersih akuntansi)`.
+   - Pada mobile (`< 768px`), urutan visual mendahulukan **Antrean Kiriman Terlambat & Hari Ini** dan **Piutang Belum Lunas** di atas ringkasan KPI 2x2 agar operator kurir/kasir tidak perlu menggulir melewati 4 kartu statistik terlebih dahulu.
+   - Hapus badge `Phase 3.3 · React` dan kartu `Pengembangan berikutnya`. Samakan props `nav` antara `UiDashboardController` dan `HandleInertiaRequests`. Catatan Phase 9: perlu query read-only tambahan di `DashboardService` untuk mengirim antrean `delivery_date` dan daftar piutang teratas.
 3. **Pelanggan Index (`/ui-customers`), Create, Edit, Detail (`/{id}`):**
-   - Hapus tombol Blade lama. Index memakai `<ResponsiveDataList>` + search otomatis/debounce ringan + target klik >= `40px`.
-   - Detail Pelanggan menampilkan **riwayat pesanan pelanggan tersebut** dan tombol **`+ Buat Pesanan`** (`/ui-orders/create?customer_id={id}`), serta menghapus teks usang `"setelah modul Pesanan tersedia"`. Modal Arsip memakai `<Modal>` standar.
+   - Sesuai `CustomerRequest`: `name` wajib, `phone` & `notes` opsional. Detail Pelanggan menampilkan **riwayat pesanan pelanggan** dan tombol **`+ Buat Pesanan`** (`/ui-orders/create?customer_id={id}`).
 4. **Pesanan Index (`/ui-orders`):**
-   - Perbaiki tombol menjadi `+ Buat Pesanan`. Tambah chip filter cepat status (`Semua`, `Baru`, `Diproses`, `Siap Kirim`, `Selesai`). Tampilkan `<OrderCodeBadge>`, ringkasan bunga & jadwal kirim terdekat, serta `<ResponsiveDataList>` pada mobile/tablet.
+   - Perbaiki tombol menjadi `+ Buat Pesanan`. Tambah chip filter cepat status (`Semua`, `Belum Lunas`, `Siap Kirim`, `Diproses`). `<ResponsiveDataList>` pada mobile/tablet.
 5. **Pesanan Create (`/ui-orders/create`) & Edit (`/ui-orders/{id}/edit`):**
-   - Layout 2 kolom desktop dengan ringkasan tagihan *sticky* di kanan.
-   - `<SearchableSelect>` pelanggan (tanpa auto-pilih `customers[0]`), mendukung query `?customer_id=`, serta **Quick-Create Customer Modal** di halaman yang sama.
-   - `<CurrencyInput>` pada harga satuan & ongkir; field `Ongkir tambahan` hanya tampil saat mode `Ditagihkan terpisah`; tombol `Duplikat Bunga` per item; ikat 100% `<label htmlFor>` ke `id` unik item.
-   - Pada Edit: hapus tampilan `ID #...`, jadikan status item `DELIVERED` sebagai teks statis `"Terkirim (Final)"`, dan beri penanda wajib dinamis pada `Alasan perubahan` bila nominal berubah pada order berbayar.
+   - **Tepat 1 tombol utama `Simpan Pesanan` per ukuran layar** (di dalam panel kanan *sticky* pada `>= 1024px`; di bilah simpan bawah pada `< 1024px`). Dilarang menampilkan tombol test/validasi dummy pada form produksi.
+   - Seluruh field wajib `OrderRequest` tetap terpisah (tidak boleh digabung): `customer_id`, `order_date`, `notes`, `change_reason` (muncul saat Edit order berbayar), dan per item `flower_type`, `recipient`, `sender_name`, `delivery_date`, `delivery_location`, `quantity`, `unit_price`, `shipping_mode` (tampil `Ditagih terpisah` / `Sudah termasuk harga bunga`), `shipping_fee` (`Rp0` saat termasuk harga, wajib `> Rp0` saat ditagih terpisah), serta `notes` item.
+   - `<SearchableSelect>` pelanggan tanpa auto-pilih, modal **+ Pelanggan Baru** tanpa menghapus item draf, dan tombol `Duplikat Item` per baris.
 6. **Pesanan Detail (`/ui-orders/{id}`):**
-   - Layout 2 kolom (Item Bunga di kiri + Stepper 4 tahap, Ringkasan Finansial & Riwayat Pembayaran *sticky* di kanan).
-   - Satu tombol `+ Catat Pembayaran` (hapus duplikasi). Link nama pelanggan ke profilnya + tampilkan nomor telepon. Perbaiki deskripsi status `Siap kirim` agar membedakan status saat ini vs aksi berikutnya. Modal Pembayaran memakai `<CurrencyInput>`, modal Void memakai `<CharCounterTextarea>` (`x/10 karakter`), dan regenerasi `idempotency_key` saat retry.
+   - Layout 2 kolom (Item Bunga di kiri + Stepper 4 tahap, Ringkasan Finansial & Riwayat Pembayaran di kanan).
+   - Aksi final **`Tandai Terkirim`** wajib memicu **Modal Konfirmasi** (`Status Terkirim bersifat final dan tidak dapat dikembalikan`). Tombol `Salin Ringkasan WA` menyalin teks nota aktual ke clipboard dengan panel pratinjau manual fallback.
+   - Modal Void wajib validasi minimal **10 karakter** (`VoidPaymentRequest`) lengkap counter `x/10 karakter minimum`.
 7. **Pembayaran & Piutang (`/ui-payments`):**
-   - Hapus tombol Blade lama. Tambahkan tombol cepat **`Catat Bayar`** di setiap baris/kartu piutang yang langsung membuka Modal Catat Pembayaran (mengirim ke endpoint `POST /ui-orders/{order}/payments`), di samping tautan `Detail`. Pakai `<ResponsiveDataList>` untuk mobile.
+   - Utamakan daftar **Tagihan Belum Lunas (Piutang Aktif)** di bagian teratas (`Order No`, `Pelanggan`, `Total`, `Terbayar`, `Sisa Tagihan`, tombol langsung `Catat Bayar` dan `Detail`), sesuai kontrak `UiPaymentController::index()`. Riwayat transaksi `Tercatat`/`Dibatalkan` disajikan sebagai seksi/tab sekunder terpisah di bawahnya agar audit tetap mudah ditemukan.
 8. **Pengeluaran (`/ui-expenses`, `/create`) & Kategori Biaya (`/ui-expense-categories`):**
    - Perbaiki `UiExpenseController::index()` agar memformat `expense_date` (`d/m/Y`) dan `voided_at` (`d/m/Y H:i` WIB), tidak mengirim UTC ISO. Gunakan `formatRupiah()` pada seluruh nominal. Render error filter tanggal `errors.to`. Ganti modal Void manual dan `window.confirm()` kategori dengan `<Modal>` standar. Beri `aria-label` dan target `>= 40px` pada tombol ubah nama kategori, serta dukung tambah kategori cepat dari form pengeluaran.
 9. **Laporan (`/ui-reports`):**

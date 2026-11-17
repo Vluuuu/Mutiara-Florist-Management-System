@@ -1,107 +1,98 @@
-# Phase 8.2 Anti-Slop & Usability QA Report
+# Phase 8.2 Final QA & Backend Contract Checklist Report
 
-Tanggal: 17 November 2026
+Tanggal: 17 November 2026 (Revisi Final Sebelum Design Approval)
 Branch: `design/phase8-human-centered-refinement`
-Tools Verifikasi:
-- `.agents/skills/antislop-human/contrast-check.py` (WCAG 2.x)
-- `agent-browser` CLI v0.43.0 (Chromium nyata lintas 5 ukuran viewport)
-- Inspeksi visual PNG langsung dan pembacaan header PNG (`IHDR` width x height)
+Kandidat Utama: **Arah 2 - Botanical Studio Workspace** (`docs/phase8-2/direction-2-botanical-studio.html`)
+Status Desain: **BELUM MENDAPAT FINAL DESIGN APPROVAL (Menunggu Tinjauan Ulang Pemilik)**
 
 ---
 
-## 1. Status Aktivasi Skill Anti-Slop (`.agents/skills/`)
+## 1. Acceptance Checklist: Kontrak Backend vs Prototipe Form
 
-Seluruh 5 skill proyek terverifikasi terbaca di repositori:
-- `.agents/skills/antislop/SKILL.md` (`53,762` byte)
-- `.agents/skills/antislop-ui/SKILL.md` (`30,486` byte)
-- `.agents/skills/antislop-human/SKILL.md` (`15,921` byte)
-- `.agents/skills/antislop-layoutmobile/SKILL.md` (`16,382` byte)
-- `.agents/skills/antislop-copywriting/SKILL.md` (`27,974` byte)
+Diperiksa langsung terhadap `app/Http/Requests/OrderRequest.php`, `StorePaymentRequest.php`, `VoidPaymentRequest.php`, `CustomerRequest.php`, `app/Services/OrderService.php`, dan migrasi `2026_11_02_000001_create_mfms_core_tables.php`.
 
-Self-test contrast checker:
-- Perintah: `python .agents/skills/antislop-human/contrast-check.py --selftest`
-- Hasil: `selftest: 9 reference pairs OK`
+### 1.1 `OrderRequest` (Buat & Edit Pesanan)
 
----
+| Field Backend & Aturan (`OrderRequest.php`) | Input pada Prototipe Revisi (`direction-2-botanical-studio.html`) | Status |
+| :--- | :--- | :--- |
+| `customer_id` (`required \| integer \| exists:customers`) | Combobox pencarian pelanggan `#customer-search-input` + hidden `#selected-customer-id` (tanpa auto-select; wajib pilih) | **MATCH** |
+| `order_date` (`required \| date_format:Y-m-d`) | Input tanggal `#order-date-input` (`type="date"`) | **MATCH** |
+| `notes` (`nullable \| string \| max:2000`) | Input `#order-general-note` ("Catatan Pesanan (Opsional)") | **MATCH** |
+| `change_reason` (`nullable \| string \| max:500`, dipakai saat Edit order berbayar) | Blok `#edit-change-reason-wrap` tampil saat Edit pesanan yang sudah menerima pembayaran | **MATCH** |
+| `items.*.flower_type` (`required \| string \| max:255`) | `#f-flower-{i}` ("Jenis & Ukuran Bunga *") | **MATCH** |
+| `items.*.recipient` (`required \| string \| max:255`) | `#f-recipient-{i}` ("Nama Penerima *") terpisah dari alamat | **MATCH** |
+| `items.*.sender_name` (`required \| string \| max:255`) | `#f-sender-{i}` ("Nama Pengirim di Pita/Kartu *") terpisah | **MATCH** |
+| `items.*.delivery_date` (`required \| date_format:Y-m-d`, DATE tanpa jam) | `#f-ddate-{i}` ("Tanggal Kirim *"), tanpa input/klaim jam-menit | **MATCH** |
+| `items.*.delivery_location` (`required \| string \| max:1000`) | `#f-loc-{i}` ("Lokasi / Alamat Pengiriman *") terpisah dari penerima | **MATCH** |
+| `items.*.quantity` (`required \| integer \| min:1`) | `#f-qty-{i}` (`type="number" min="1"`) | **MATCH** |
+| `items.*.unit_price` (`required \| integer \| min:0`) | `#f-price-{i}` (`CurrencyInput` bulat Rupiah tanpa desimal) | **MATCH** |
+| `items.*.shipping_mode` (`required \| in:INCLUDED,SEPARATE`) | `#f-shipmode-{i}` (Payload `SEPARATE` tampil `"Ditagih terpisah"`, payload `INCLUDED` tampil `"Sudah termasuk harga bunga"`) | **MATCH** |
+| `items.*.shipping_fee` (`INCLUDED` -> `0`; `SEPARATE` -> `> 0`) | `#f-shipfee-{i}` terkunci `Rp0` saat `INCLUDED`; divalidasi `> Rp0` saat `SEPARATE` (`Ongkir terpisah harus lebih dari Rp0.`) | **MATCH** |
+| `items.*.notes` (`nullable \| string \| max:2000`) | `#f-notes-{i}` ("Catatan Item / Isi Ucapan Pita (Opsional)") | **MATCH** |
 
-## 2. Verifikasi Kontras Warna (WCAG AA & Non-Text 1.4.11)
+### 1.2 `CustomerRequest`, `StorePaymentRequest`, & `VoidPaymentRequest`
 
-Diukur aktual dengan `.agents/skills/antislop-human/contrast-check.py`:
-
-| Pasangan Warna | FG / BG | Rasio Aktual | Hasil |
-| :--- | :--- | :--- | :--- |
-| D1 teks utama / kanvas | `#1C1917` / `#FAF7F2` | `16.37:1` | **PASS** (AA `4.5:1`) |
-| D1 teks sekunder / kartu | `#57534E` / `#FFFFFF` | `7.63:1` | **PASS** |
-| D1 tombol primer | `#FFFFFF` / `#163829` | `12.87:1` | **PASS** |
-| D1 tombol terakota mendesak | `#FFFFFF` / `#B44D2B` | `5.20:1` | **PASS** |
-| D1 batas input / putih | `#8E8577` / `#FFFFFF` | `3.64:1` | **PASS** non-text `3.0:1` (exit 1 pada uji normal text `4.5:1`, memang komponen border) |
-| D2 teks utama / kanvas | `#1E2420` / `#FBF9F6` | `15.04:1` | **PASS** |
-| D2 teks utama / kartu | `#1E2420` / `#FFFFFF` | `15.81:1` | **PASS** |
-| D2 teks sekunder / kanvas | `#525B54` / `#FBF9F6` | `6.70:1` | **PASS** |
-| D2 teks sidebar / rel botani | `#F6F4EF` / `#143326` | `12.48:1` | **PASS** |
-| D2 label grup sidebar / rel | `#C6D7CE` / `#143326` | `9.15:1` | **PASS** |
-| D2 item sidebar aktif | `#143326` / `#E6EFEA` | `11.69:1` | **PASS** |
-| D2 tombol primer | `#FFFFFF` / `#143326` | `13.71:1` | **PASS** |
-| D2 tombol mawar mendesak | `#FFFFFF` / `#8C3B4A` | `7.40:1` | **PASS** |
-| D2 batas input / putih | `#858E87` / `#FFFFFF` | `3.38:1` | **PASS** non-text `3.0:1` |
-| Lencana Paid / POSTED | `#166534` / `#DCFCE7` | `6.49:1` | **PASS** |
-| Lencana Sebagian / Warn | `#92400E` / `#FEF3C7` | `6.37:1` | **PASS** |
-| Lencana Siap Kirim | `#1E40AF` / `#DBEAFE` | `7.15:1` | **PASS** |
-| Lencana Terlambat / Danger | `#991B1B` / `#FEE2E2` | `6.80:1` | **PASS** |
-| Lencana VOIDED / Neutral | `#374151` / `#E5E7EB` | `8.33:1` | **PASS** |
+| Kontrak Backend | Implementasi pada Prototipe Revisi | Status |
+| :--- | :--- | :--- |
+| `CustomerRequest`: `name` wajib, `phone` opsional (`nullable`), `notes` opsional (`nullable`) | Modal `#modal-customer`: `#qc-name` wajib, `#qc-phone` opsional, `#qc-notes` opsional; menyimpan tanpa mereset draf item | **MATCH** |
+| `StorePaymentRequest`: `amount` int `>= 1` maks sisa tagihan, `method` (`CASH\|TRANSFER\|QRIS\|OTHER`), `payment_date`, `reference`, `idempotency_key` (di React) | Modal `#modal-payment`: pre-fill sisa tagihan, validasi integer bulat `1 .. remaining`, pilihan metode Bahasa Indonesia dengan value enum sah | **MATCH** |
+| `VoidPaymentRequest`: `void_reason` (`required \| string \| min:10 \| max:1000`) | Modal `#modal-void`: textarea `#void-reason-input` dengan counter live `0/10 karakter minimum` dan blok submit jika `< 10` karakter | **MATCH** |
 
 ---
 
-## 3. Pengujian Browser Nyata, Temuan Bug & Perbaikan
+## 2. Catatan Kebutuhan Desain yang Belum Didukung Backend
 
-### Masalah yang Tertangkap Saat Inspeksi Visual Screenshot Awal
-1. **Spesifisitas tombol `.tablet-menu-btn`:** Awalnya `.btn { display: inline-flex; }` menimpa `.tablet-menu-btn { display: none; }` sehingga tombol `Menu` muncul ganda pada desktop (`1440px`) dan mobile (`390px`). **Diperbaiki** dengan selektor `.btn.tablet-menu-btn` sehingga hanya tampil pada `768px-1023px`.
-2. **Bilah Simpan Form `position: sticky`:** Pada form panjang yang belum digulir ke bawah (`1440x900` & `360x780`), `.sticky-save-bar` mengambang menutupi baris input `Jumlah` dan `Harga Satuan`. **Diperbaiki** dengan memindahkan aksi `Simpan Pesanan` ke panel ringkasan kanan yang sejajar (desktop) dan menempatkan bar simpan sebagai kartu aksi non-tumpang-tindih di bagian bawah form.
+Hasil audit langsung controller dan service backend saat ini (tanpa mengubah schema atau logika bisnis pada Phase 8.2):
 
-### Hasil Pengujian Matrix Lintas Viewport (Setelah Perbaikan Final)
+1. **Daftar Antrean Kiriman Terlambat & Hari Ini di Dashboard:** `DashboardService::stats()` dan `UiDashboardController` baru mengirim 6 angka statistik kumulatif (`orders`, `billed`, `received`, `outstanding`, `expenses`, `cash_flow`) ke halaman Dashboard, belum mengirim daftar item kiriman terlambat/hari ini maupun daftar tagihan belum lunas teratas. Pada Phase 9 perlu tambahan query read-only di `DashboardService` / `UiDashboardController`.
+2. **Ketidakhadiran Jam Kirim pada `order_items.delivery_date`:** Kolom database bertipe `DATE` saja (tanpa waktu). Desain Phase 8.2 telah menghapus seluruh penanda jam/menit (`13:00 WIB`, `Lewat 30 mnt`) dan memakai indikator berbasis tanggal (`Terlambat (16/11/2026)`, `Kirim hari ini (17/11/2026)`). Jika toko suatu saat butuh jadwal per jam, diperlukan migrasi terpisah di luar Phase 9.
+3. **Riwayat Transaksi Pembayaran Gabungan pada `/ui-payments`:** `UiPaymentController::index()` saat ini mengirim daftar tagihan belum lunas (`PaymentService::getReceivables()`) + `outstanding`, belum mengirim daftar riwayat transaksi individual (`Tercatat`/`Dibatalkan`) ke halaman index Piutang (riwayat pembayaran saat ini hanya dimuat per order di `OrderService::getOrderDetail()`). Desain halaman `Piutang & Pembayaran` telah mengutamakan **Tagihan Belum Lunas** di atas dan menempatkan **Riwayat Transaksi** sebagai blok sekunder yang dapat ditambah read-only query di Phase 9 bila disetujui pemilik.
+4. **Nomor Telepon pada Ringkasan Pencarian Order List:** `OrderService::paginate()` baru memuat `customer:id,name`, belum memuat `phone`.
+5. **Status Blueprint Halaman Pendukung:** Halaman `Pelanggan`, `Pengeluaran`, `Kategori Biaya`, dan `Laporan` pada prototipe masih berstatus *Blueprint Layout Pendukung* dan telah diberi banner penjelas agar tidak dianggap alur produksi penuh.
 
-Seluruh pengukuran di bawah berasal dari jalankan `agent-browser` setelah edit CSS terakhir:
+---
 
-| File & Viewport | Ukuran PNG Aktual (px) | `docSW` / `bodySW` | `maxRight` | `inputsNoLabel` | `smallTargets (<44px)` | Status |
+## 3. Verifikasi Skill Anti-Slop & Kontras Warna
+
+- `.agents/skills/antislop-human/contrast-check.py --selftest` -> `selftest: 9 reference pairs OK`.
+- Seluruh token Arah 2 lulus WCAG AA (`#1E2420`/`#FBF9F6` `15.04:1`, `#525B54`/`#FFFFFF` `7.04:1`, `#F6F4EF`/`#143326` `12.48:1`, `#FFFFFF`/`#143326` `13.71:1`, `#FFFFFF`/`#8C3B4A` `7.40:1`, batas input `#858E87`/`#FFFFFF` `3.38:1` non-text `>= 3.0:1`).
+- Pemeriksaan karakter tipografi & teks kode internal: `em-dash: 0`, `en-dash: 0`, `Uji Validasi Kosong: 0`, dan `leakedTechCodes: []` (nol kemunculan `POSTED`, `VOIDED`, `SEPARATE`, `INCLUDED`, atau klaim jam/menit `13:00`/`15:30`/`17:00`/`mnt` di teks operator `#main-content`).
+
+---
+
+## 4. Hasil Uji Browser Multi-Viewport & Interaksi (Setelah Revisi Final)
+
+Dijalankan melalui `agent-browser` CLI v0.43.0 terhadap `direction-2-botanical-studio.html`:
+
+| Viewport & Layar | Ukuran PNG Aktual | Overflow (`docSW/maxRight`) | `inputsNoLabel` | `smallTargets (<44px)` | Urutan Mobile / Tombol Simpan | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| Arah 1 Dashboard (`1440×900`) | `1440×937` | `1440` / `1440` | `1440` | `0` | N/A | **PASS** |
-| Arah 1 Form (`1440×900`) | `1440×937` | `1440` / `1440` | `1440` | `0` | N/A | **PASS** |
-| Arah 1 Detail (`1440×900`) | `1440×937` | `1440` / `1440` | `1440` | `0` | N/A | **PASS** |
-| Arah 1 Dashboard (`390×844`) | `390×2102` | `390` / `390` | `390` | `0` | `0` | **PASS** |
-| Arah 1 Detail (`390×844`) | `390×1609` | `390` / `390` | `390` | `0` | `0` | **PASS** |
-| Arah 2 Dashboard (`1440×900`) | `1440×953` | `1440` / `1440` | `1440` | `0` | N/A | **PASS** |
-| Arah 2 Pesanan (`1440×900`) | `1440×953` | `1440` / `1440` | `1440` | `0` | N/A | **PASS** |
-| Arah 2 Form (`1440×900`) | `1440×1160` | `1440` / `1440` | `1440` | `0` | N/A | **PASS** |
-| Arah 2 Detail (`1440×900`) | `1440×953` | `1440` / `1440` | `1440` | `0` | N/A | **PASS** |
-| Arah 2 Pembayaran (`1440×900`) | `1440×953` | `1440` / `1440` | `1440` | `0` | N/A | **PASS** |
-| Arah 2 Narrow Desktop (`1024×768`) | `1024×1184` | `1024` / `1024` | `1024` | `0` | N/A | **PASS** |
-| Arah 2 Tablet Dashboard (`768×1024`) | `768×1474` | `768` / `768` | `768` | `0` | N/A | **PASS** |
-| Arah 2 Tablet Form (`768×1024`) | `768×1513` | `768` / `768` | `768` | `0` | N/A | **PASS** |
-| Arah 2 Dashboard (`390×844`) | `390×2212` | `390` / `390` | `390` | `0` | `0` | **PASS** |
-| Arah 2 Pesanan (`390×844`) | `390×1417` | `390` / `390` | `390` | `0` | `0` | **PASS** |
-| Arah 2 Form (`390×844`) | `390×2305` | `390` / `390` | `390` | `0` | `0` | **PASS** |
-| Arah 2 Detail (`390×844`) | `390×2103` | `390` / `390` | `390` | `0` | `0` | **PASS** |
-| Arah 2 Pembayaran (`390×844`) | `390×1100` | `390` / `390` | `390` | `0` | `0` | **PASS** |
-| Arah 2 Small Mobile Dashboard (`360×780`) | `360×2262` | `360` / `360` | `360` | `0` | `0` | **PASS** |
-| Arah 2 Small Mobile Detail (`360×780`) | `360×2209` | `360` / `360` | `360` | `0` | `0` | **PASS** |
-| Arah 2 Small Mobile Form (`360×780`) | `360×2398` | `360` / `360` | `360` | `0` | `0` | **PASS** |
+| `1440×900` Dashboard | `1440×953` | `1440 / 1440` (`0` overflow) | `0` | N/A | KPI atas, antrean + piutang split | **PASS** |
+| `1440×900` Pesanan | `1440×953` | `1440 / 1440` (`0` overflow) | `0` | N/A | Tabel desktop lengkap | **PASS** |
+| `1440×900` Buat Pesanan | `1440×1201` | `1440 / 1440` (`0` overflow) | `0` | N/A | **1** tombol `Simpan Pesanan` (`deskBtns: 1`) | **PASS** |
+| `1440×900` Detail (`MF-261116-09`) | `1440×900` | `1440 / 1440` (`0` overflow) | `0` | N/A | `Salin Ringkasan WA` tampil pratinjau real | **PASS** |
+| `1440×900` Piutang & Bayar | `1440×1109` | `1440 / 1440` (`0` overflow) | `0` | N/A | Tagihan Belum Lunas di atas + riwayat di bawah | **PASS** |
+| `1024×768` Dashboard | `1024×1202` | `1024 / 1024` (`0` overflow) | `0` | N/A | Sidebar rail aktif tanpa tombol Menu ganda | **PASS** |
+| `768×1024` Dashboard & Form | `768×1467`, `768×1582` | `768 / 768` (`0` overflow) | `0` | N/A | Tombol `Menu` tablet tampil; **1** tombol Simpan | **PASS** |
+| `390×844` Dashboard | `390×1865` | `390 / 390` (`0` overflow) | `0` | `0` | **`queueBeforeKpi: true`** (Antrean di paling atas!) | **PASS** |
+| `390×844` Pesanan & Pembayaran | `390×1343`, `390×1788` | `390 / 390` (`0` overflow) | `0` | `0` | Mobile card list rapi | **PASS** |
+| `390×844` Form & Detail | `390×2363`, `390×1831` | `390 / 390` (`0` overflow) | `0` | `0` | **1** tombol `Simpan Pesanan` bawah | **PASS** |
+| `360×780` Dashboard, Detail, Form | `360×2019`, `360×1959`, `360×2410` | `360 / 360` (`0` overflow) | `0` | `0` | **`queueBeforeKpi: true`**, **1** tombol Simpan | **PASS** |
 
-*Catatan jujur pengujian PNG ulang:* Setelah pemindahan CSS `.sticky-save-bar` dan `.btn.tablet-menu-btn`, pengambilan ulang PNG dilakukan pada seluruh tampilan utama yang berubah serta 3 modal/validasi (`d2-mobile-menu-drawer.png`, `d2-mobile-payment-modal.png`, `d2-desktop-validation-summary.png`); konsol browser tidak mencatat error JavaScript apa pun (`0` errors).
+### Uji Interaksi Fungsional
+- **`Tandai Terkirim`:** Membuka modal konfirmasi `#modal-deliver-confirm` (`deliverConfirmOpen: true`) yang memperingatkan bahwa status bersifat final sebelum mengubah data. **PASS**
+- **Pilih Nota Dinamis & `Salin Ringkasan WA`:** Klik nota `MF-261116-09` membuka detail nota Hotel Puri Anggrek (`openedOrderNo: "MF-261116-09"`), dan klik `Salin Ringkasan WA` menyalin serta menampilkan teks rincian nota aktual (`waVisible: true`, `waContains: true`). **PASS**
+- **Validasi Ongkir Terpisah (`SEPARATE` `> 0`) & `Void` Min 10 Karakter:** Mengisi ongkir `Rp0` saat mode `Ditagih terpisah` memicu pesan persis backend `"Bunga #1: Ongkir terpisah harus lebih dari Rp0."`, dan alasan pembatalan `< 10` karakter ditolak (`voidBlockedShort: true`). **PASS**
+- **Mode Edit Pesanan Berbayar:** Skenario `Demo Edit Pesanan Berbayar` dari bilah demo memunculkan kolom wajib `Alasan Perubahan Nominal / Pesanan *` (`editReasonVisible: true`). **PASS**
 
 ---
 
-## 4. Uji Alur Interaktif & Anti-Slop Check
+## 5. Screenshot Sebelum vs Sesudah Revisi
 
-- **Duplikasi Item & Perhitungan Ongkir:** `Duplikat Item` menambah jumlah item `1 -> 2` dan total `Rp1.400.000 -> Rp2.800.000`; mengubah Item #2 ke `INCLUDED` otomatis menurunkan total menjadi `Rp2.650.000` dan mengunci kolom ongkir Item #2 ke `Rp0`. **PASS**
-- **Modal `+ Pelanggan Baru` tanpa Reset Form:** Menambah `CV Mawar Indah (0819-0001-2233)` memperbarui input pelanggan terpilih dan mempertahankan `2` item yang sudah diisi (`countAfterCust: "2"`). **PASS**
-- **Keyboard `Escape` & Modal Focus:** Drawer menu mobile terbuka saat diklik dan tertutup bersih saat tombol `Escape` ditekan (`open: true -> after Escape: false`). **PASS**
-- **Simulasi Edge State (`Empty` / `Loading` / `Error`):** Ketiga state tampil tanpa error layout di Daftar Pesanan. **PASS**
-- **R-02 Hygiene:** Pemeriksaan Python atas `direction-1-warm-atelier.html` dan `direction-2-botanical-studio.html` menghasilkan `em-dash: 0, en-dash: 0`. **PASS**
-
----
-
-## 5. Risiko Sisa (Harus Ditjaga Saat Phase 9 React/Inertia)
-
-1. **Tangkapan gambar penuh (`--full`) di browser untuk navbar `position: fixed`:** Pada screenshot penuh Chromium di halaman mobile panjang (`390×2305`), bilah bawah tetap (`position: fixed; bottom: 0`) dirender di lipatan layar pertama (`844px`), meskipun saat dipakai nyata oleh manusia di HP bilah tersebut selalu menempel rapi di dasar layar. Di Phase 9, pastikan `padding-bottom` konten utama tetap memberi ruang longgar agar item terbawah bisa digulir ke atas bilah.
-2. **Combobox Keyboard Arrow Up/Down Lengkap:** Prototipe HTML sudah menyediakan filter ketik langsung, `aria-expanded`, `role="listbox"`, dan `Escape`; pada implementasi React Phase 9 nanti lengkapi navigasi tombol panah `ArrowDown`/`ArrowUp`/`Enter` sesuai WAI-ARIA Authoring Practices.
-3. **Database & Logika Server:** Prototipe Phase 8.2 menggunakan kalkulasi pratinjau client-side sintetis. Saat Phase 9, sumber kebenaran total order, validasi status linear item, dan idempotency pembayaran tetap 100% di backend Laravel.
+| Layar | Sebelum Revisi (`docs/phase8-2/screenshots/before/`) | Sesudah Revisi (`docs/phase8-2/screenshots/`) | Ringkasan Perubahan |
+| :--- | :--- | :--- | :--- |
+| Desktop Dashboard | `before/d2-desktop-dashboard-before.png` | `d2-desktop-dashboard.png` | Hapus menit/jam (`13:00`, `Lewat 30 mnt`), ganti tanggal nyata; hapus `POSTED` dari teks UI; rapikan ukuran heading serif |
+| Desktop Form Pesanan | `before/d2-desktop-order-form-before.png` | `d2-desktop-order-form.png` | Field lengkap 1:1 `OrderRequest` (`sender_name`, `delivery_location` & `recipient` terpisah, `notes`); hapus tombol `Simpan Pesanan` ganda & `Uji Validasi Kosong`; hapus `SEPARATE`/`INCLUDED` dari label |
+| Desktop Piutang & Bayar | `before/d2-desktop-payments-before.png` | `d2-desktop-payments.png` | Dahulukan daftar **Tagihan Belum Lunas (Piutang Aktif)** sesuai `UiPaymentController`; riwayat transaksi di bawah memakai label `Tercatat`/`Dibatalkan` |
+| Mobile Dashboard | `before/d2-mobile-dashboard-before.png` | `d2-mobile-dashboard.png` | **Antrean Kiriman Terlambat & Hari Ini** kini tampil paling atas sebelum 4 kartu KPI ringkas (`2x2`) |
+| Mobile Form Pesanan | `before/d2-mobile-order-form-before.png` | `d2-mobile-order-form.png` | Seluruh field wajib `OrderRequest` terpisah rapi 1 kolom dengan **1** tombol `Simpan Pesanan` di bawah |
+| Bukti Tambahan Revisi | - | `d2-desktop-order-detail.png`, `d2-desktop-deliver-confirm.png` | Bukti `Salin Ringkasan WA` aktual & modal konfirmasi final `Tandai Terkirim` |

@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Arah 2 (Rekomendasi): Botanical Studio Workspace - Mutiara Florist MS</title>
+  <title>Arah 2 (Revisi Final): Botanical Studio Workspace - Mutiara Florist MS</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg-canvas: #FBF9F6;
@@ -47,7 +47,7 @@
 
       --radius-sm: 6px;
       --radius-md: 10px;
-      --radius-lg: 14px;
+      --radius-lg: 12px;
       --bottom-nav-h: 64px;
     }
 
@@ -122,7 +122,7 @@
       font-variant-numeric: tabular-nums;
     }
 
-    /* Preview bar (clearly marked design review banner) */
+    /* Separated Design Review Demo Strip (NOT part of production UI) */
     .preview-strip {
       background: var(--bg-sunken);
       border-bottom: 1px solid var(--border-hairline);
@@ -134,6 +134,19 @@
       align-items: center;
       justify-content: space-between;
       gap: 10px;
+    }
+
+    .preview-badge {
+      display: inline-block;
+      background: var(--text-primary);
+      color: #FFFFFF;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      margin-right: 6px;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
     }
 
     .preview-controls {
@@ -154,7 +167,7 @@
       font-weight: 600;
     }
 
-    /* Shell */
+    /* App Shell */
     .app-shell {
       display: flex;
       min-height: calc(100vh - 48px);
@@ -186,30 +199,31 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 4px 8px 18px;
+      padding: 4px 8px 16px;
       border-bottom: 1px solid rgba(255, 255, 255, 0.14);
       margin-bottom: 16px;
     }
 
     .brand-mark {
-      width: 36px;
-      height: 36px;
+      width: 34px;
+      height: 34px;
       border-radius: var(--radius-sm);
       background: #E6EFEA;
       color: #143326;
       display: grid;
       place-items: center;
       font-family: var(--font-display);
-      font-weight: 700;
-      font-size: 18px;
+      font-weight: 600;
+      font-size: 17px;
       flex-shrink: 0;
     }
 
     .brand-text strong {
       display: block;
-      font-family: var(--font-display);
-      font-size: 17px;
-      line-height: 1.2;
+      font-family: var(--font-sans);
+      font-weight: 700;
+      font-size: 16px;
+      line-height: 1.25;
       color: var(--text-on-rail);
     }
 
@@ -359,9 +373,9 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      font-family: var(--font-display);
+      font-family: var(--font-sans);
       font-weight: 700;
-      font-size: 17px;
+      font-size: 16px;
       color: var(--text-primary);
     }
 
@@ -405,26 +419,26 @@
       width: 100%;
       max-width: 1200px;
       margin: 0 auto;
-      padding: 20px 16px calc(var(--bottom-nav-h) + 100px);
+      padding: 16px 14px calc(var(--bottom-nav-h) + 96px);
     }
 
     @media (min-width: 768px) {
       .workspace {
-        padding: 24px 24px 80px;
+        padding: 22px 24px 72px;
       }
     }
 
     @media (min-width: 1024px) {
       .workspace {
-        padding: 28px 32px 64px;
+        padding: 24px 32px 64px;
       }
     }
 
     .page-head {
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      margin-bottom: 20px;
+      gap: 10px;
+      margin-bottom: 18px;
     }
 
     @media (min-width: 768px) {
@@ -437,15 +451,16 @@
 
     h1.page-title {
       font-family: var(--font-display);
-      font-size: clamp(24px, 3vw, 30px);
-      line-height: 1.2;
+      font-size: clamp(20px, 2.2vw, 25px);
+      line-height: 1.25;
+      letter-spacing: -0.015em;
       margin: 0;
       color: var(--text-primary);
-      font-weight: 700;
+      font-weight: 600;
     }
 
     .page-subtitle {
-      margin: 4px 0 0;
+      margin: 3px 0 0;
       color: var(--text-secondary);
       font-size: 14px;
     }
@@ -516,7 +531,7 @@
       font-size: 14px;
       font-weight: 600;
       color: var(--text-primary);
-      margin-bottom: 6px;
+      margin-bottom: 5px;
     }
 
     .field-hint {
@@ -535,7 +550,7 @@
     .input, .select, .textarea {
       width: 100%;
       min-height: 44px;
-      padding: 10px 12px;
+      padding: 9px 12px;
       background: var(--bg-surface);
       color: var(--text-primary);
       border: 1.5px solid var(--border-input);
@@ -543,8 +558,14 @@
       font-size: 15px;
     }
 
+    .textarea {
+      min-height: 76px;
+      resize: vertical;
+    }
+
     .input[aria-invalid="true"],
-    .select[aria-invalid="true"] {
+    .select[aria-invalid="true"],
+    .textarea[aria-invalid="true"] {
       border-color: var(--status-danger-fg);
       background: #FFF9F9;
     }
@@ -561,6 +582,10 @@
       border-color: var(--status-danger-fg);
       background: #FFF9F9;
     }
+    .input-currency-wrap.is-disabled {
+      background: var(--bg-sunken);
+      opacity: 0.78;
+    }
     .input-currency-prefix {
       display: grid;
       place-items: center;
@@ -576,7 +601,7 @@
       flex: 1;
       min-width: 0;
       min-height: 42px;
-      padding: 10px 12px;
+      padding: 9px 12px;
       font-variant-numeric: tabular-nums;
       font-weight: 600;
       background: transparent;
@@ -590,7 +615,7 @@
       outline-offset: 2px;
     }
 
-    /* Searchable Customer Combobox */
+    /* Combobox */
     .combobox {
       position: relative;
     }
@@ -636,8 +661,8 @@
       background: #FEF2F2;
       border: 2px solid var(--status-danger-fg);
       border-radius: var(--radius-md);
-      padding: 16px;
-      margin-bottom: 18px;
+      padding: 14px 16px;
+      margin-bottom: 16px;
     }
     .error-summary[hidden] {
       display: none;
@@ -663,7 +688,13 @@
       background: var(--bg-surface);
       border: 1px solid var(--border-hairline);
       border-radius: var(--radius-md);
-      padding: 18px;
+      padding: 14px;
+    }
+
+    @media (min-width: 768px) {
+      .card {
+        padding: 18px;
+      }
     }
 
     .card-header {
@@ -672,7 +703,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 10px;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
     }
 
     .card-title {
@@ -682,17 +713,31 @@
       color: var(--text-primary);
     }
 
-    /* Responsive Grids - PURE CSS media queries only */
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 12px;
-      margin-bottom: 20px;
+    /* Dashboard Flex Order: Priority Queue First on Mobile, Compact 2x2 KPI below */
+    .dash-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
     }
 
-    @media (min-width: 640px) {
+    .kpi-grid {
+      order: 2;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .dash-main-split {
+      order: 1;
+    }
+
+    @media (min-width: 768px) {
       .kpi-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        order: 1;
+        gap: 12px;
+      }
+      .dash-main-split {
+        order: 2;
       }
     }
 
@@ -706,7 +751,13 @@
       background: var(--bg-surface);
       border: 1px solid var(--border-hairline);
       border-radius: var(--radius-md);
-      padding: 14px 16px;
+      padding: 12px;
+    }
+
+    @media (min-width: 768px) {
+      .kpi-card {
+        padding: 14px 16px;
+      }
     }
 
     .kpi-card-sunken {
@@ -714,35 +765,59 @@
     }
 
     .kpi-label {
-      font-size: 13px;
+      font-size: 12px;
       color: var(--text-secondary);
       font-weight: 600;
-      margin: 0 0 6px;
+      margin: 0 0 4px;
     }
 
     .kpi-value {
-      font-size: 24px;
+      font-size: 19px;
       font-weight: 700;
       margin: 0;
       color: var(--text-primary);
-      line-height: 1.2;
+      line-height: 1.25;
+    }
+
+    @media (min-width: 768px) {
+      .kpi-value {
+        font-size: 22px;
+      }
+      .kpi-label {
+        font-size: 13px;
+      }
     }
 
     .kpi-note {
-      font-size: 13px;
+      font-size: 12px;
       color: var(--text-secondary);
-      margin: 6px 0 0;
+      margin: 4px 0 0;
+    }
+
+    /* Detail 4-stat grid (separate from mobile dashboard order) */
+    .detail-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    @media (min-width: 1024px) {
+      .detail-kpi-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+      }
     }
 
     .split-layout {
       display: grid;
       grid-template-columns: 1fr;
-      gap: 18px;
+      gap: 16px;
     }
 
     @media (min-width: 1024px) {
       .split-layout {
-        grid-template-columns: minmax(0, 1.6fr) minmax(300px, 1fr);
+        grid-template-columns: minmax(0, 1.6fr) minmax(310px, 1fr);
         align-items: start;
       }
     }
@@ -750,24 +825,26 @@
     .form-grid-2 {
       display: grid;
       grid-template-columns: 1fr;
-      gap: 14px;
+      gap: 12px;
     }
 
     @media (min-width: 768px) {
       .form-grid-2 {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
       }
     }
 
     .form-grid-3 {
       display: grid;
       grid-template-columns: 1fr;
-      gap: 14px;
+      gap: 12px;
     }
 
     @media (min-width: 768px) {
       .form-grid-3 {
         grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
       }
     }
 
@@ -775,7 +852,7 @@
     .badge {
       display: inline-flex;
       align-items: center;
-      padding: 4px 10px;
+      padding: 3px 9px;
       border-radius: 999px;
       font-size: 12px;
       font-weight: 700;
@@ -792,17 +869,17 @@
     .stack-list {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
     }
 
     .agenda-row {
       border: 1px solid var(--border-hairline);
       border-radius: var(--radius-sm);
-      padding: 14px;
+      padding: 12px 14px;
       background: var(--bg-surface);
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
     }
 
     @media (min-width: 768px) {
@@ -822,7 +899,7 @@
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       margin-bottom: 4px;
     }
 
@@ -834,7 +911,7 @@
     }
 
     .agenda-sub {
-      font-size: 14px;
+      font-size: 13px;
       color: var(--text-secondary);
       margin: 0;
     }
@@ -850,8 +927,8 @@
     .toolbar {
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      margin-bottom: 16px;
+      gap: 10px;
+      margin-bottom: 14px;
     }
     @media (min-width: 768px) {
       .toolbar {
@@ -938,7 +1015,7 @@
       text-align: right;
     }
 
-    /* Stepper / Linear Status Progress */
+    /* Stepper */
     .stepper {
       display: flex;
       flex-wrap: wrap;
@@ -961,13 +1038,16 @@
       color: #FFFFFF;
     }
 
-    /* Form Action Footer Bar (non-overlapping natural document flow + visible below items) */
-    .sticky-save-bar {
+    /* Single Primary Save Action Strategy (zero duplicate Simpan Pesanan buttons!) */
+    .desktop-only-save {
+      display: none;
+    }
+    .mobile-save-bar {
       background: var(--bg-surface);
       border: 1.5px solid var(--brand-primary);
       border-radius: var(--radius-md);
       padding: 14px 16px;
-      margin-top: 18px;
+      margin-top: 16px;
       display: flex;
       flex-wrap: wrap;
       align-items: center;
@@ -975,11 +1055,26 @@
       gap: 12px;
     }
 
-    /* Item Editor Card */
+    @media (min-width: 1024px) {
+      .sticky-aside {
+        position: sticky;
+        top: 84px;
+      }
+      .desktop-only-save {
+        display: flex;
+        width: 100%;
+        margin-top: 14px;
+      }
+      .mobile-save-bar {
+        display: none;
+      }
+    }
+
+    /* Item Editor */
     .item-editor {
       border: 1px solid var(--border-hairline);
       border-radius: var(--radius-md);
-      padding: 16px;
+      padding: 14px;
       background: var(--bg-canvas);
       margin-bottom: 14px;
     }
@@ -993,14 +1088,6 @@
       padding-bottom: 10px;
       margin-bottom: 12px;
       border-bottom: 1px solid var(--border-hairline);
-    }
-
-    /* Summary Ledger Card (Desktop sticky right) */
-    @media (min-width: 1024px) {
-      .sticky-aside {
-        position: sticky;
-        top: 84px;
-      }
     }
 
     .summary-line {
@@ -1022,12 +1109,47 @@
       color: var(--brand-primary);
     }
 
-    /* Empty / Loading / Error State Panels */
+    /* Copy Preview Box for Salin Ringkasan WA */
+    .wa-copy-box {
+      background: var(--bg-sunken);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      margin-bottom: 16px;
+    }
+    .wa-copy-box[hidden] {
+      display: none;
+    }
+    .wa-copy-box pre {
+      margin: 8px 0 0;
+      white-space: pre-wrap;
+      font-family: var(--font-sans);
+      font-size: 13px;
+      color: var(--text-primary);
+      background: var(--bg-surface);
+      padding: 10px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-hairline);
+    }
+
+    /* Blueprint Prototype Disclaimer Banner */
+    .blueprint-banner {
+      background: #FEF3C7;
+      border: 1px solid #F59E0B;
+      color: #92400E;
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    /* State Panels */
     .state-panel {
       background: var(--bg-surface);
       border: 1px dashed var(--border-input);
       border-radius: var(--radius-md);
-      padding: 28px 20px;
+      padding: 26px 18px;
       text-align: center;
       margin-bottom: 16px;
     }
@@ -1036,7 +1158,7 @@
     }
     .state-panel h3 {
       margin: 0 0 6px;
-      font-size: 17px;
+      font-size: 16px;
     }
     .state-panel p {
       margin: 0 0 14px;
@@ -1052,7 +1174,7 @@
       display: block;
     }
 
-    /* Mobile Bottom Nav (< 768px only) */
+    /* Mobile Bottom Nav (< 768px) */
     .mobile-bottom-nav {
       position: fixed;
       left: 0;
@@ -1094,11 +1216,11 @@
       background: var(--bg-rail-active);
     }
 
-    /* Modals / Drawers */
+    /* Modals */
     .modal-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(20, 51, 38, 0.52);
+      background: rgba(20, 51, 38, 0.54);
       display: none;
       align-items: center;
       justify-content: center;
@@ -1116,13 +1238,13 @@
       background: var(--bg-surface);
       border-radius: var(--radius-lg);
       border: 1px solid var(--border-hairline);
-      padding: 20px;
+      padding: 18px;
     }
     .modal-footer {
       display: flex;
       justify-content: flex-end;
       gap: 10px;
-      margin-top: 18px;
+      margin-top: 16px;
       flex-wrap: wrap;
     }
 
@@ -1137,7 +1259,7 @@
       bottom: calc(var(--bottom-nav-h) + 16px);
       background: var(--brand-primary);
       color: #FFFFFF;
-      padding: 12px 16px;
+      padding: 11px 16px;
       border-radius: var(--radius-sm);
       font-size: 14px;
       font-weight: 600;
@@ -1159,18 +1281,21 @@
   <a href="#main-content" class="skip-link">Langsung ke konten utama</a>
   <div id="live-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
-  <!-- Design Review Banner -->
+  <!-- Design Review & QA Scenario Switcher (Explicitly separate from Operator UI) -->
   <div class="preview-strip">
     <div>
-      <strong>Arah 2 (Rekomendasi): Botanical Studio Workspace</strong> | Data sintetis Phase 8.2 (5 Layar Inti + 4 Blueprint Pendukung)
+      <span class="preview-badge">Mode Demo Desain</span>
+      <strong>Arah 2 Revisi Final: Botanical Studio Workspace</strong> | Data sintetis (tanpa database nyata)
     </div>
     <div class="preview-controls">
-      <label for="view-state-mode" style="font-weight: 600;">Simulasi State:</label>
-      <select id="view-state-mode" class="preview-select" aria-label="Simulasi tampilan state daftar pesanan">
-        <option value="normal">Normal (Data Aktif)</option>
-        <option value="empty">Kosong (Empty State)</option>
-        <option value="loading">Memuat (Loading State)</option>
-        <option value="error">Gagal Muat (Error State)</option>
+      <label for="demo-scenario-select" style="font-weight: 600;">Skenario Tinjauan:</label>
+      <select id="demo-scenario-select" class="preview-select" aria-label="Pilih skenario demo tinjauan desain">
+        <option value="normal">Operasional Normal</option>
+        <option value="form-error">Demo Validasi Error Form</option>
+        <option value="form-edit">Demo Edit Pesanan Berbayar</option>
+        <option value="orders-empty">Demo Daftar Kosong</option>
+        <option value="orders-loading">Demo Memuat Data</option>
+        <option value="orders-error">Demo Gagal Muat</option>
       </select>
     </div>
   </div>
@@ -1196,7 +1321,7 @@
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                   Hari Ini
                 </span>
-                <span class="nav-count">4</span>
+                <span class="nav-count" id="sidebar-urgent-badge">3</span>
               </button>
             </li>
             <li>
@@ -1219,7 +1344,7 @@
               <button type="button" class="nav-btn" data-nav="payments">
                 <span class="nav-btn-left">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-                  Pembayaran
+                  Piutang &amp; Bayar
                 </span>
                 <span class="nav-count">2</span>
               </button>
@@ -1228,7 +1353,7 @@
         </div>
 
         <div class="nav-group">
-          <p class="nav-group-label">Pelanggan &amp; Biaya</p>
+          <p class="nav-group-label">Pelanggan &amp; Biaya (Blueprint)</p>
           <ul class="nav-list">
             <li>
               <button type="button" class="nav-btn" data-nav="customers">
@@ -1271,7 +1396,7 @@
           <strong>Sari Wijaya</strong>
           Admin Kasir &amp; Jadwal
         </div>
-        <button type="button" class="logout-btn" id="desktop-logout-btn">
+        <button type="button" class="logout-btn" data-open-logout>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
           Keluar Akun
         </button>
@@ -1283,17 +1408,17 @@
       <header class="topbar">
         <div class="topbar-left">
           <div class="mobile-brand">
-            <div class="brand-mark" style="width: 32px; height: 32px; font-size: 16px; background: #143326; color: #FFFFFF;" aria-hidden="true">M</div>
+            <div class="brand-mark" style="width: 30px; height: 30px; font-size: 15px; background: #143326; color: #FFFFFF;" aria-hidden="true">M</div>
             <span>Mutiara Florist</span>
           </div>
           <div class="topbar-search">
             <label for="global-order-search" class="sr-only">Cari cepat nota atau pelanggan</label>
-            <input id="global-order-search" type="search" class="input" placeholder="Cari nota (MF-...), pemesan, atau penerima...">
+            <input id="global-order-search" type="search" class="input" placeholder="Cari nomor nota (MF-...) atau nama pelanggan...">
           </div>
         </div>
         <div class="topbar-actions">
           <button type="button" class="btn btn-secondary tablet-menu-btn" data-open-menu>Menu</button>
-          <button type="button" class="btn btn-primary" data-nav="order-form">+ Pesanan Baru</button>
+          <button type="button" class="btn btn-primary" data-new-order-trigger>+ Pesanan Baru</button>
         </div>
       </header>
 
@@ -1304,8 +1429,8 @@
         <section id="screen-dashboard" class="screen is-active" aria-labelledby="h1-dash">
           <div class="page-head">
             <div>
-              <h1 id="h1-dash" class="page-title">Jadwal &amp; Kas Hari Ini</h1>
-              <p class="page-subtitle">Selasa, 17 November 2026 | Kiriman terdekat ditampilkan paling atas agar tidak terlewat</p>
+              <h1 id="h1-dash" class="page-title">Jadwal Pengiriman &amp; Ringkasan Toko</h1>
+              <p class="page-subtitle">Tanggal acuan: Selasa, 17/11/2026 | Urutan berdasar tanggal kirim terdekat</p>
             </div>
             <div class="action-row">
               <button type="button" class="btn btn-secondary" data-nav="orders">Semua Pesanan</button>
@@ -1313,123 +1438,49 @@
             </div>
           </div>
 
-          <div class="kpi-grid">
-            <div class="kpi-card">
-              <p class="kpi-label">Kirim Hari Ini</p>
-              <p class="kpi-value num">4 Item</p>
-              <p class="kpi-note" style="color: var(--brand-urgent); font-weight: 600;">1 melewati jam kirim</p>
-            </div>
-            <div class="kpi-card">
-              <p class="kpi-label">Siap Diambil / Kurir</p>
-              <p class="kpi-value num">2 Item</p>
-              <p class="kpi-note">Menunggu serah terima</p>
-            </div>
-            <div class="kpi-card">
-              <p class="kpi-label">Sisa Piutang Aktif</p>
-              <p class="kpi-value num">Rp4.250.000</p>
-              <p class="kpi-note">Dari 2 pesanan berjalan</p>
-            </div>
-            <div class="kpi-card kpi-card-sunken">
-              <p class="kpi-label">Kas Masuk Hari Ini</p>
-              <p class="kpi-value num" style="color: var(--status-paid-fg);">Rp3.150.000</p>
-              <p class="kpi-note">3 pembayaran POSTED</p>
-            </div>
-          </div>
-
-          <div class="split-layout">
-            <section class="card" aria-labelledby="dash-agenda-title">
-              <div class="card-header">
-                <h2 id="dash-agenda-title" class="card-title">Prioritas Pengiriman &amp; Pengerjaan</h2>
-                <span class="badge badge-danger">1 Terlambat</span>
+          <!-- Flex container flips order cleanly on Mobile (<768px): Queue First, KPI Strip Second -->
+          <div class="dash-stack">
+            <div class="kpi-grid" aria-label="Ringkasan angka toko">
+              <div class="kpi-card">
+                <p class="kpi-label">Total Nilai Pesanan</p>
+                <p class="kpi-value num">Rp8.250.000</p>
+                <p class="kpi-note">Dari 4 pesanan aktif</p>
               </div>
-
-              <div class="stack-list" id="dash-agenda-list">
-                <article class="agenda-row agenda-row-inline agenda-row-urgent" data-agenda-item="ag1">
-                  <div>
-                    <div class="agenda-meta">
-                      <span class="badge badge-danger">Lewat 30 mnt (13:00)</span>
-                      <span class="badge badge-ready" data-status-pill>Siap Kirim</span>
-                      <span class="mono" style="font-size: 13px;">MF-261117-01</span>
-                    </div>
-                    <h3 class="agenda-title">Papan Bunga Grand Opening 2x1.2m (1 buah)</h3>
-                    <p class="agenda-sub">Ruko Puri Indah Blok B2 | Pemesan: PT Sinar Harapan Tbk</p>
-                  </div>
-                  <div class="action-row">
-                    <button type="button" class="btn btn-urgent btn-sm" data-advance-agenda="ag1">Tandai Terkirim</button>
-                    <button type="button" class="btn btn-secondary btn-sm" data-nav="order-detail">Detail</button>
-                  </div>
-                </article>
-
-                <article class="agenda-row agenda-row-inline" data-agenda-item="ag2">
-                  <div>
-                    <div class="agenda-meta">
-                      <span class="badge badge-warn">Jadwal 15:30 WIB</span>
-                      <span class="badge badge-neutral" data-status-pill>Diproses</span>
-                      <span class="mono" style="font-size: 13px;">MF-261117-02</span>
-                    </div>
-                    <h3 class="agenda-title">Standing Flower Anggrek Putih (2 buah)</h3>
-                    <p class="agenda-sub">Menara Imperium Lt. 12 | Pemesan: Ibu Ratna Dewi</p>
-                  </div>
-                  <div class="action-row">
-                    <button type="button" class="btn btn-primary btn-sm" data-advance-agenda="ag2">Tandai Siap</button>
-                    <button type="button" class="btn btn-secondary btn-sm" data-nav="order-detail">Detail</button>
-                  </div>
-                </article>
-
-                <article class="agenda-row agenda-row-inline" data-agenda-item="ag3">
-                  <div>
-                    <div class="agenda-meta">
-                      <span class="badge badge-ready">Jadwal 17:00 WIB</span>
-                      <span class="badge badge-neutral" data-status-pill>Baru</span>
-                      <span class="mono" style="font-size: 13px;">MF-261117-03</span>
-                    </div>
-                    <h3 class="agenda-title">Buket Mawar Peach &amp; Eucalyptus</h3>
-                    <p class="agenda-sub">Ambil di toko oleh Klinik Gigi Sentosa | Status bayar: Lunas</p>
-                  </div>
-                  <div class="action-row">
-                    <button type="button" class="btn btn-secondary btn-sm" data-advance-agenda="ag3">Mulai Proses</button>
-                    <button type="button" class="btn btn-secondary btn-sm" data-nav="order-detail">Detail</button>
-                  </div>
-                </article>
+              <div class="kpi-card">
+                <p class="kpi-label">Uang Masuk (Sah)</p>
+                <p class="kpi-value num" style="color: var(--status-paid-fg);">Rp4.000.000</p>
+                <p class="kpi-note">Total pembayaran tercatat</p>
               </div>
-            </section>
-
-            <aside class="card sticky-aside" aria-labelledby="dash-piutang-title">
-              <div class="card-header">
-                <h2 id="dash-piutang-title" class="card-title">Tagihan Belum Lunas</h2>
-                <button type="button" class="btn btn-ghost btn-sm" data-nav="payments">Lihat Buku</button>
+              <div class="kpi-card">
+                <p class="kpi-label">Sisa Piutang Berjalan</p>
+                <p class="kpi-value num" style="color: var(--brand-urgent);">Rp4.250.000</p>
+                <p class="kpi-note">Dari 2 tagihan terbuka</p>
               </div>
-              <div class="stack-list">
-                <div class="agenda-row">
-                  <div>
-                    <div class="agenda-meta">
-                      <span class="badge badge-warn">DP Sebagian</span>
-                      <span class="mono" style="font-size: 13px;">MF-261117-01</span>
-                    </div>
-                    <p class="agenda-title">PT Sinar Harapan Tbk</p>
-                    <p class="agenda-sub num">Total Rp2.675.000 | Sisa: <strong>Rp1.175.000</strong></p>
-                  </div>
-                  <div class="action-row">
-                    <button type="button" class="btn btn-primary btn-sm" data-open-payment data-order="MF-261117-01" data-balance="1175000">Catat Pelunasan</button>
-                    <button type="button" class="btn btn-secondary btn-sm" data-nav="order-detail">Buka</button>
-                  </div>
+              <div class="kpi-card kpi-card-sunken">
+                <p class="kpi-label">Selisih Kas Sederhana</p>
+                <p class="kpi-value num">Rp2.800.000</p>
+                <p class="kpi-note">Masuk Rp4 jt - Biaya Rp1,2 jt</p>
+              </div>
+            </div>
+
+            <div class="split-layout dash-main-split">
+              <section class="card" aria-labelledby="dash-agenda-title">
+                <div class="card-header">
+                  <h2 id="dash-agenda-title" class="card-title">Antrean Kiriman Terlambat &amp; Hari Ini</h2>
+                  <span class="badge badge-danger" id="dash-overdue-pill">1 Terlambat tanggal</span>
                 </div>
 
-                <div class="agenda-row">
-                  <div>
-                    <div class="agenda-meta">
-                      <span class="badge badge-danger">Belum Bayar</span>
-                      <span class="mono" style="font-size: 13px;">MF-261116-09</span>
-                    </div>
-                    <p class="agenda-title">Hotel Puri Anggrek</p>
-                    <p class="agenda-sub num">Total Rp3.075.000 | Sisa: <strong>Rp3.075.000</strong></p>
-                  </div>
-                  <div class="action-row">
-                    <button type="button" class="btn btn-primary btn-sm" data-open-payment data-order="MF-261116-09" data-balance="3075000">Catat Bayar</button>
-                  </div>
+                <div class="stack-list" id="dash-agenda-list"></div>
+              </section>
+
+              <aside class="card" aria-labelledby="dash-piutang-title">
+                <div class="card-header">
+                  <h2 id="dash-piutang-title" class="card-title">Piutang Belum Lunas</h2>
+                  <button type="button" class="btn btn-ghost btn-sm" data-nav="payments">Semua Piutang</button>
                 </div>
-              </div>
-            </aside>
+                <div class="stack-list" id="dash-receivables-list"></div>
+              </aside>
+            </div>
           </div>
         </section>
 
@@ -1440,9 +1491,9 @@
           <div class="page-head">
             <div>
               <h1 id="h1-orders" class="page-title">Daftar Pesanan</h1>
-              <p class="page-subtitle">Cari berdasarkan nomor nota, pemesan, atau status pengerjaan</p>
+              <p class="page-subtitle">Cari berdasarkan nomor nota atau nama pelanggan, lalu kelola pengiriman dan pembayaran</p>
             </div>
-            <button type="button" class="btn btn-primary" data-nav="order-form">+ Pesanan Baru</button>
+            <button type="button" class="btn btn-primary" data-new-order-trigger>+ Pesanan Baru</button>
           </div>
 
           <div class="card">
@@ -1450,30 +1501,29 @@
               <div class="chip-row" role="group" aria-label="Filter status pesanan">
                 <button type="button" class="chip-btn" data-order-filter="all" aria-pressed="true">Semua (4)</button>
                 <button type="button" class="chip-btn" data-order-filter="unpaid" aria-pressed="false">Belum Lunas (2)</button>
-                <button type="button" class="chip-btn" data-order-filter="ready" aria-pressed="false">Siap Kirim (1)</button>
-                <button type="button" class="chip-btn" data-order-filter="process" aria-pressed="false">Diproses (1)</button>
+                <button type="button" class="chip-btn" data-order-filter="READY" aria-pressed="false">Siap Kirim (1)</button>
+                <button type="button" class="chip-btn" data-order-filter="PROCESSING" aria-pressed="false">Diproses (1)</button>
               </div>
-              <div style="min-width: 220px;">
-                <label for="orders-inline-search" class="sr-only">Saring pesanan</label>
-                <input id="orders-inline-search" type="search" class="input" placeholder="Ketik nama atau kode MF-...">
+              <div style="min-width: 240px;">
+                <label for="orders-inline-search" class="sr-only">Saring pesanan menurut kode atau pelanggan</label>
+                <input id="orders-inline-search" type="search" class="input" placeholder="Ketik kode nota atau pelanggan...">
               </div>
             </div>
 
-            <!-- Simulated Edge States (Empty / Loading / Error) -->
             <div id="orders-state-empty" class="state-panel" hidden>
-              <h3>Belum ada pesanan pada filter ini</h3>
-              <p>Ubah kata kunci pencarian atau catat pesanan baru untuk toko hari ini.</p>
-              <button type="button" class="btn btn-primary" data-nav="order-form">+ Buat Pesanan Pertama</button>
+              <h3>Belum ada pesanan yang cocok</h3>
+              <p>Ubah kata kunci pencarian atau catat pesanan baru untuk pelanggan hari ini.</p>
+              <button type="button" class="btn btn-primary" id="orders-reset-empty-btn">Tampilkan Semua Pesanan</button>
             </div>
 
             <div id="orders-state-loading" class="state-panel" hidden aria-busy="true">
               <h3>Memuat daftar pesanan terbaru...</h3>
-              <p>Mengambil jadwal kiriman dan status pembayaran dari server.</p>
+              <p>Mengambil jadwal pengiriman dan status tagihan dari server.</p>
             </div>
 
             <div id="orders-state-error" class="state-panel" role="alert" hidden>
               <h3>Gagal memuat daftar pesanan</h3>
-              <p>Koneksi ke server terputus. Data pesanan tetap aman dan bisa dicoba muat ulang.</p>
+              <p>Koneksi terputus sementara. Data transaksi tersimpan aman dan bisa dicoba muat ulang.</p>
               <button type="button" class="btn btn-secondary" id="orders-retry-btn">Coba Muat Ulang</button>
             </div>
 
@@ -1483,111 +1533,19 @@
                   <thead>
                     <tr>
                       <th>No. Pesanan</th>
-                      <th>Pemesan &amp; Item</th>
-                      <th>Jadwal Kirim</th>
+                      <th>Pelanggan &amp; Rangkaian</th>
+                      <th>Tanggal Kirim</th>
                       <th>Pengerjaan</th>
                       <th>Pembayaran</th>
                       <th class="num-cell">Total</th>
                       <th>Aksi</th>
                     </tr>
                   </thead>
-                  <tbody id="orders-table-body">
-                    <tr data-status="ready" data-paid="unpaid" data-search="mf-261117-01 pt sinar harapan papan bunga">
-                      <td class="mono"><strong>MF-261117-01</strong></td>
-                      <td><strong>PT Sinar Harapan Tbk</strong><br><span style="color: var(--text-secondary);">2 item (Papan Bunga + Standing Flower)</span></td>
-                      <td class="num">17/11/2026 13:00</td>
-                      <td><span class="badge badge-ready">Siap Kirim</span></td>
-                      <td><span class="badge badge-warn">DP Sebagian</span></td>
-                      <td class="num-cell num"><strong>Rp2.675.000</strong></td>
-                      <td><button type="button" class="btn btn-secondary btn-sm" data-nav="order-detail">Buka</button></td>
-                    </tr>
-                    <tr data-status="process" data-paid="paid" data-search="mf-261117-02 ibu ratna dewi standing flower anggrek">
-                      <td class="mono"><strong>MF-261117-02</strong></td>
-                      <td><strong>Ibu Ratna Dewi</strong><br><span style="color: var(--text-secondary);">2 buah Standing Flower Anggrek</span></td>
-                      <td class="num">17/11/2026 15:30</td>
-                      <td><span class="badge badge-neutral">Diproses</span></td>
-                      <td><span class="badge badge-paid">Lunas</span></td>
-                      <td class="num-cell num"><strong>Rp1.850.000</strong></td>
-                      <td><button type="button" class="btn btn-secondary btn-sm" data-nav="order-detail">Buka</button></td>
-                    </tr>
-                    <tr data-status="new" data-paid="paid" data-search="mf-261117-03 klinik gigi sentosa buket mawar">
-                      <td class="mono"><strong>MF-261117-03</strong></td>
-                      <td><strong>Klinik Gigi Sentosa</strong><br><span style="color: var(--text-secondary);">Buket Mawar Peach</span></td>
-                      <td class="num">17/11/2026 17:00</td>
-                      <td><span class="badge badge-neutral">Baru</span></td>
-                      <td><span class="badge badge-paid">Lunas</span></td>
-                      <td class="num-cell num"><strong>Rp650.000</strong></td>
-                      <td><button type="button" class="btn btn-secondary btn-sm" data-nav="order-detail">Buka</button></td>
-                    </tr>
-                    <tr data-status="delivered" data-paid="unpaid" data-search="mf-261116-09 hotel puri anggrek rangkaian lobby">
-                      <td class="mono"><strong>MF-261116-09</strong></td>
-                      <td><strong>Hotel Puri Anggrek</strong><br><span style="color: var(--text-secondary);">3 Rangkaian Meja Lobby</span></td>
-                      <td class="num">16/11/2026 09:00</td>
-                      <td><span class="badge badge-paid">Terkirim</span></td>
-                      <td><span class="badge badge-danger">Belum Bayar</span></td>
-                      <td class="num-cell num"><strong>Rp3.075.000</strong></td>
-                      <td><button type="button" class="btn btn-primary btn-sm" data-open-payment data-order="MF-261116-09" data-balance="3075000">Bayar</button></td>
-                    </tr>
-                  </tbody>
+                  <tbody id="orders-table-body"></tbody>
                 </table>
               </div>
 
-              <div class="cards-mobile" id="orders-cards-mobile">
-                <article class="agenda-row agenda-row-urgent" data-status="ready" data-paid="unpaid" data-search="mf-261117-01 pt sinar harapan papan bunga">
-                  <div>
-                    <div class="agenda-meta">
-                      <span class="mono" style="font-size: 13px;">MF-261117-01</span>
-                      <span class="badge badge-ready">Siap Kirim</span>
-                      <span class="badge badge-warn">DP Sebagian</span>
-                    </div>
-                    <h3 class="agenda-title">PT Sinar Harapan Tbk</h3>
-                    <p class="agenda-sub num">Kirim 17/11 13:00 | Total Rp2.675.000 (Sisa Rp1.175.000)</p>
-                  </div>
-                  <div class="action-row">
-                    <button type="button" class="btn btn-secondary btn-sm" data-nav="order-detail">Buka Detail</button>
-                    <button type="button" class="btn btn-primary btn-sm" data-open-payment data-order="MF-261117-01" data-balance="1175000">Catat Bayar</button>
-                  </div>
-                </article>
-
-                <article class="agenda-row" data-status="process" data-paid="paid" data-search="mf-261117-02 ibu ratna dewi standing flower anggrek">
-                  <div>
-                    <div class="agenda-meta">
-                      <span class="mono" style="font-size: 13px;">MF-261117-02</span>
-                      <span class="badge badge-neutral">Diproses</span>
-                      <span class="badge badge-paid">Lunas</span>
-                    </div>
-                    <h3 class="agenda-title">Ibu Ratna Dewi</h3>
-                    <p class="agenda-sub num">Kirim 17/11 15:30 | Total Rp1.850.000</p>
-                  </div>
-                  <button type="button" class="btn btn-secondary btn-sm" data-nav="order-detail">Buka Detail</button>
-                </article>
-
-                <article class="agenda-row" data-status="new" data-paid="paid" data-search="mf-261117-03 klinik gigi sentosa buket mawar">
-                  <div>
-                    <div class="agenda-meta">
-                      <span class="mono" style="font-size: 13px;">MF-261117-03</span>
-                      <span class="badge badge-neutral">Baru</span>
-                      <span class="badge badge-paid">Lunas</span>
-                    </div>
-                    <h3 class="agenda-title">Klinik Gigi Sentosa</h3>
-                    <p class="agenda-sub num">Ambil 17/11 17:00 | Total Rp650.000</p>
-                  </div>
-                  <button type="button" class="btn btn-secondary btn-sm" data-nav="order-detail">Buka Detail</button>
-                </article>
-
-                <article class="agenda-row" data-status="delivered" data-paid="unpaid" data-search="mf-261116-09 hotel puri anggrek rangkaian lobby">
-                  <div>
-                    <div class="agenda-meta">
-                      <span class="mono" style="font-size: 13px;">MF-261116-09</span>
-                      <span class="badge badge-paid">Terkirim</span>
-                      <span class="badge badge-danger">Belum Bayar</span>
-                    </div>
-                    <h3 class="agenda-title">Hotel Puri Anggrek</h3>
-                    <p class="agenda-sub num">Terkirim 16/11 | Tagihan Rp3.075.000</p>
-                  </div>
-                  <button type="button" class="btn btn-primary btn-sm" data-open-payment data-order="MF-261116-09" data-balance="3075000">Catat Pelunasan</button>
-                </article>
-              </div>
+              <div class="cards-mobile" id="orders-cards-mobile"></div>
             </div>
           </div>
         </section>
@@ -1599,12 +1557,11 @@
           <div class="page-head">
             <div>
               <h1 id="h1-order-form" class="page-title">Buat Pesanan Baru</h1>
-              <p class="page-subtitle">Isi data pemesan dan rangkaian bunga; perhitungan total Rupiah final diverifikasi server saat simpan</p>
+              <p class="page-subtitle" id="order-form-subtitle">Seluruh rincian dihitung ulang oleh server saat disimpan; nominal memakai Rupiah bulat</p>
             </div>
             <button type="button" class="btn btn-secondary" data-nav="orders">Kembali ke Daftar</button>
           </div>
 
-          <!-- GOV.UK Accessible Error Summary -->
           <div id="order-error-summary" class="error-summary" role="alert" tabindex="-1" hidden>
             <h2>Ada bagian yang perlu dilengkapi sebelum menyimpan</h2>
             <ul id="order-error-list"></ul>
@@ -1613,7 +1570,7 @@
           <form id="order-create-form" novalidate>
             <div class="split-layout">
               <div>
-                <!-- Step 1: Customer & Date -->
+                <!-- Section 1: Header Order -->
                 <section class="card" style="margin-bottom: 16px;" aria-labelledby="sec-customer-info">
                   <div class="card-header">
                     <h2 id="sec-customer-info" class="card-title">1. Informasi Pemesan &amp; Nota</h2>
@@ -1622,35 +1579,18 @@
 
                   <div class="form-grid-2">
                     <div class="field-group">
-                      <label for="customer-search-input" class="field-label">Pilih Pelanggan *</label>
+                      <label for="customer-search-input" class="field-label">Pelanggan *</label>
                       <div class="combobox">
-                        <input id="customer-search-input" type="text" class="input" value="PT Sinar Harapan Nusantara Tbk (0812-8800-1122)" autocomplete="off" aria-expanded="false" aria-controls="customer-listbox" aria-describedby="customer-err">
-                        <input type="hidden" id="selected-customer-id" value="c1">
-                        <div id="customer-listbox" class="combobox-list" role="listbox" aria-label="Daftar pelanggan">
-                          <button type="button" class="combobox-option" role="option" data-cid="c1" data-label="PT Sinar Harapan Nusantara Tbk (0812-8800-1122)">
-                            <strong>PT Sinar Harapan Nusantara Tbk</strong>
-                            <span>0812-8800-1122 | Perusahaan</span>
-                          </button>
-                          <button type="button" class="combobox-option" role="option" data-cid="c2" data-label="Ibu Ratna Dewi (0811-9220-4411)">
-                            <strong>Ibu Ratna Dewi</strong>
-                            <span>0811-9220-4411 | Pelanggan tetap</span>
-                          </button>
-                          <button type="button" class="combobox-option" role="option" data-cid="c3" data-label="Klinik Gigi Sentosa (0813-7700-9900)">
-                            <strong>Klinik Gigi Sentosa</strong>
-                            <span>0813-7700-9900</span>
-                          </button>
-                          <button type="button" class="combobox-option" role="option" data-cid="c4" data-label="Hotel Puri Anggrek (021-555-0192)">
-                            <strong>Hotel Puri Anggrek</strong>
-                            <span>021-555-0192 | Korporat</span>
-                          </button>
-                        </div>
+                        <input id="customer-search-input" type="text" class="input" value="" placeholder="Cari atau pilih nama / no. HP pelanggan..." autocomplete="off" aria-expanded="false" aria-controls="customer-listbox" aria-describedby="customer-err">
+                        <input type="hidden" id="selected-customer-id" value="">
+                        <div id="customer-listbox" class="combobox-list" role="listbox" aria-label="Daftar pelanggan"></div>
                       </div>
-                      <p class="field-hint">Ketik nama atau nomor HP, atau klik + Pelanggan Baru tanpa menghapus item.</p>
+                      <p class="field-hint">Menambah pelanggan baru tidak akan menghapus item bunga yang sedang diketik.</p>
                       <p id="customer-err" class="field-error" hidden></p>
                     </div>
 
                     <div class="field-group">
-                      <label for="order-date-input" class="field-label">Tanggal Pesanan *</label>
+                      <label for="order-date-input" class="field-label">Tanggal Nota / Pesan *</label>
                       <input id="order-date-input" type="date" class="input" value="2026-11-17" aria-describedby="order-date-err">
                       <p id="order-date-err" class="field-error" hidden></p>
                     </div>
@@ -1658,14 +1598,20 @@
 
                   <div class="field-group" style="margin-bottom: 0;">
                     <label for="order-general-note" class="field-label">Catatan Pesanan (Opsional)</label>
-                    <input id="order-general-note" type="text" class="input" placeholder="Misal: Minta foto hasil rangkaian sebelum kurir berangkat">
+                    <input id="order-general-note" type="text" class="input" placeholder="Misal: Konfirmasi foto hasil rangkaian ke WA pemesan">
+                  </div>
+
+                  <div class="field-group" id="edit-change-reason-wrap" style="margin-top: 14px; margin-bottom: 0;" hidden>
+                    <label for="order-change-reason" class="field-label">Alasan Perubahan Nominal / Pesanan *</label>
+                    <input id="order-change-reason" type="text" class="input" placeholder="Wajib diisi bila pesanan sudah menerima pembayaran (min. keterangan jelas)" aria-describedby="change-reason-err">
+                    <p id="change-reason-err" class="field-error" hidden></p>
                   </div>
                 </section>
 
-                <!-- Step 2: Order Items -->
+                <!-- Section 2: Items matching OrderRequest fields 1:1 -->
                 <section class="card" aria-labelledby="sec-order-items">
                   <div class="card-header">
-                    <h2 id="sec-order-items" class="card-title">2. Daftar Item Karangan Bunga (<span id="item-count-label">1</span>)</h2>
+                    <h2 id="sec-order-items" class="card-title">2. Daftar Rangkaian Bunga (<span id="item-count-label">1</span>)</h2>
                     <button type="button" class="btn btn-secondary btn-sm" id="add-blank-item-btn">+ Tambah Item Lain</button>
                   </div>
 
@@ -1673,7 +1619,7 @@
                 </section>
               </div>
 
-              <!-- Sticky Live Summary Rail (Desktop) -->
+              <!-- Desktop Sticky Summary + ONLY Save Button on Desktop (>= 1024px) -->
               <aside class="card sticky-aside" aria-labelledby="sec-summary-receipt">
                 <h2 id="sec-summary-receipt" class="card-title" style="margin-bottom: 12px;">Ringkasan Hitungan Nota</h2>
                 <div class="summary-line">
@@ -1688,21 +1634,18 @@
                   <span>Perkiraan Total</span>
                   <span id="sum-grand" class="num">Rp1.400.000</span>
                 </div>
-                <p class="field-hint" style="margin-top: 10px;">Nominal bulat Rupiah tanpa desimal. Total resmi dikunci server saat Anda menekan Simpan Pesanan.</p>
-                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 14px;">Simpan Pesanan</button>
+                <p class="field-hint" style="margin-top: 10px;">Nominal Rupiah bulat tanpa desimal. Total resmi dikunci server saat Anda menekan simpan.</p>
+                <button type="submit" class="btn btn-primary desktop-only-save">Simpan Pesanan</button>
               </aside>
             </div>
 
-            <!-- Sticky Save Bar (Always visible, sits safely above mobile bottom nav) -->
-            <div class="sticky-save-bar">
+            <!-- Mobile/Tablet Bottom Save Bar (ONLY Save Button below 1024px) -->
+            <div class="mobile-save-bar">
               <div>
-                <span style="font-size: 13px; color: var(--text-secondary);">Total Sementara</span>
-                <div id="sticky-bar-total" class="num" style="font-size: 20px; font-weight: 700;">Rp1.400.000</div>
+                <span style="font-size: 13px; color: var(--text-secondary);">Perkiraan Total Tagihan</span>
+                <div id="sticky-bar-total" class="num" style="font-size: 19px; font-weight: 700;">Rp1.400.000</div>
               </div>
-              <div class="action-row">
-                <button type="button" class="btn btn-secondary" id="test-invalid-submit-btn">Uji Validasi Kosong</button>
-                <button type="submit" class="btn btn-primary">Simpan Pesanan</button>
-              </div>
+              <button type="submit" class="btn btn-primary">Simpan Pesanan</button>
             </div>
           </form>
         </section>
@@ -1713,136 +1656,100 @@
         <section id="screen-order-detail" class="screen" aria-labelledby="h1-order-detail">
           <div class="page-head">
             <div>
-              <h1 id="h1-order-detail" class="page-title">Nota <span class="mono">MF-261117-01</span></h1>
-              <p class="page-subtitle">PT Sinar Harapan Nusantara Tbk (0812-8800-1122) | Tanggal Pesan 17/11/2026</p>
+              <h1 id="h1-order-detail" class="page-title">Nota <span class="mono" id="detail-order-number">MF-261117-01</span></h1>
+              <p class="page-subtitle" id="detail-order-subtitle"></p>
             </div>
             <div class="action-row">
-              <button type="button" class="btn btn-secondary" data-nav="order-form">Edit Pesanan</button>
-              <button type="button" class="btn btn-secondary" data-toast="Ringkasan nota siap disalin untuk WhatsApp pemesan.">Salin Ringkasan WA</button>
-              <button type="button" class="btn btn-primary" data-open-payment data-order="MF-261117-01" data-balance="1175000">+ Catat Pembayaran</button>
+              <button type="button" class="btn btn-secondary" id="detail-edit-btn">Edit Pesanan</button>
+              <button type="button" class="btn btn-secondary" id="copy-wa-summary-btn">Salin Ringkasan WA</button>
+              <button type="button" class="btn btn-primary" id="detail-pay-btn">+ Catat Pembayaran</button>
             </div>
           </div>
 
-          <div class="kpi-grid">
-            <div class="kpi-card">
-              <p class="kpi-label">Total Tagihan</p>
-              <p class="kpi-value num">Rp2.675.000</p>
+          <div id="wa-copy-preview" class="wa-copy-box" hidden>
+            <div class="card-header" style="margin-bottom: 4px;">
+              <strong style="font-size: 14px;" id="wa-copy-status">Ringkasan WhatsApp berhasil disalin ke clipboard</strong>
+              <button type="button" class="btn btn-secondary btn-sm" id="wa-copy-close">Tutup</button>
             </div>
-            <div class="kpi-card">
-              <p class="kpi-label">Diterima (POSTED)</p>
-              <p class="kpi-value num" style="color: var(--status-paid-fg);">Rp1.500.000</p>
-            </div>
-            <div class="kpi-card">
-              <p class="kpi-label">Sisa Tagihan</p>
-              <p class="kpi-value num" style="color: var(--brand-urgent);">Rp1.175.000</p>
-            </div>
-            <div class="kpi-card">
-              <p class="kpi-label">Status Pembayaran</p>
-              <p style="margin: 4px 0 0;"><span class="badge badge-warn">DP Sebagian</span></p>
-            </div>
+            <pre id="wa-copy-text"></pre>
           </div>
+
+          <div class="detail-kpi-grid" id="detail-kpi-grid"></div>
 
           <div class="split-layout">
             <section class="card" aria-labelledby="detail-items-heading">
               <div class="card-header">
-                <h2 id="detail-items-heading" class="card-title">Status Pengerjaan Per Item (2)</h2>
+                <h2 id="detail-items-heading" class="card-title">Daftar Rangkaian &amp; Status Kerja</h2>
               </div>
-
-              <div class="stack-list">
-                <article class="agenda-row">
-                  <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; align-items: start;">
-                    <div>
-                      <div class="agenda-meta">
-                        <span class="badge badge-paid">Terkirim</span>
-                        <span class="num" style="font-size: 13px; color: var(--text-secondary);">17/11/2026 10:00 | Ongkir: Sudah Termasuk</span>
-                      </div>
-                      <h3 class="agenda-title">1. Standing Flower Anggrek Putih (1 buah)</h3>
-                      <p class="agenda-sub">Penerima: Direktur PT Mitra Jaya, Menara Imperium Lt. 12</p>
-                      <p class="agenda-sub">Pita ucapan: Selamat &amp; Sukses Atas Peresmian Kantor</p>
-                    </div>
-                    <strong class="num" style="font-size: 16px;">Rp1.375.000</strong>
-                  </div>
-                  <div class="stepper" aria-label="Tahap pengerjaan selesai">
-                    <span class="step-pill is-done">Baru</span>
-                    <span class="step-pill is-done">Diproses</span>
-                    <span class="step-pill is-done">Siap Kirim</span>
-                    <span class="step-pill is-current">Terkirim</span>
-                  </div>
-                </article>
-
-                <article class="agenda-row agenda-row-urgent" id="detail-item-2">
-                  <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; align-items: start;">
-                    <div>
-                      <div class="agenda-meta">
-                        <span class="badge badge-ready" id="detail-item2-badge">Siap Kirim</span>
-                        <span class="num" style="font-size: 13px; color: var(--text-secondary);">17/11/2026 13:00 | Ongkir Terpisah Rp150.000</span>
-                      </div>
-                      <h3 class="agenda-title">2. Papan Bunga Grand Opening 2x1.2m (1 buah)</h3>
-                      <p class="agenda-sub">Penerima: Cabang Baru Mitra Jaya, Ruko Puri Indah Blok B2</p>
-                      <p class="agenda-sub">Pita ucapan: Selamat Grand Opening - Dari PT Sinar Harapan</p>
-                    </div>
-                    <strong class="num" style="font-size: 16px;">Rp1.300.000</strong>
-                  </div>
-                  <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px;">
-                    <div class="stepper" aria-label="Tahap pengerjaan item 2">
-                      <span class="step-pill is-done">Baru</span>
-                      <span class="step-pill is-done">Diproses</span>
-                      <span class="step-pill is-current" id="detail-step-ready">Siap Kirim</span>
-                      <span class="step-pill" id="detail-step-delivered">Terkirim</span>
-                    </div>
-                    <button type="button" class="btn btn-primary btn-sm" id="detail-advance-btn">Tandai Terkirim</button>
-                  </div>
-                </article>
-              </div>
+              <div class="stack-list" id="detail-items-list"></div>
             </section>
 
             <section class="card" aria-labelledby="detail-payments-heading">
               <div class="card-header">
                 <h2 id="detail-payments-heading" class="card-title">Riwayat Pembayaran &amp; Audit</h2>
               </div>
-              <div class="stack-list">
-                <div class="agenda-row">
-                  <div style="display: flex; justify-content: space-between; gap: 8px; align-items: center;">
-                    <span class="badge badge-paid">POSTED</span>
-                    <span class="num" style="font-size: 13px; color: var(--text-secondary);">17/11/2026</span>
-                  </div>
-                  <p class="agenda-title num">Rp1.500.000</p>
-                  <p class="agenda-sub">Transfer BCA | Ref: <span class="mono">TRX-4411-BCA</span></p>
-                  <div class="action-row">
-                    <button type="button" class="btn btn-secondary btn-sm" data-open-void data-pay-label="Rp1.500.000 (MF-261117-01)">Void / Koreksi</button>
-                  </div>
-                </div>
-
-                <div class="agenda-row">
-                  <div style="display: flex; justify-content: space-between; gap: 8px; align-items: center;">
-                    <span class="badge badge-neutral">VOIDED</span>
-                    <span class="num" style="font-size: 13px; color: var(--text-secondary);">17/11/2026</span>
-                  </div>
-                  <p class="agenda-title num voided-amount">Rp1.000.000</p>
-                  <p class="agenda-sub">Alasan void: Salah ketik nominal DP saat input pertama</p>
-                </div>
-              </div>
+              <div class="stack-list" id="detail-payments-list"></div>
             </section>
           </div>
         </section>
 
         <!-- ========================================================= -->
-        <!-- CORE SCREEN 5: PEMBAYARAN & PIUTANG                       -->
+        <!-- CORE SCREEN 5: PIUTANG & PEMBAYARAN                       -->
         <!-- ========================================================= -->
         <section id="screen-payments" class="screen" aria-labelledby="h1-payments">
           <div class="page-head">
             <div>
-              <h1 id="h1-payments" class="page-title">Pembayaran &amp; Buku Piutang</h1>
-              <p class="page-subtitle">Pembayaran tercatat tidak dihapus permanen; koreksi memakai status VOIDED beserta alasan</p>
+              <h1 id="h1-payments" class="page-title">Piutang &amp; Pembayaran</h1>
+              <p class="page-subtitle">Daftar tagihan terbuka paling atas untuk tindak lanjut pelunasan; catatan bayar dijaga permanen</p>
             </div>
-            <button type="button" class="btn btn-primary" data-open-payment data-order="MF-261117-01" data-balance="1175000">+ Catat Pembayaran</button>
           </div>
 
-          <div class="card">
-            <div class="chip-row" role="group" aria-label="Filter transaksi pembayaran">
-              <button type="button" class="chip-btn" aria-pressed="true" data-pay-filter="all">Semua Catatan (3)</button>
-              <button type="button" class="chip-btn" aria-pressed="false" data-pay-filter="POSTED">Hanya POSTED (2)</button>
-              <button type="button" class="chip-btn" aria-pressed="false" data-pay-filter="VOIDED">Hanya VOIDED (1)</button>
+          <!-- Primary Section: Receivables List (matches UiPaymentController::index) -->
+          <section class="card" style="margin-bottom: 18px;" aria-labelledby="sec-receivables-main">
+            <div class="toolbar">
+              <div>
+                <h2 id="sec-receivables-main" class="card-title">Tagihan Belum Lunas (Piutang Aktif)</h2>
+                <p class="field-hint" style="margin-top: 2px;">Total piutang aktif: <strong id="receivables-total-label" class="num">Rp4.250.000</strong></p>
+              </div>
+              <div style="min-width: 240px;">
+                <label for="receivables-search-input" class="sr-only">Cari piutang berdasarkan nota atau pelanggan</label>
+                <input id="receivables-search-input" type="search" class="input" placeholder="Cari nota atau nama pelanggan...">
+              </div>
+            </div>
+
+            <div class="table-desktop">
+              <table class="ledger-table">
+                <thead>
+                  <tr>
+                    <th>No. Pesanan</th>
+                    <th>Pelanggan</th>
+                    <th>Tanggal Nota</th>
+                    <th>Status</th>
+                    <th class="num-cell">Total</th>
+                    <th class="num-cell">Terbayar</th>
+                    <th class="num-cell">Sisa Tagihan</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="receivables-table-body"></tbody>
+              </table>
+            </div>
+
+            <div class="cards-mobile" id="receivables-cards-mobile"></div>
+          </section>
+
+          <!-- Secondary Section: Audit History (Tercatat & Dibatalkan) -->
+          <section class="card" aria-labelledby="sec-payment-history">
+            <div class="card-header">
+              <div>
+                <h2 id="sec-payment-history" class="card-title">Riwayat Transaksi Pembayaran Terakhir</h2>
+                <p class="field-hint">Catatan tidak pernah dihapus permanen; pembatalan memakai status Dibatalkan beserta alasan</p>
+              </div>
+              <div class="chip-row" role="group" aria-label="Filter status riwayat pembayaran">
+                <button type="button" class="chip-btn" aria-pressed="true" data-pay-filter="all">Semua</button>
+                <button type="button" class="chip-btn" aria-pressed="false" data-pay-filter="POSTED">Hanya Tercatat</button>
+                <button type="button" class="chip-btn" aria-pressed="false" data-pay-filter="VOIDED">Hanya Dibatalkan</button>
+              </div>
             </div>
 
             <div class="table-desktop">
@@ -1850,100 +1757,42 @@
                 <thead>
                   <tr>
                     <th>Tanggal</th>
-                    <th>Pesanan &amp; Pemesan</th>
+                    <th>Pesanan &amp; Pelanggan</th>
                     <th>Metode / Referensi</th>
-                    <th>Status Audit</th>
+                    <th>Status Catatan</th>
                     <th class="num-cell">Nominal</th>
                     <th>Aksi</th>
                   </tr>
                 </thead>
-                <tbody id="payments-table-body">
-                  <tr data-pay-status="POSTED">
-                    <td class="num">17/11/2026</td>
-                    <td><strong class="mono">MF-261117-01</strong><br>PT Sinar Harapan Tbk</td>
-                    <td>Transfer BCA <span class="mono">TRX-4411</span></td>
-                    <td><span class="badge badge-paid">POSTED</span></td>
-                    <td class="num-cell num"><strong>Rp1.500.000</strong></td>
-                    <td><button type="button" class="btn btn-secondary btn-sm" data-open-void data-pay-label="Rp1.500.000 (MF-261117-01)">Void</button></td>
-                  </tr>
-                  <tr data-pay-status="POSTED">
-                    <td class="num">17/11/2026</td>
-                    <td><strong class="mono">MF-261117-02</strong><br>Ibu Ratna Dewi</td>
-                    <td>QRIS Toko <span class="mono">QR-8821</span></td>
-                    <td><span class="badge badge-paid">POSTED</span></td>
-                    <td class="num-cell num"><strong>Rp1.850.000</strong></td>
-                    <td><button type="button" class="btn btn-secondary btn-sm" data-open-void data-pay-label="Rp1.850.000 (MF-261117-02)">Void</button></td>
-                  </tr>
-                  <tr data-pay-status="VOIDED">
-                    <td class="num">17/11/2026</td>
-                    <td><strong class="mono">MF-261117-01</strong><br>PT Sinar Harapan Tbk</td>
-                    <td>Koreksi: Salah input nominal DP</td>
-                    <td><span class="badge badge-neutral">VOIDED</span></td>
-                    <td class="num-cell num voided-amount">Rp1.000.000</td>
-                    <td><span style="font-size: 13px; color: var(--text-secondary);">Terkunci</span></td>
-                  </tr>
-                </tbody>
+                <tbody id="payments-history-table-body"></tbody>
               </table>
             </div>
 
-            <div class="cards-mobile" id="payments-cards-mobile">
-              <article class="agenda-row" data-pay-status="POSTED">
-                <div>
-                  <div class="agenda-meta">
-                    <span class="badge badge-paid">POSTED</span>
-                    <span class="mono" style="font-size: 13px;">MF-261117-01</span>
-                  </div>
-                  <h3 class="agenda-title num">Rp1.500.000 - PT Sinar Harapan Tbk</h3>
-                  <p class="agenda-sub">17/11/2026 | Transfer BCA TRX-4411</p>
-                </div>
-                <button type="button" class="btn btn-secondary btn-sm" data-open-void data-pay-label="Rp1.500.000 (MF-261117-01)">Void / Koreksi</button>
-              </article>
-              <article class="agenda-row" data-pay-status="POSTED">
-                <div>
-                  <div class="agenda-meta">
-                    <span class="badge badge-paid">POSTED</span>
-                    <span class="mono" style="font-size: 13px;">MF-261117-02</span>
-                  </div>
-                  <h3 class="agenda-title num">Rp1.850.000 - Ibu Ratna Dewi</h3>
-                  <p class="agenda-sub">17/11/2026 | QRIS Toko QR-8821</p>
-                </div>
-                <button type="button" class="btn btn-secondary btn-sm" data-open-void data-pay-label="Rp1.850.000 (MF-261117-02)">Void / Koreksi</button>
-              </article>
-              <article class="agenda-row" data-pay-status="VOIDED">
-                <div>
-                  <div class="agenda-meta">
-                    <span class="badge badge-neutral">VOIDED</span>
-                    <span class="mono" style="font-size: 13px;">MF-261117-01</span>
-                  </div>
-                  <h3 class="agenda-title num voided-amount">Rp1.000.000</h3>
-                  <p class="agenda-sub">Alasan: Salah input nominal DP</p>
-                </div>
-              </article>
-            </div>
-          </div>
+            <div class="cards-mobile" id="payments-history-cards-mobile"></div>
+          </section>
         </section>
 
         <!-- ========================================================= -->
-        <!-- SUPPORTING BLUEPRINT SCREENS (Customers, Expenses, Cats, Reports) -->
+        <!-- SUPPORTING BLUEPRINT SCREENS                              -->
         <!-- ========================================================= -->
         <section id="screen-customers" class="screen" aria-labelledby="h1-customers">
+          <div class="blueprint-banner">Blueprint Layout Pendukung (Belum Terhubung ke Aksi Penuh pada Phase 8.2)</div>
           <div class="page-head">
             <div>
-              <h1 id="h1-customers" class="page-title">Direktori Pelanggan (Blueprint Layout)</h1>
-              <p class="page-subtitle">Pencarian cepat nama &amp; nomor WA serta riwayat pesanan per pelanggan</p>
+              <h1 id="h1-customers" class="page-title">Direktori Pelanggan</h1>
+              <p class="page-subtitle">Pencarian nama &amp; nomor WA serta pintasan pembuatan pesanan</p>
             </div>
             <button type="button" class="btn btn-primary" id="customers-add-btn">+ Tambah Pelanggan</button>
           </div>
           <div class="card">
-            <p class="agenda-sub" style="margin-bottom: 12px;">Pola konsisten dengan Daftar Pesanan: tabel di desktop (`&gt;= 900px`) dan kartu ringkas di HP, plus tombol langsung "+ Pesan untuk Pelanggan Ini".</p>
             <div class="table-desktop">
               <table class="ledger-table">
                 <thead>
                   <tr><th>Nama Pelanggan</th><th>No. WhatsApp</th><th class="num-cell">Total Pesanan</th><th class="num-cell">Sisa Piutang</th><th>Aksi</th></tr>
                 </thead>
                 <tbody>
-                  <tr><td><strong>PT Sinar Harapan Nusantara Tbk</strong></td><td class="mono">0812-8800-1122</td><td class="num-cell num">5</td><td class="num-cell num">Rp1.175.000</td><td><button type="button" class="btn btn-secondary btn-sm" data-nav="order-form">+ Pesan</button></td></tr>
-                  <tr><td><strong>Ibu Ratna Dewi</strong></td><td class="mono">0811-9220-4411</td><td class="num-cell num">8</td><td class="num-cell num">Rp0</td><td><button type="button" class="btn btn-secondary btn-sm" data-nav="order-form">+ Pesan</button></td></tr>
+                  <tr><td><strong>PT Sinar Harapan Nusantara Tbk</strong></td><td class="mono">0812-8800-1122</td><td class="num-cell num">5</td><td class="num-cell num">Rp1.175.000</td><td><button type="button" class="btn btn-secondary btn-sm" data-new-order-trigger>+ Pesan</button></td></tr>
+                  <tr><td><strong>Ibu Ratna Dewi</strong></td><td class="mono">0811-9220-4411</td><td class="num-cell num">8</td><td class="num-cell num">Rp0</td><td><button type="button" class="btn btn-secondary btn-sm" data-new-order-trigger>+ Pesan</button></td></tr>
                 </tbody>
               </table>
             </div>
@@ -1953,39 +1802,38 @@
                   <p class="agenda-title">PT Sinar Harapan Nusantara Tbk</p>
                   <p class="agenda-sub mono">0812-8800-1122 | Piutang Rp1.175.000</p>
                 </div>
-                <button type="button" class="btn btn-secondary btn-sm" data-nav="order-form">+ Pesan</button>
+                <button type="button" class="btn btn-secondary btn-sm" data-new-order-trigger>+ Pesan</button>
               </div>
             </div>
           </div>
         </section>
 
         <section id="screen-expenses" class="screen" aria-labelledby="h1-expenses">
+          <div class="blueprint-banner">Blueprint Layout Pendukung (Belum Terhubung ke Aksi Penuh pada Phase 8.2)</div>
           <div class="page-head">
             <div>
-              <h1 id="h1-expenses" class="page-title">Pengeluaran Toko (Blueprint Layout)</h1>
-              <p class="page-subtitle">Pencatatan belanja bunga segar, perlengkapan papan, dan ongkos kurir dengan audit POSTED / VOIDED</p>
+              <h1 id="h1-expenses" class="page-title">Pengeluaran Toko</h1>
+              <p class="page-subtitle">Catatan belanja bahan bunga dan kurir dengan jejak pembatalan beralasan</p>
             </div>
-            <button type="button" class="btn btn-primary" data-toast="Modal catat pengeluaran akan memakai CurrencyInput + idempotency guard.">+ Catat Pengeluaran</button>
           </div>
           <div class="card">
             <div class="agenda-row agenda-row-inline">
               <div>
-                <div class="agenda-meta"><span class="badge badge-paid">POSTED</span><span class="badge badge-neutral">Bunga Segar</span></div>
+                <div class="agenda-meta"><span class="badge badge-paid">Tercatat</span><span class="badge badge-neutral">Bunga Segar</span></div>
                 <p class="agenda-title">Belanja Anggrek Bulan &amp; Mawar Segar (Rawa Belong)</p>
                 <p class="agenda-sub num">17/11/2026 | Nominal: <strong>Rp1.200.000</strong></p>
               </div>
-              <button type="button" class="btn btn-secondary btn-sm" data-open-void data-pay-label="Pengeluaran Bunga Rp1.200.000">Void</button>
             </div>
           </div>
         </section>
 
         <section id="screen-categories" class="screen" aria-labelledby="h1-categories">
+          <div class="blueprint-banner">Blueprint Layout Pendukung (Belum Terhubung ke Aksi Penuh pada Phase 8.2)</div>
           <div class="page-head">
             <div>
-              <h1 id="h1-categories" class="page-title">Kategori Biaya (Blueprint Layout)</h1>
-              <p class="page-subtitle">Pengelompokan belanja operasional agar laporan bulanan rapi</p>
+              <h1 id="h1-categories" class="page-title">Kategori Biaya</h1>
+              <p class="page-subtitle">Pengelompokan belanja operasional untuk laporan bulanan</p>
             </div>
-            <button type="button" class="btn btn-primary" data-toast="Tambah kategori biaya baru.">+ Tambah Kategori</button>
           </div>
           <div class="card">
             <div class="stack-list">
@@ -2002,25 +1850,25 @@
         </section>
 
         <section id="screen-reports" class="screen" aria-labelledby="h1-reports">
+          <div class="blueprint-banner">Blueprint Layout Pendukung (Belum Terhubung ke Aksi Penuh pada Phase 8.2)</div>
           <div class="page-head">
             <div>
-              <h1 id="h1-reports" class="page-title">Laporan Keuangan Toko (Blueprint Layout)</h1>
-              <p class="page-subtitle">Rekap hanya menghitung transaksi POSTED; baris VOIDED dikecualikan otomatis</p>
+              <h1 id="h1-reports" class="page-title">Laporan Keuangan Toko</h1>
+              <p class="page-subtitle">Rekap hanya menghitung transaksi sah; transaksi dibatalkan dikecualikan otomatis</p>
             </div>
-            <button type="button" class="btn btn-secondary" data-toast="Unduh laporan Excel / CSV periode berjalan.">Ekspor Excel</button>
           </div>
-          <div class="kpi-grid">
+          <div class="detail-kpi-grid">
             <div class="kpi-card"><p class="kpi-label">Omzet Bulan Ini</p><p class="kpi-value num">Rp28.450.000</p></div>
-            <div class="kpi-card"><p class="kpi-label">Kas Masuk (POSTED)</p><p class="kpi-value num" style="color: var(--status-paid-fg);">Rp24.200.000</p></div>
-            <div class="kpi-card"><p class="kpi-label">Pengeluaran (POSTED)</p><p class="kpi-value num">Rp9.850.000</p></div>
-            <div class="kpi-card kpi-card-sunken"><p class="kpi-label">Selisih Kas Bersih</p><p class="kpi-value num">Rp14.350.000</p></div>
+            <div class="kpi-card"><p class="kpi-label">Kas Masuk (Sah)</p><p class="kpi-value num" style="color: var(--status-paid-fg);">Rp24.200.000</p></div>
+            <div class="kpi-card"><p class="kpi-label">Pengeluaran (Sah)</p><p class="kpi-value num">Rp9.850.000</p></div>
+            <div class="kpi-card kpi-card-sunken"><p class="kpi-label">Selisih Kas Sederhana</p><p class="kpi-value num">Rp14.350.000</p></div>
           </div>
         </section>
       </main>
     </div>
   </div>
 
-  <!-- Clean 4-Tab Mobile Bottom Navigation (< 768px) -->
+  <!-- 4-Destination Mobile Bottom Navigation (< 768px) -->
   <nav class="mobile-bottom-nav" aria-label="Navigasi utama mobile">
     <button type="button" class="bottom-nav-btn" data-nav="dashboard" aria-current="page">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -2030,7 +1878,7 @@
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/></svg>
       <span>Pesanan</span>
     </button>
-    <button type="button" class="bottom-nav-btn" data-nav="order-form">
+    <button type="button" class="bottom-nav-btn" data-new-order-trigger data-nav="order-form">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
       <span>Buat</span>
     </button>
@@ -2045,69 +1893,75 @@
     <div class="modal-card">
       <div class="card-header">
         <h2 id="modal-menu-title" class="card-title">Menu Mutiara Florist</h2>
-        <button type="button" class="btn btn-secondary btn-sm" data-close-modal="modal-menu">Tutup</button>
+        <button type="button" class="btn btn-secondary btn-sm" data-close-modal>Tutup</button>
       </div>
       <div class="stack-list">
-        <button type="button" class="btn btn-secondary" data-nav="payments">Pembayaran &amp; Piutang</button>
-        <button type="button" class="btn btn-secondary" data-nav="order-detail">Contoh Detail Pesanan</button>
-        <button type="button" class="btn btn-secondary" data-nav="customers">Direktori Pelanggan</button>
-        <button type="button" class="btn btn-secondary" data-nav="expenses">Pengeluaran Toko</button>
-        <button type="button" class="btn btn-secondary" data-nav="categories">Kategori Biaya</button>
-        <button type="button" class="btn btn-secondary" data-nav="reports">Laporan Keuangan</button>
+        <button type="button" class="btn btn-secondary" data-nav="payments">Piutang &amp; Pembayaran</button>
+        <button type="button" class="btn btn-secondary" data-nav="customers">Pelanggan (Blueprint)</button>
+        <button type="button" class="btn btn-secondary" data-nav="expenses">Pengeluaran (Blueprint)</button>
+        <button type="button" class="btn btn-secondary" data-nav="categories">Kategori Biaya (Blueprint)</button>
+        <button type="button" class="btn btn-secondary" data-nav="reports">Laporan (Blueprint)</button>
         <hr style="width: 100%; border: 0; border-top: 1px solid var(--border-hairline); margin: 4px 0;">
-        <button type="button" class="btn btn-urgent" id="mobile-logout-btn">Keluar Akun (Sari Wijaya)</button>
+        <button type="button" class="btn btn-urgent" data-open-logout>Keluar Akun (Sari Wijaya)</button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL 2: Quick Create Customer (without resetting order items!) -->
+  <!-- MODAL 2: Quick Create Customer (matches CustomerRequest: name required, phone optional, notes optional) -->
   <div id="modal-customer" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-customer-title">
     <div class="modal-card">
       <div class="card-header">
         <h2 id="modal-customer-title" class="card-title">Tambah Pelanggan Baru</h2>
-        <button type="button" class="btn btn-secondary btn-sm" data-close-modal="modal-customer">Tutup</button>
+        <button type="button" class="btn btn-secondary btn-sm" data-close-modal>Tutup</button>
       </div>
       <form id="quick-customer-form" novalidate>
         <div class="field-group">
           <label for="qc-name" class="field-label">Nama Pemesan / Perusahaan *</label>
-          <input id="qc-name" type="text" class="input" placeholder="Misal: CV Karya Mandiri">
+          <input id="qc-name" type="text" class="input" placeholder="Misal: CV Karya Mandiri" aria-describedby="qc-name-err">
+          <p id="qc-name-err" class="field-error" hidden></p>
         </div>
         <div class="field-group">
-          <label for="qc-phone" class="field-label">Nomor WhatsApp / HP *</label>
+          <label for="qc-phone" class="field-label">Nomor WhatsApp / Telepon (Opsional)</label>
           <input id="qc-phone" type="tel" class="input" placeholder="0812-3456-7890">
         </div>
+        <div class="field-group">
+          <label for="qc-notes" class="field-label">Catatan Pelanggan (Opsional)</label>
+          <input id="qc-notes" type="text" class="input" placeholder="Misal: Minta invoice PDF via WhatsApp">
+        </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-close-modal="modal-customer">Batal</button>
+          <button type="button" class="btn btn-secondary" data-close-modal>Batal</button>
           <button type="submit" class="btn btn-primary">Simpan &amp; Pilih</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- MODAL 3: Catat Pembayaran (CurrencyInput + Double-submit Lock) -->
+  <!-- MODAL 3: Record Payment (matches StorePaymentRequest) -->
   <div id="modal-payment" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-payment-title">
     <div class="modal-card">
       <div class="card-header">
         <h2 id="modal-payment-title" class="card-title">Catat Pembayaran Pesanan</h2>
-        <button type="button" class="btn btn-secondary btn-sm" data-close-modal="modal-payment">Tutup</button>
+        <button type="button" class="btn btn-secondary btn-sm" data-close-modal>Tutup</button>
       </div>
       <form id="payment-record-form" novalidate>
-        <p class="agenda-sub" style="margin-bottom: 12px;">Nota target: <strong id="pay-modal-order" class="mono">MF-261117-01</strong></p>
+        <p class="agenda-sub" style="margin-bottom: 12px;">Nota target: <strong id="pay-modal-order" class="mono"></strong> | Sisa tagihan: <strong id="pay-modal-remaining" class="num"></strong></p>
         <div class="field-group">
           <label for="pay-amount-input" class="field-label">Nominal Diterima (Rupiah bulat) *</label>
-          <div class="input-currency-wrap">
+          <div class="input-currency-wrap" id="pay-amount-wrap">
             <span class="input-currency-prefix">Rp</span>
-            <input id="pay-amount-input" type="text" inputmode="numeric" value="1.175.000">
+            <input id="pay-amount-input" type="text" inputmode="numeric" value="" aria-describedby="pay-amount-err">
           </div>
-          <p class="field-hint">Hanya bilangan bulat tanpa koma desimal.</p>
+          <p class="field-hint">Hanya bilangan bulat tanpa koma desimal, maksimal sebesar sisa tagihan.</p>
+          <p id="pay-amount-err" class="field-error" hidden></p>
         </div>
         <div class="form-grid-2">
           <div class="field-group">
             <label for="pay-method-select" class="field-label">Metode Bayar *</label>
             <select id="pay-method-select" class="select">
-              <option value="Transfer Bank">Transfer BCA</option>
-              <option value="Tunai">Tunai Kasir</option>
-              <option value="QRIS">QRIS Toko</option>
+              <option value="TRANSFER">Transfer bank</option>
+              <option value="CASH">Tunai kasir</option>
+              <option value="QRIS">QRIS toko</option>
+              <option value="OTHER">Lainnya</option>
             </select>
           </div>
           <div class="field-group">
@@ -2116,36 +1970,68 @@
           </div>
         </div>
         <div class="field-group">
-          <label for="pay-ref-input" class="field-label">Catatan / Nomor Referensi</label>
-          <input id="pay-ref-input" type="text" class="input" placeholder="Opsional, misal TRX-9910">
+          <label for="pay-ref-input" class="field-label">Referensi / Bukti Transfer (Opsional)</label>
+          <input id="pay-ref-input" type="text" class="input" placeholder="Misal: BCA TRX-9910">
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-close-modal="modal-payment">Batal</button>
+          <button type="button" class="btn btn-secondary" data-close-modal>Batal</button>
           <button type="submit" class="btn btn-primary" id="submit-payment-btn">Simpan Pembayaran</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- MODAL 4: Void / Koreksi dengan Alasan Wajib -->
+  <!-- MODAL 4: Confirm Permanent Delivery ("Tandai Terkirim") -->
+  <div id="modal-deliver-confirm" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-deliver-title">
+    <div class="modal-card">
+      <div class="card-header">
+        <h2 id="modal-deliver-title" class="card-title">Konfirmasi Barang Terkirim</h2>
+        <button type="button" class="btn btn-secondary btn-sm" data-close-modal>Tutup</button>
+      </div>
+      <p class="agenda-sub" style="margin-bottom: 10px;" id="deliver-confirm-summary"></p>
+      <p style="font-size: 14px; color: var(--brand-urgent); font-weight: 600; margin: 0;">Status Terkirim bersifat final dan tidak dapat dikembalikan ke Siap Kirim.</p>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-close-modal>Batal</button>
+        <button type="button" class="btn btn-primary" id="confirm-deliver-submit-btn">Ya, Tandai Terkirim</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 5: Void Payment (matches VoidPaymentRequest min:10 chars) -->
   <div id="modal-void" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-void-title">
     <div class="modal-card">
       <div class="card-header">
-        <h2 id="modal-void-title" class="card-title">Konfirmasi Void Transaksi</h2>
-        <button type="button" class="btn btn-secondary btn-sm" data-close-modal="modal-void">Tutup</button>
+        <h2 id="modal-void-title" class="card-title">Batalkan Catatan Pembayaran</h2>
+        <button type="button" class="btn btn-secondary btn-sm" data-close-modal>Tutup</button>
       </div>
       <form id="void-confirm-form" novalidate>
-        <p class="agenda-sub" style="margin-bottom: 12px;">Transaksi <strong id="void-target-label"></strong> akan ditandai <strong>VOIDED</strong> dan tetap tersimpan di riwayat audit.</p>
+        <p class="agenda-sub" style="margin-bottom: 12px;">Transaksi <strong id="void-target-label"></strong> akan ditandai <strong>Dibatalkan</strong>. Ini hanya koreksi pencatatan, bukan pengembalian uang.</p>
         <div class="field-group">
-          <label for="void-reason-input" class="field-label">Alasan Koreksi / Void (Wajib) *</label>
-          <input id="void-reason-input" type="text" class="input" placeholder="Misal: Salah input nominal transfer">
+          <label for="void-reason-input" class="field-label">Alasan Pembatalan Catatan (Min. 10 karakter) *</label>
+          <textarea id="void-reason-input" class="textarea" placeholder="Misal: Salah input nominal transfer dari bukti bank" aria-describedby="void-char-count void-reason-err"></textarea>
+          <p id="void-char-count" class="field-hint">0/10 karakter minimum</p>
           <p id="void-reason-err" class="field-error" hidden></p>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-close-modal="modal-void">Batalkan</button>
-          <button type="submit" class="btn btn-urgent">Ya, Tandai VOIDED</button>
+          <button type="button" class="btn btn-secondary" data-close-modal>Batal</button>
+          <button type="submit" class="btn btn-urgent">Ya, Batalkan Catatan</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- MODAL 6: Confirm Logout -->
+  <div id="modal-logout" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-logout-title">
+    <div class="modal-card">
+      <div class="card-header">
+        <h2 id="modal-logout-title" class="card-title">Keluar dari Aplikasi?</h2>
+        <button type="button" class="btn btn-secondary btn-sm" data-close-modal>Tutup</button>
+      </div>
+      <p class="agenda-sub">Pastikan seluruh pesanan atau pembayaran yang sedang diketik sudah disimpan sebelum keluar.</p>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-close-modal>Tetap Masuk</button>
+        <button type="button" class="btn btn-urgent" id="confirm-logout-btn">Keluar Sekarang</button>
+      </div>
     </div>
   </div>
 
@@ -2153,26 +2039,224 @@
 
   <script>
     (function () {
-      // Utilities: Integer Rupiah formatting
+      const TODAY_ISO = '2026-11-17';
+
+      // Synthetic State Store matching MFMS Database & Service Contracts
+      let customers = [
+        { id: 1, name: 'PT Sinar Harapan Nusantara Tbk', phone: '0812-8800-1122', notes: 'Pelanggan korporat' },
+        { id: 2, name: 'Ibu Ratna Dewi', phone: '0811-9220-4411', notes: 'Pelanggan tetap' },
+        { id: 3, name: 'Klinik Gigi Sentosa', phone: '0813-7700-9900', notes: '' },
+        { id: 4, name: 'Hotel Puri Anggrek', phone: '021-555-0192', notes: 'Invoice akhir bulan' }
+      ];
+
+      let orders = [
+        {
+          id: 101,
+          order_number: 'MF-261117-01',
+          customer_id: 1,
+          order_date: '2026-11-17',
+          notes: 'Kirimkan foto rangkaian via WA sebelum berangkat.',
+          items: [
+            {
+              id: 201,
+              flower_type: 'Standing Flower Anggrek Putih',
+              recipient: 'Direktur PT Mitra Jaya',
+              sender_name: 'Direksi PT Sinar Harapan',
+              delivery_date: '2026-11-17',
+              delivery_location: 'Menara Imperium Lt. 12, Jakarta Selatan',
+              quantity: 1,
+              unit_price: 1375000,
+              shipping_mode: 'INCLUDED',
+              shipping_fee: 0,
+              fulfillment_status: 'DELIVERED',
+              notes: 'Selamat dan Sukses Peresmian Kantor Pusat'
+            },
+            {
+              id: 202,
+              flower_type: 'Papan Bunga Grand Opening 2x1.2m',
+              recipient: 'Pimpinan Cabang Mitra Jaya',
+              sender_name: 'PT Sinar Harapan Nusantara',
+              delivery_date: '2026-11-16',
+              delivery_location: 'Ruko Puri Indah Blok B2, Jakarta Barat',
+              quantity: 1,
+              unit_price: 1150000,
+              shipping_mode: 'SEPARATE',
+              shipping_fee: 150000,
+              fulfillment_status: 'READY',
+              notes: 'Selamat Grand Opening Cabang Baru'
+            }
+          ],
+          payments: [
+            {
+              id: 301,
+              payment_date: '2026-11-17',
+              amount: 1500000,
+              method: 'TRANSFER',
+              reference: 'BCA-4411',
+              status: 'POSTED',
+              void_reason: null
+            },
+            {
+              id: 302,
+              payment_date: '2026-11-17',
+              amount: 1000000,
+              method: 'TRANSFER',
+              reference: 'BCA-4409',
+              status: 'VOIDED',
+              void_reason: 'Salah ketik nominal uang muka saat input pertama'
+            }
+          ]
+        },
+        {
+          id: 102,
+          order_number: 'MF-261117-02',
+          customer_id: 2,
+          order_date: '2026-11-17',
+          notes: '',
+          items: [
+            {
+              id: 203,
+              flower_type: 'Standing Flower Anggrek Putih',
+              recipient: 'Ibu Kartini Wijaya',
+              sender_name: 'Ratna Dewi & Keluarga',
+              delivery_date: '2026-11-17',
+              delivery_location: 'Gedung Graha Kirana Lt. 5, Sunter',
+              quantity: 2,
+              unit_price: 925000,
+              shipping_mode: 'INCLUDED',
+              shipping_fee: 0,
+              fulfillment_status: 'PROCESSING',
+              notes: 'Turut berbahagia atas pembukaan galeri'
+            }
+          ],
+          payments: [
+            {
+              id: 303,
+              payment_date: '2026-11-17',
+              amount: 1850000,
+              method: 'QRIS',
+              reference: 'QR-8821',
+              status: 'POSTED',
+              void_reason: null
+            }
+          ]
+        },
+        {
+          id: 103,
+          order_number: 'MF-261117-03',
+          customer_id: 3,
+          order_date: '2026-11-17',
+          notes: 'Diambil langsung oleh kurir klinik di toko.',
+          items: [
+            {
+              id: 204,
+              flower_type: 'Buket Mawar Peach & Eucalyptus',
+              recipient: 'drg. Amelia Putri',
+              sender_name: 'Tim Klinik Gigi Sentosa',
+              delivery_date: '2026-11-17',
+              delivery_location: 'Ambil di Workshop Mutiara Florist',
+              quantity: 1,
+              unit_price: 650000,
+              shipping_mode: 'INCLUDED',
+              shipping_fee: 0,
+              fulfillment_status: 'NEW',
+              notes: 'Happy Anniversary drg. Amelia'
+            }
+          ],
+          payments: [
+            {
+              id: 304,
+              payment_date: '2026-11-17',
+              amount: 650000,
+              method: 'CASH',
+              reference: '',
+              status: 'POSTED',
+              void_reason: null
+            }
+          ]
+        },
+        {
+          id: 104,
+          order_number: 'MF-261116-09',
+          customer_id: 4,
+          order_date: '2026-11-16',
+          notes: 'Tagihan ditagih kolektif akhir pekan.',
+          items: [
+            {
+              id: 205,
+              flower_type: 'Rangkaian Bunga Meja Lobby',
+              recipient: 'Resepsionis Hotel Puri Anggrek',
+              sender_name: 'Manajemen Puri Anggrek',
+              delivery_date: '2026-11-16',
+              delivery_location: 'Jl. Melawai Raya No. 28, Kebayoran Baru',
+              quantity: 3,
+              unit_price: 975000,
+              shipping_mode: 'SEPARATE',
+              shipping_fee: 150000,
+              fulfillment_status: 'DELIVERED',
+              notes: 'Penggantian rutin mingguan lobby utama'
+            }
+          ],
+          payments: []
+        }
+      ];
+
+      // State Helpers
       function parseDigits(str) {
         const clean = String(str || '').replace(/\D/g, '');
         return clean ? parseInt(clean, 10) : 0;
       }
-
       function formatRupiahDigits(num) {
         const val = Math.max(0, Math.round(Number(num) || 0));
         return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
       }
-
       function formatRp(num) {
         return 'Rp' + formatRupiahDigits(num);
       }
+      function formatDateId(iso) {
+        if (!iso || !iso.includes('-')) return iso || '';
+        const [y, m, d] = iso.split('-');
+        return `${d}/${m}/${y}`;
+      }
+      function getCustomer(cid) {
+        return customers.find((c) => c.id === cid) || { id: cid, name: 'Pelanggan', phone: '' };
+      }
+      function calcOrderTotal(order) {
+        return order.items.reduce((acc, it) => {
+          return acc + (it.quantity * it.unit_price) + (it.shipping_mode === 'SEPARATE' ? it.shipping_fee : 0);
+        }, 0);
+      }
+      function calcOrderPaid(order) {
+        return order.payments.filter((p) => p.status === 'POSTED').reduce((acc, p) => acc + p.amount, 0);
+      }
+      function getPaymentStatusUi(total, paid) {
+        if (paid === 0) return { label: 'Belum bayar', cls: 'badge-danger' };
+        if (paid >= total) return { label: 'Lunas', cls: 'badge-paid' };
+        return { label: 'Sebagian', cls: 'badge-warn' };
+      }
+      function getFulfillmentUi(code) {
+        return {
+          NEW: { label: 'Baru', cls: 'badge-neutral', next: 'PROCESSING', nextLabel: 'Mulai Proses' },
+          PROCESSING: { label: 'Diproses', cls: 'badge-warn', next: 'READY', nextLabel: 'Tandai Siap' },
+          READY: { label: 'Siap kirim', cls: 'badge-ready', next: 'DELIVERED', nextLabel: 'Tandai Terkirim' },
+          DELIVERED: { label: 'Terkirim', cls: 'badge-paid', next: null, nextLabel: null }
+        }[code] || { label: 'Baru', cls: 'badge-neutral', next: null, nextLabel: null };
+      }
+      function getMethodLabel(code) {
+        return { CASH: 'Tunai', TRANSFER: 'Transfer bank', QRIS: 'QRIS', OTHER: 'Lainnya' }[code] || 'Lainnya';
+      }
+      function getOrderOverallStatus(order) {
+        const statuses = order.items.map((i) => i.fulfillment_status);
+        if (statuses.every((s) => s === 'DELIVERED')) return 'DELIVERED';
+        if (statuses.every((s) => s === 'READY' || s === 'DELIVERED')) return 'READY';
+        if (statuses.some((s) => s !== 'NEW')) return 'PROCESSING';
+        return 'NEW';
+      }
 
-      // Live announcements & Toast
+      // Live Region & Toast
       const toastEl = document.getElementById('toast-box');
       const liveEl = document.getElementById('live-announcer');
       let toastTimer = null;
-
       function showToast(msg) {
         toastEl.textContent = msg;
         toastEl.classList.add('is-visible');
@@ -2182,17 +2266,16 @@
         toastTimer = setTimeout(() => toastEl.classList.remove('is-visible'), 3000);
       }
 
-      // Modal management with focus return & Escape key
+      // Modal Management + Focus Return + Escape
       let lastFocused = null;
-      function openModal(id, focusTargetId) {
+      function openModal(id, focusElId) {
         lastFocused = document.activeElement;
         document.querySelectorAll('.modal-backdrop').forEach((m) => m.classList.remove('is-open'));
         const modal = document.getElementById(id);
         modal.classList.add('is-open');
-        const target = focusTargetId ? document.getElementById(focusTargetId) : modal.querySelector('input, button');
+        const target = focusElId ? document.getElementById(focusElId) : modal.querySelector('input, button, select, textarea');
         if (target) target.focus();
       }
-
       function closeAllModals() {
         const wasOpen = document.querySelector('.modal-backdrop.is-open');
         document.querySelectorAll('.modal-backdrop').forEach((m) => m.classList.remove('is-open'));
@@ -2200,11 +2283,7 @@
           lastFocused.focus();
         }
       }
-
-      document.querySelectorAll('[data-close-modal]').forEach((btn) => {
-        btn.addEventListener('click', closeAllModals);
-      });
-
+      document.querySelectorAll('[data-close-modal]').forEach((btn) => btn.addEventListener('click', closeAllModals));
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
           closeAllModals();
@@ -2213,154 +2292,547 @@
         }
       });
 
-      // Screen navigation
+      // Screen Switching
       const screens = document.querySelectorAll('.screen');
-      const navButtons = document.querySelectorAll('[data-nav]');
+      const navButtons = document.querySelectorAll('.nav-btn[data-nav], .bottom-nav-btn[data-nav]');
+      let activeOrderDetailId = 101;
+      let orderFormMode = 'create'; // 'create' | 'edit'
+      let editingOrderId = null;
+
       function switchScreen(target) {
         screens.forEach((s) => s.classList.toggle('is-active', s.id === 'screen-' + target));
         navButtons.forEach((b) => {
-          if (b.dataset.nav === target) {
-            b.setAttribute('aria-current', 'page');
-          } else {
-            b.removeAttribute('aria-current');
-          }
+          if (b.dataset.nav === target) b.setAttribute('aria-current', 'page');
+          else b.removeAttribute('aria-current');
         });
         document.getElementById('modal-menu').classList.remove('is-open');
         window.scrollTo({ top: 0, behavior: 'auto' });
       }
 
-      navButtons.forEach((btn) => {
-        btn.addEventListener('click', () => switchScreen(btn.dataset.nav));
-      });
-
-      document.querySelectorAll('[data-open-menu]').forEach((btn) => {
-        btn.addEventListener('click', () => openModal('modal-menu'));
-      });
-
-      document.getElementById('desktop-logout-btn').addEventListener('click', () => {
-        showToast('Sesi ditutup (simulasi logout aman).');
-      });
-      document.getElementById('mobile-logout-btn').addEventListener('click', () => {
-        closeAllModals();
-        showToast('Sesi ditutup (simulasi logout aman).');
-      });
-
-      // Dashboard linear progression demo
-      document.querySelectorAll('[data-advance-agenda]').forEach((btn) => {
+      document.querySelectorAll('[data-nav]').forEach((btn) => {
         btn.addEventListener('click', () => {
-          const id = btn.dataset.advanceAgenda;
-          const row = document.querySelector(`[data-agenda-item="${id}"]`);
-          const pill = row.querySelector('[data-status-pill]');
-          if (pill.textContent === 'Baru') {
-            pill.textContent = 'Diproses';
-            pill.className = 'badge badge-warn';
-            btn.textContent = 'Tandai Siap';
-            showToast('Status kerja diperbarui: Diproses.');
-          } else if (pill.textContent === 'Diproses') {
-            pill.textContent = 'Siap Kirim';
-            pill.className = 'badge badge-ready';
-            btn.textContent = 'Tandai Terkirim';
-            showToast('Status kerja diperbarui: Siap Kirim.');
-          } else if (pill.textContent === 'Siap Kirim') {
-            pill.textContent = 'Terkirim';
-            pill.className = 'badge badge-paid';
-            row.classList.remove('agenda-row-urgent');
-            btn.remove();
-            showToast('Pesanan selesai dikirim.');
-          }
+          const target = btn.dataset.nav;
+          if (target === 'order-form') return; // handled by [data-new-order-trigger]
+          if (target === 'order-detail') renderOrderDetail(activeOrderDetailId);
+          switchScreen(target);
         });
       });
 
-      // Orders filter & Edge state simulator
-      const orderFilterBtns = document.querySelectorAll('[data-order-filter]');
-      const orderSearchInput = document.getElementById('orders-inline-search');
-      const stateSelect = document.getElementById('view-state-mode');
-      let currentOrderFilter = 'all';
+      document.querySelectorAll('[data-open-menu]').forEach((btn) => btn.addEventListener('click', () => openModal('modal-menu')));
+      document.querySelectorAll('[data-open-logout]').forEach((btn) => btn.addEventListener('click', () => openModal('modal-logout')));
+      document.getElementById('confirm-logout-btn').addEventListener('click', () => {
+        closeAllModals();
+        showToast('Sesi ditutup aman (simulasi logout).');
+      });
 
-      function applyOrdersView() {
-        const mode = stateSelect.value;
+      // Render Dashboard (Date-only Urgency Queue + Receivables)
+      function renderDashboard() {
+        const agendaList = document.getElementById('dash-agenda-list');
+        const recList = document.getElementById('dash-receivables-list');
+        const queueItems = [];
+
+        orders.forEach((ord) => {
+          ord.items.forEach((it) => {
+            if (it.fulfillment_status !== 'DELIVERED') {
+              queueItems.push({ order: ord, item: it });
+            }
+          });
+        });
+        queueItems.sort((a, b) => a.item.delivery_date.localeCompare(b.item.delivery_date));
+
+        let overdueCount = 0;
+        agendaList.innerHTML = '';
+        queueItems.forEach(({ order, item }) => {
+          const isOverdue = item.delivery_date < TODAY_ISO;
+          if (isOverdue) overdueCount++;
+          const st = getFulfillmentUi(item.fulfillment_status);
+          const cust = getCustomer(order.customer_id);
+          const dateLabel = isOverdue
+            ? `Terlambat (${formatDateId(item.delivery_date)})`
+            : (item.delivery_date === TODAY_ISO ? `Kirim hari ini (${formatDateId(item.delivery_date)})` : `Jadwal ${formatDateId(item.delivery_date)}`);
+
+          const art = document.createElement('article');
+          art.className = 'agenda-row agenda-row-inline' + (isOverdue ? ' agenda-row-urgent' : '');
+          art.innerHTML = `
+            <div>
+              <div class="agenda-meta">
+                <span class="badge ${isOverdue ? 'badge-danger' : 'badge-warn'}">${dateLabel}</span>
+                <span class="badge ${st.cls}">${st.label}</span>
+                <span class="mono" style="font-size: 13px;">${order.order_number}</span>
+              </div>
+              <h3 class="agenda-title">${item.flower_type} (${item.quantity} buah)</h3>
+              <p class="agenda-sub">Untuk: ${item.recipient} | ${item.delivery_location} | Pemesan: ${cust.name}</p>
+            </div>
+            <div class="action-row">
+              ${st.next ? `<button type="button" class="btn ${isOverdue ? 'btn-urgent' : 'btn-primary'} btn-sm" data-step-order="${order.id}" data-step-item="${item.id}" data-next-status="${st.next}">${st.nextLabel}</button>` : ''}
+              <button type="button" class="btn btn-secondary btn-sm" data-open-order="${order.id}">Detail</button>
+            </div>
+          `;
+          agendaList.appendChild(art);
+        });
+
+        if (queueItems.length === 0) {
+          agendaList.innerHTML = '<div class="state-panel"><p style="margin:0;">Semua rangkaian sudah selesai dikirim.</p></div>';
+        }
+
+        document.getElementById('dash-overdue-pill').textContent = overdueCount > 0 ? `${overdueCount} Terlambat tanggal` : 'Semua tepat tanggal';
+        document.getElementById('dash-overdue-pill').className = overdueCount > 0 ? 'badge badge-danger' : 'badge badge-paid';
+        document.getElementById('sidebar-urgent-badge').textContent = String(queueItems.length);
+
+        // Unpaid receivables on dashboard aside
+        recList.innerHTML = '';
+        orders.forEach((ord) => {
+          const total = calcOrderTotal(ord);
+          const paid = calcOrderPaid(ord);
+          const rem = Math.max(total - paid, 0);
+          if (rem <= 0) return;
+          const pui = getPaymentStatusUi(total, paid);
+          const cust = getCustomer(ord.customer_id);
+          const box = document.createElement('div');
+          box.className = 'agenda-row';
+          box.innerHTML = `
+            <div>
+              <div class="agenda-meta">
+                <span class="badge ${pui.cls}">${pui.label}</span>
+                <span class="mono" style="font-size: 13px;">${ord.order_number}</span>
+              </div>
+              <p class="agenda-title">${cust.name}</p>
+              <p class="agenda-sub num">Total ${formatRp(total)} | Sisa: <strong>${formatRp(rem)}</strong></p>
+            </div>
+            <div class="action-row">
+              <button type="button" class="btn btn-primary btn-sm" data-open-payment="${ord.id}">Catat Bayar</button>
+              <button type="button" class="btn btn-secondary btn-sm" data-open-order="${ord.id}">Detail</button>
+            </div>
+          `;
+          recList.appendChild(box);
+        });
+      }
+
+      // Linear Fulfillment Progression + Guarded Confirm Modal on DELIVERED
+      let pendingDeliverTarget = null;
+      function handleFulfillmentClick(orderId, itemId, nextStatus) {
+        const order = orders.find((o) => o.id === orderId);
+        const item = order?.items.find((i) => i.id === itemId);
+        if (!order || !item) return;
+
+        if (nextStatus === 'DELIVERED') {
+          pendingDeliverTarget = { orderId, itemId };
+          document.getElementById('deliver-confirm-summary').textContent =
+            `Nota ${order.order_number}: "${item.flower_type}" untuk ${item.recipient} (${item.delivery_location}).`;
+          openModal('modal-deliver-confirm', 'confirm-deliver-submit-btn');
+          return;
+        }
+
+        item.fulfillment_status = nextStatus;
+        renderAll();
+        showToast(`Status "${item.flower_type}" diperbarui menjadi ${getFulfillmentUi(nextStatus).label}.`);
+      }
+
+      document.getElementById('confirm-deliver-submit-btn').addEventListener('click', () => {
+        if (!pendingDeliverTarget) return;
+        const order = orders.find((o) => o.id === pendingDeliverTarget.orderId);
+        const item = order?.items.find((i) => i.id === pendingDeliverTarget.itemId);
+        if (item) item.fulfillment_status = 'DELIVERED';
+        pendingDeliverTarget = null;
+        closeAllModals();
+        renderAll();
+        showToast('Item berhasil ditandai Terkirim.');
+      });
+
+      // Orders Screen Rendering & Filtering
+      let currentOrderFilter = 'all';
+      let ordersScenarioMode = 'normal';
+
+      function renderOrders() {
         const emptyBox = document.getElementById('orders-state-empty');
         const loadBox = document.getElementById('orders-state-loading');
         const errBox = document.getElementById('orders-state-error');
         const dataWrap = document.getElementById('orders-data-wrap');
 
-        emptyBox.hidden = true;
-        loadBox.hidden = true;
-        errBox.hidden = true;
-        dataWrap.hidden = true;
+        emptyBox.hidden = true; loadBox.hidden = true; errBox.hidden = true; dataWrap.hidden = true;
+        if (ordersScenarioMode === 'empty') { emptyBox.hidden = false; return; }
+        if (ordersScenarioMode === 'loading') { loadBox.hidden = false; return; }
+        if (ordersScenarioMode === 'error') { errBox.hidden = false; return; }
 
-        if (mode === 'empty') { emptyBox.hidden = false; return; }
-        if (mode === 'loading') { loadBox.hidden = false; return; }
-        if (mode === 'error') { errBox.hidden = false; return; }
+        const q = (document.getElementById('orders-inline-search').value || '').trim().toLowerCase();
+        const tbody = document.getElementById('orders-table-body');
+        const mobileWrap = document.getElementById('orders-cards-mobile');
+        tbody.innerHTML = '';
+        mobileWrap.innerHTML = '';
 
-        const q = (orderSearchInput.value || '').trim().toLowerCase();
-        let visibleCount = 0;
-        const rows = document.querySelectorAll('#orders-table-body tr, #orders-cards-mobile article');
-        rows.forEach((el) => {
-          const matchesFilter = currentOrderFilter === 'all' ||
-            (currentOrderFilter === 'unpaid' && el.dataset.paid === 'unpaid') ||
-            (currentOrderFilter === el.dataset.status);
-          const matchesSearch = !q || (el.dataset.search || '').includes(q);
-          const show = matchesFilter && matchesSearch;
-          el.style.display = show ? '' : 'none';
-          if (show && el.tagName === 'TR') visibleCount++;
+        const filtered = orders.filter((ord) => {
+          const total = calcOrderTotal(ord);
+          const paid = calcOrderPaid(ord);
+          const rem = total - paid;
+          const overall = getOrderOverallStatus(ord);
+          const cust = getCustomer(ord.customer_id);
+          const matchFilter = currentOrderFilter === 'all' ||
+            (currentOrderFilter === 'unpaid' && rem > 0) ||
+            (currentOrderFilter === overall);
+          const hay = `${ord.order_number} ${cust.name} ${ord.items.map((i) => i.flower_type).join(' ')}`.toLowerCase();
+          return matchFilter && (!q || hay.includes(q));
         });
 
-        if (visibleCount === 0) {
+        if (filtered.length === 0) {
           emptyBox.hidden = false;
+          return;
+        }
+        dataWrap.hidden = false;
+
+        filtered.forEach((ord) => {
+          const total = calcOrderTotal(ord);
+          const paid = calcOrderPaid(ord);
+          const rem = Math.max(total - paid, 0);
+          const cust = getCustomer(ord.customer_id);
+          const pui = getPaymentStatusUi(total, paid);
+          const fui = getFulfillmentUi(getOrderOverallStatus(ord));
+          const earliestDelivery = ord.items.map((i) => i.delivery_date).sort()[0];
+          const isOverdue = earliestDelivery < TODAY_ISO && getOrderOverallStatus(ord) !== 'DELIVERED';
+
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td class="mono"><strong>${ord.order_number}</strong></td>
+            <td><strong>${cust.name}</strong><br><span style="color: var(--text-secondary);">${ord.items.length} item: ${ord.items[0].flower_type}</span></td>
+            <td class="num">${formatDateId(earliestDelivery)}</td>
+            <td><span class="badge ${fui.cls}">${fui.label}</span></td>
+            <td><span class="badge ${pui.cls}">${pui.label}</span></td>
+            <td class="num-cell num"><strong>${formatRp(total)}</strong></td>
+            <td>
+              <div class="action-row">
+                <button type="button" class="btn btn-secondary btn-sm" data-open-order="${ord.id}">Detail</button>
+                ${rem > 0 ? `<button type="button" class="btn btn-primary btn-sm" data-open-payment="${ord.id}">Bayar</button>` : ''}
+              </div>
+            </td>
+          `;
+          tbody.appendChild(tr);
+
+          const card = document.createElement('article');
+          card.className = 'agenda-row' + (isOverdue ? ' agenda-row-urgent' : '');
+          card.innerHTML = `
+            <div>
+              <div class="agenda-meta">
+                <span class="mono" style="font-size: 13px;">${ord.order_number}</span>
+                <span class="badge ${fui.cls}">${fui.label}</span>
+                <span class="badge ${pui.cls}">${pui.label}</span>
+              </div>
+              <h3 class="agenda-title">${cust.name}</h3>
+              <p class="agenda-sub num">Kirim ${formatDateId(earliestDelivery)} | Total ${formatRp(total)}${rem > 0 ? ` (Sisa ${formatRp(rem)})` : ''}</p>
+            </div>
+            <div class="action-row">
+              <button type="button" class="btn btn-secondary btn-sm" data-open-order="${ord.id}">Buka Detail</button>
+              ${rem > 0 ? `<button type="button" class="btn btn-primary btn-sm" data-open-payment="${ord.id}">Catat Bayar</button>` : ''}
+            </div>
+          `;
+          mobileWrap.appendChild(card);
+        });
+      }
+
+      document.querySelectorAll('[data-order-filter]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          currentOrderFilter = btn.dataset.orderFilter;
+          document.querySelectorAll('[data-order-filter]').forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+          renderOrders();
+        });
+      });
+      document.getElementById('orders-inline-search').addEventListener('input', renderOrders);
+      document.getElementById('orders-retry-btn').addEventListener('click', () => {
+        document.getElementById('demo-scenario-select').value = 'normal';
+        ordersScenarioMode = 'normal';
+        renderOrders();
+        showToast('Daftar pesanan berhasil dimuat ulang.');
+      });
+      document.getElementById('orders-reset-empty-btn').addEventListener('click', () => {
+        document.getElementById('demo-scenario-select').value = 'normal';
+        ordersScenarioMode = 'normal';
+        currentOrderFilter = 'all';
+        document.getElementById('orders-inline-search').value = '';
+        document.querySelectorAll('[data-order-filter]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.orderFilter === 'all')));
+        renderOrders();
+      });
+
+      document.getElementById('global-order-search').addEventListener('input', (e) => {
+        document.getElementById('orders-inline-search').value = e.target.value;
+        switchScreen('orders');
+        renderOrders();
+      });
+
+      // Order Detail Screen (Real dynamic lookup by ID + real clipboard copy for WA summary)
+      function renderOrderDetail(orderId) {
+        activeOrderDetailId = orderId;
+        const order = orders.find((o) => o.id === orderId) || orders[0];
+        const cust = getCustomer(order.customer_id);
+        const total = calcOrderTotal(order);
+        const paid = calcOrderPaid(order);
+        const rem = Math.max(total - paid, 0);
+        const pui = getPaymentStatusUi(total, paid);
+
+        document.getElementById('detail-order-number').textContent = order.order_number;
+        document.getElementById('detail-order-subtitle').textContent =
+          `${cust.name}${cust.phone ? ` (${cust.phone})` : ''} | Tanggal Nota ${formatDateId(order.order_date)}`;
+        document.getElementById('wa-copy-preview').hidden = true;
+
+        document.getElementById('detail-pay-btn').style.display = rem > 0 ? '' : 'none';
+        document.getElementById('detail-pay-btn').onclick = () => openPaymentModal(order.id);
+        document.getElementById('detail-edit-btn').onclick = () => loadOrderIntoForm('edit', order.id);
+
+        document.getElementById('detail-kpi-grid').innerHTML = `
+          <div class="kpi-card"><p class="kpi-label">Total Tagihan</p><p class="kpi-value num">${formatRp(total)}</p></div>
+          <div class="kpi-card"><p class="kpi-label">Sudah Diterima</p><p class="kpi-value num" style="color: var(--status-paid-fg);">${formatRp(paid)}</p></div>
+          <div class="kpi-card"><p class="kpi-label">Sisa Tagihan</p><p class="kpi-value num" style="color: var(--brand-urgent);">${formatRp(rem)}</p></div>
+          <div class="kpi-card"><p class="kpi-label">Status Bayar</p><p style="margin: 4px 0 0;"><span class="badge ${pui.cls}">${pui.label}</span></p></div>
+        `;
+
+        const itemsList = document.getElementById('detail-items-list');
+        itemsList.innerHTML = '';
+        order.items.forEach((it, idx) => {
+          const st = getFulfillmentUi(it.fulfillment_status);
+          const isOverdue = it.delivery_date < TODAY_ISO && it.fulfillment_status !== 'DELIVERED';
+          const shipText = it.shipping_mode === 'SEPARATE'
+            ? `Ongkir ditagih terpisah ${formatRp(it.shipping_fee)}`
+            : 'Ongkir sudah termasuk harga bunga';
+          const rowSub = (it.quantity * it.unit_price) + (it.shipping_mode === 'SEPARATE' ? it.shipping_fee : 0);
+
+          const el = document.createElement('article');
+          el.className = 'agenda-row' + (isOverdue ? ' agenda-row-urgent' : '');
+          el.innerHTML = `
+            <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; align-items: start;">
+              <div>
+                <div class="agenda-meta">
+                  <span class="badge ${st.cls}">${st.label}</span>
+                  <span class="num" style="font-size: 13px; color: var(--text-secondary);">Kirim ${formatDateId(it.delivery_date)} | ${shipText}</span>
+                </div>
+                <h3 class="agenda-title">${idx + 1}. ${it.flower_type} (${it.quantity} buah)</h3>
+                <p class="agenda-sub">Penerima: <strong>${it.recipient}</strong> | Pengirim kartu: <strong>${it.sender_name}</strong></p>
+                <p class="agenda-sub">Lokasi: ${it.delivery_location}</p>
+                ${it.notes ? `<p class="agenda-sub">Catatan: ${it.notes}</p>` : ''}
+              </div>
+              <strong class="num" style="font-size: 16px;">${formatRp(rowSub)}</strong>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px;">
+              <div class="stepper" aria-label="Tahap pengerjaan">
+                <span class="step-pill ${it.fulfillment_status === 'NEW' ? 'is-current' : 'is-done'}">Baru</span>
+                <span class="step-pill ${it.fulfillment_status === 'PROCESSING' ? 'is-current' : (['READY', 'DELIVERED'].includes(it.fulfillment_status) ? 'is-done' : '')}">Diproses</span>
+                <span class="step-pill ${it.fulfillment_status === 'READY' ? 'is-current' : (it.fulfillment_status === 'DELIVERED' ? 'is-done' : '')}">Siap kirim</span>
+                <span class="step-pill ${it.fulfillment_status === 'DELIVERED' ? 'is-current' : ''}">Terkirim</span>
+              </div>
+              ${st.next ? `<button type="button" class="btn btn-primary btn-sm" data-step-order="${order.id}" data-step-item="${it.id}" data-next-status="${st.next}">${st.nextLabel}</button>` : ''}
+            </div>
+          `;
+          itemsList.appendChild(el);
+        });
+
+        const payList = document.getElementById('detail-payments-list');
+        payList.innerHTML = '';
+        if (order.payments.length === 0) {
+          payList.innerHTML = '<p class="agenda-sub">Belum ada pembayaran yang dicatat pada nota ini.</p>';
         } else {
-          dataWrap.hidden = false;
+          order.payments.forEach((p) => {
+            const isPosted = p.status === 'POSTED';
+            const box = document.createElement('div');
+            box.className = 'agenda-row';
+            box.innerHTML = `
+              <div style="display: flex; justify-content: space-between; gap: 8px; align-items: center;">
+                <span class="badge ${isPosted ? 'badge-paid' : 'badge-neutral'}">${isPosted ? 'Tercatat' : 'Dibatalkan'}</span>
+                <span class="num" style="font-size: 13px; color: var(--text-secondary);">${formatDateId(p.payment_date)}</span>
+              </div>
+              <p class="agenda-title num ${isPosted ? '' : 'voided-amount'}">${formatRp(p.amount)}</p>
+              <p class="agenda-sub">${getMethodLabel(p.method)}${p.reference ? ` | Ref: ${p.reference}` : ''}</p>
+              ${isPosted
+                ? `<div class="action-row"><button type="button" class="btn btn-secondary btn-sm" data-open-void-ord="${order.id}" data-open-void-pay="${p.id}">Batalkan Catatan</button></div>`
+                : `<p class="agenda-sub">Alasan: ${p.void_reason}</p>`}
+            `;
+            payList.appendChild(box);
+          });
         }
       }
 
-      orderFilterBtns.forEach((btn) => {
-        btn.addEventListener('click', () => {
-          currentOrderFilter = btn.dataset.orderFilter;
-          orderFilterBtns.forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
-          applyOrdersView();
+      // Real WhatsApp Summary Copy
+      document.getElementById('copy-wa-summary-btn').addEventListener('click', async () => {
+        const ord = orders.find((o) => o.id === activeOrderDetailId) || orders[0];
+        const cust = getCustomer(ord.customer_id);
+        const total = calcOrderTotal(ord);
+        const paid = calcOrderPaid(ord);
+        const rem = Math.max(total - paid, 0);
+        const lines = [
+          `*Ringkasan Nota Mutiara Florist*`,
+          `No. Nota: ${ord.order_number}`,
+          `Pemesan: ${cust.name}`,
+          `Tanggal Nota: ${formatDateId(ord.order_date)}`,
+          ``,
+          `Rincian Pesanan:`,
+          ...ord.items.map((it, i) => `${i + 1}. ${it.flower_type} (${it.quantity} bh) - Kirim ${formatDateId(it.delivery_date)} ke ${it.recipient} (${it.delivery_location})`),
+          ``,
+          `Total Tagihan: ${formatRp(total)}`,
+          `Sudah Dibayar: ${formatRp(paid)}`,
+          `Sisa Tagihan: ${formatRp(rem)}`
+        ];
+        const text = lines.join('\n');
+        let copiedOk = false;
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(text);
+            copiedOk = true;
+          }
+        } catch (err) {
+          copiedOk = false;
+        }
+        if (!copiedOk) {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          ta.style.position = 'fixed';
+          ta.style.left = '-9999px';
+          document.body.appendChild(ta);
+          ta.select();
+          try { copiedOk = document.execCommand('copy'); } catch (e) { copiedOk = false; }
+          document.body.removeChild(ta);
+        }
+        document.getElementById('wa-copy-text').textContent = text;
+        document.getElementById('wa-copy-status').textContent = copiedOk
+          ? 'Teks ringkasan WhatsApp berhasil disalin ke clipboard:'
+          : 'Salin manual teks ringkasan WhatsApp di bawah ini:';
+        document.getElementById('wa-copy-preview').hidden = false;
+        showToast(copiedOk ? 'Teks WhatsApp tersalin ke clipboard.' : 'Pratinjau teks WhatsApp siap disalin manual.');
+      });
+      document.getElementById('wa-copy-close').addEventListener('click', () => {
+        document.getElementById('wa-copy-preview').hidden = true;
+      });
+
+      // Payments & Receivables Screen
+      let currentPayHistoryFilter = 'all';
+      function renderPaymentsScreen() {
+        const recQ = (document.getElementById('receivables-search-input').value || '').trim().toLowerCase();
+        const recTbody = document.getElementById('receivables-table-body');
+        const recMobile = document.getElementById('receivables-cards-mobile');
+        recTbody.innerHTML = '';
+        recMobile.innerHTML = '';
+
+        let totalOutstanding = 0;
+        const unpaidOrders = orders.filter((ord) => {
+          const tot = calcOrderTotal(ord);
+          const paid = calcOrderPaid(ord);
+          const rem = tot - paid;
+          if (rem <= 0) return false;
+          totalOutstanding += rem;
+          const cust = getCustomer(ord.customer_id);
+          return !recQ || `${ord.order_number} ${cust.name}`.toLowerCase().includes(recQ);
         });
-      });
-      orderSearchInput.addEventListener('input', applyOrdersView);
-      stateSelect.addEventListener('change', () => {
-        switchScreen('orders');
-        applyOrdersView();
-      });
-      document.getElementById('orders-retry-btn').addEventListener('click', () => {
-        stateSelect.value = 'normal';
-        applyOrdersView();
-        showToast('Daftar pesanan berhasil dimuat ulang.');
-      });
+        document.getElementById('receivables-total-label').textContent = formatRp(totalOutstanding);
 
-      // Order Detail progression
-      const detailAdvBtn = document.getElementById('detail-advance-btn');
-      detailAdvBtn.addEventListener('click', () => {
-        document.getElementById('detail-item2-badge').textContent = 'Terkirim';
-        document.getElementById('detail-item2-badge').className = 'badge badge-paid';
-        document.getElementById('detail-step-ready').className = 'step-pill is-done';
-        document.getElementById('detail-step-delivered').className = 'step-pill is-current';
-        document.getElementById('detail-item-2').classList.remove('agenda-row-urgent');
-        detailAdvBtn.remove();
-        showToast('Item #2 ditandai Terkirim.');
-      });
+        if (unpaidOrders.length === 0) {
+          recTbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 18px; color: var(--text-secondary);">Tidak ada tagihan piutang yang cocok.</td></tr>';
+          recMobile.innerHTML = '<div class="state-panel"><p style="margin:0;">Tidak ada tagihan piutang yang cocok.</p></div>';
+        } else {
+          unpaidOrders.forEach((ord) => {
+            const tot = calcOrderTotal(ord);
+            const paid = calcOrderPaid(ord);
+            const rem = tot - paid;
+            const cust = getCustomer(ord.customer_id);
+            const pui = getPaymentStatusUi(tot, paid);
 
-      // Payments filter & modal
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td class="mono"><strong>${ord.order_number}</strong></td>
+              <td><strong>${cust.name}</strong></td>
+              <td class="num">${formatDateId(ord.order_date)}</td>
+              <td><span class="badge ${pui.cls}">${pui.label}</span></td>
+              <td class="num-cell num">${formatRp(tot)}</td>
+              <td class="num-cell num">${formatRp(paid)}</td>
+              <td class="num-cell num" style="color: var(--brand-urgent);"><strong>${formatRp(rem)}</strong></td>
+              <td>
+                <div class="action-row">
+                  <button type="button" class="btn btn-primary btn-sm" data-open-payment="${ord.id}">Catat Bayar</button>
+                  <button type="button" class="btn btn-secondary btn-sm" data-open-order="${ord.id}">Detail</button>
+                </div>
+              </td>
+            `;
+            recTbody.appendChild(tr);
+
+            const card = document.createElement('article');
+            card.className = 'agenda-row';
+            card.innerHTML = `
+              <div>
+                <div class="agenda-meta">
+                  <span class="badge ${pui.cls}">${pui.label}</span>
+                  <span class="mono" style="font-size: 13px;">${ord.order_number}</span>
+                </div>
+                <h3 class="agenda-title">${cust.name}</h3>
+                <p class="agenda-sub num">Total ${formatRp(tot)} | Terbayar ${formatRp(paid)} | Sisa: <strong>${formatRp(rem)}</strong></p>
+              </div>
+              <div class="action-row">
+                <button type="button" class="btn btn-primary btn-sm" data-open-payment="${ord.id}">Catat Bayar</button>
+                <button type="button" class="btn btn-secondary btn-sm" data-open-order="${ord.id}">Detail</button>
+              </div>
+            `;
+            recMobile.appendChild(card);
+          });
+        }
+
+        // Secondary Audit Payment History
+        const hBody = document.getElementById('payments-history-table-body');
+        const hMob = document.getElementById('payments-history-cards-mobile');
+        hBody.innerHTML = '';
+        hMob.innerHTML = '';
+
+        const allPayments = [];
+        orders.forEach((ord) => ord.payments.forEach((p) => allPayments.push({ order: ord, payment: p })));
+        allPayments
+          .filter(({ payment }) => currentPayHistoryFilter === 'all' || payment.status === currentPayHistoryFilter)
+          .forEach(({ order, payment }) => {
+            const cust = getCustomer(order.customer_id);
+            const isPosted = payment.status === 'POSTED';
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td class="num">${formatDateId(payment.payment_date)}</td>
+              <td><strong class="mono">${order.order_number}</strong><br>${cust.name}</td>
+              <td>${isPosted ? `${getMethodLabel(payment.method)}${payment.reference ? ` (${payment.reference})` : ''}` : `Alasan: ${payment.void_reason}`}</td>
+              <td><span class="badge ${isPosted ? 'badge-paid' : 'badge-neutral'}">${isPosted ? 'Tercatat' : 'Dibatalkan'}</span></td>
+              <td class="num-cell num ${isPosted ? '' : 'voided-amount'}"><strong>${formatRp(payment.amount)}</strong></td>
+              <td>${isPosted ? `<button type="button" class="btn btn-secondary btn-sm" data-open-void-ord="${order.id}" data-open-void-pay="${payment.id}">Batalkan</button>` : '<span style="font-size:13px; color: var(--text-secondary);">Terkunci</span>'}</td>
+            `;
+            hBody.appendChild(tr);
+
+            const card = document.createElement('article');
+            card.className = 'agenda-row';
+            card.innerHTML = `
+              <div>
+                <div class="agenda-meta">
+                  <span class="badge ${isPosted ? 'badge-paid' : 'badge-neutral'}">${isPosted ? 'Tercatat' : 'Dibatalkan'}</span>
+                  <span class="mono" style="font-size: 13px;">${order.order_number}</span>
+                </div>
+                <h3 class="agenda-title num ${isPosted ? '' : 'voided-amount'}">${formatRp(payment.amount)} - ${cust.name}</h3>
+                <p class="agenda-sub">${formatDateId(payment.payment_date)} | ${isPosted ? getMethodLabel(payment.method) : `Alasan: ${payment.void_reason}`}</p>
+              </div>
+              ${isPosted ? `<button type="button" class="btn btn-secondary btn-sm" data-open-void-ord="${order.id}" data-open-void-pay="${payment.id}">Batalkan Catatan</button>` : ''}
+            `;
+            hMob.appendChild(card);
+          });
+      }
+
+      document.getElementById('receivables-search-input').addEventListener('input', renderPaymentsScreen);
       document.querySelectorAll('[data-pay-filter]').forEach((btn) => {
         btn.addEventListener('click', () => {
-          const target = btn.dataset.payFilter;
+          currentPayHistoryFilter = btn.dataset.payFilter;
           document.querySelectorAll('[data-pay-filter]').forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
-          document.querySelectorAll('#payments-table-body tr, #payments-cards-mobile article').forEach((row) => {
-            row.style.display = (target === 'all' || row.dataset.payStatus === target) ? '' : 'none';
-          });
+          renderPaymentsScreen();
         });
       });
 
-      document.querySelectorAll('[data-open-payment]').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          document.getElementById('pay-modal-order').textContent = btn.dataset.order || 'MF-261117-01';
-          document.getElementById('pay-amount-input').value = formatRupiahDigits(btn.dataset.balance || 1175000);
-          openModal('modal-payment', 'pay-amount-input');
-        });
-      });
+      // Payment Modal (StorePaymentRequest validation: amount int >= 1 && <= remaining)
+      let activePayOrderId = 101;
+      function openPaymentModal(orderId) {
+        const order = orders.find((o) => o.id === orderId) || orders[0];
+        activePayOrderId = order.id;
+        const tot = calcOrderTotal(order);
+        const paid = calcOrderPaid(order);
+        const rem = Math.max(tot - paid, 0);
+        document.getElementById('pay-modal-order').textContent = order.order_number;
+        document.getElementById('pay-modal-remaining').textContent = formatRp(rem);
+        document.getElementById('pay-amount-input').value = formatRupiahDigits(rem);
+        document.getElementById('pay-amount-err').hidden = true;
+        document.getElementById('pay-amount-wrap').classList.remove('is-invalid');
+        openModal('modal-payment', 'pay-amount-input');
+      }
 
       document.getElementById('pay-amount-input').addEventListener('input', (e) => {
         e.target.value = formatRupiahDigits(parseDigits(e.target.value));
@@ -2368,190 +2840,312 @@
 
       document.getElementById('payment-record-form').addEventListener('submit', (e) => {
         e.preventDefault();
-        const val = parseDigits(document.getElementById('pay-amount-input').value);
-        if (val <= 0) {
-          showToast('Nominal pembayaran harus lebih dari Rp0.');
+        const order = orders.find((o) => o.id === activePayOrderId);
+        const rem = Math.max(calcOrderTotal(order) - calcOrderPaid(order), 0);
+        const amt = parseDigits(document.getElementById('pay-amount-input').value);
+        const errEl = document.getElementById('pay-amount-err');
+        const wrapEl = document.getElementById('pay-amount-wrap');
+
+        if (amt <= 0) {
+          errEl.textContent = 'Nominal pembayaran minimal Rp1.';
+          errEl.hidden = false;
+          wrapEl.classList.add('is-invalid');
           return;
         }
+        if (amt > rem) {
+          errEl.textContent = `Pembayaran melebihi sisa tagihan ${formatRp(rem)}.`;
+          errEl.hidden = false;
+          wrapEl.classList.add('is-invalid');
+          return;
+        }
+
+        order.payments.unshift({
+          id: Date.now(),
+          payment_date: document.getElementById('pay-date-input').value || TODAY_ISO,
+          amount: amt,
+          method: document.getElementById('pay-method-select').value,
+          reference: document.getElementById('pay-ref-input').value.trim(),
+          status: 'POSTED',
+          void_reason: null
+        });
+        document.getElementById('pay-ref-input').value = '';
         closeAllModals();
-        showToast(`Pembayaran ${formatRp(val)} tercatat dengan status POSTED.`);
+        renderAll();
+        showToast(`Pembayaran ${formatRp(amt)} berhasil dicatat.`);
       });
 
-      // Void modal with required reason
-      document.querySelectorAll('[data-open-void]').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          document.getElementById('void-target-label').textContent = btn.dataset.payLabel || '';
-          document.getElementById('void-reason-input').value = '';
-          document.getElementById('void-reason-err').hidden = true;
-          document.getElementById('void-reason-input').removeAttribute('aria-invalid');
-          openModal('modal-void', 'void-reason-input');
-        });
+      // Void Payment Modal (VoidPaymentRequest min 10 chars live counter)
+      let activeVoidTarget = null;
+      const voidInput = document.getElementById('void-reason-input');
+      const voidCountEl = document.getElementById('void-char-count');
+      voidInput.addEventListener('input', () => {
+        const len = voidInput.value.trim().length;
+        voidCountEl.textContent = `${len}/10 karakter minimum`;
       });
+
+      function openVoidModal(orderId, payId) {
+        const ord = orders.find((o) => o.id === orderId);
+        const pay = ord?.payments.find((p) => p.id === payId);
+        if (!ord || !pay) return;
+        activeVoidTarget = { orderId, payId };
+        document.getElementById('void-target-label').textContent = `${formatRp(pay.amount)} (${ord.order_number})`;
+        voidInput.value = '';
+        voidCountEl.textContent = '0/10 karakter minimum';
+        document.getElementById('void-reason-err').hidden = true;
+        voidInput.removeAttribute('aria-invalid');
+        openModal('modal-void', 'void-reason-input');
+      }
 
       document.getElementById('void-confirm-form').addEventListener('submit', (e) => {
         e.preventDefault();
-        const reasonEl = document.getElementById('void-reason-input');
+        const reason = voidInput.value.trim();
         const errEl = document.getElementById('void-reason-err');
-        if (!reasonEl.value.trim()) {
-          errEl.textContent = 'Alasan pembatalan wajib diisi untuk menjaga jejak audit.';
+        if (reason.length < 10) {
+          errEl.textContent = 'Alasan pembatalan wajib minimal 10 karakter.';
           errEl.hidden = false;
-          reasonEl.setAttribute('aria-invalid', 'true');
-          reasonEl.focus();
+          voidInput.setAttribute('aria-invalid', 'true');
+          voidInput.focus();
           return;
         }
+        const ord = orders.find((o) => o.id === activeVoidTarget.orderId);
+        const pay = ord?.payments.find((p) => p.id === activeVoidTarget.payId);
+        if (pay) {
+          pay.status = 'VOIDED';
+          pay.void_reason = reason;
+        }
         closeAllModals();
-        showToast('Transaksi berhasil ditandai VOIDED beserta alasannya.');
+        renderAll();
+        showToast('Pencatatan pembayaran ditandai Dibatalkan.');
       });
 
-      // Order Create Form: Combobox + Quick Customer + Dynamic Items + Shipping Toggle + Error Summary
+      // Customer Combobox & Quick-Create Customer Modal (without auto-selecting customer or resetting items)
       const customerInput = document.getElementById('customer-search-input');
       const customerListbox = document.getElementById('customer-listbox');
       const customerIdHidden = document.getElementById('selected-customer-id');
 
-      function attachComboboxOption(btn) {
-        btn.addEventListener('click', () => {
-          customerInput.value = btn.dataset.label;
-          customerIdHidden.value = btn.dataset.cid;
-          customerListbox.classList.remove('is-open');
-          customerInput.setAttribute('aria-expanded', 'false');
-          customerInput.removeAttribute('aria-invalid');
-          document.getElementById('customer-err').hidden = true;
+      function renderCustomerOptions(filterText) {
+        const q = (filterText || '').trim().toLowerCase();
+        customerListbox.innerHTML = '';
+        customers.forEach((c) => {
+          const display = c.phone ? `${c.name} (${c.phone})` : c.name;
+          if (q && !display.toLowerCase().includes(q)) return;
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'combobox-option';
+          btn.setAttribute('role', 'option');
+          btn.innerHTML = `<strong>${c.name}</strong><span>${c.phone || 'Tanpa nomor telepon'}${c.notes ? ` | ${c.notes}` : ''}</span>`;
+          btn.addEventListener('click', () => {
+            customerIdHidden.value = String(c.id);
+            customerInput.value = display;
+            customerListbox.classList.remove('is-open');
+            customerInput.setAttribute('aria-expanded', 'false');
+            customerInput.removeAttribute('aria-invalid');
+            document.getElementById('customer-err').hidden = true;
+          });
+          customerListbox.appendChild(btn);
         });
       }
 
-      document.querySelectorAll('.combobox-option').forEach(attachComboboxOption);
-
       customerInput.addEventListener('focus', () => {
+        renderCustomerOptions('');
         customerListbox.classList.add('is-open');
         customerInput.setAttribute('aria-expanded', 'true');
       });
-
       customerInput.addEventListener('input', () => {
         customerIdHidden.value = '';
-        const q = customerInput.value.toLowerCase();
+        renderCustomerOptions(customerInput.value);
         customerListbox.classList.add('is-open');
-        customerListbox.querySelectorAll('.combobox-option').forEach((opt) => {
-          opt.style.display = opt.textContent.toLowerCase().includes(q) ? 'flex' : 'none';
-        });
       });
 
-      document.getElementById('open-quick-customer-btn').addEventListener('click', () => openModal('modal-customer', 'qc-name'));
-      document.getElementById('customers-add-btn').addEventListener('click', () => openModal('modal-customer', 'qc-name'));
+      document.getElementById('open-quick-customer-btn').addEventListener('click', () => {
+        document.getElementById('qc-name-err').hidden = true;
+        document.getElementById('qc-name').removeAttribute('aria-invalid');
+        openModal('modal-customer', 'qc-name');
+      });
+      document.getElementById('customers-add-btn').addEventListener('click', () => {
+        document.getElementById('qc-name-err').hidden = true;
+        document.getElementById('qc-name').removeAttribute('aria-invalid');
+        openModal('modal-customer', 'qc-name');
+      });
 
       document.getElementById('quick-customer-form').addEventListener('submit', (e) => {
         e.preventDefault();
-        const name = document.getElementById('qc-name').value.trim();
-        const phone = document.getElementById('qc-phone').value.trim();
-        if (!name || !phone) {
-          showToast('Lengkapi nama dan nomor WhatsApp pelanggan baru.');
+        const nameEl = document.getElementById('qc-name');
+        const errEl = document.getElementById('qc-name-err');
+        const name = nameEl.value.trim();
+        if (!name) {
+          errEl.textContent = 'Nama pelanggan wajib diisi.';
+          errEl.hidden = false;
+          nameEl.setAttribute('aria-invalid', 'true');
+          nameEl.focus();
           return;
         }
-        const label = `${name} (${phone})`;
-        const cid = 'c-' + Date.now();
-        const opt = document.createElement('button');
-        opt.type = 'button';
-        opt.className = 'combobox-option';
-        opt.setAttribute('role', 'option');
-        opt.dataset.cid = cid;
-        opt.dataset.label = label;
-        opt.innerHTML = `<strong>${name}</strong><span>${phone} | Baru ditambahkan</span>`;
-        attachComboboxOption(opt);
-        customerListbox.prepend(opt);
-        customerInput.value = label;
-        customerIdHidden.value = cid;
-        document.getElementById('qc-name').value = '';
+        const phone = document.getElementById('qc-phone').value.trim();
+        const notes = document.getElementById('qc-notes').value.trim();
+        const newCust = { id: Date.now(), name, phone, notes };
+        customers.unshift(newCust);
+        customerIdHidden.value = String(newCust.id);
+        customerInput.value = phone ? `${name} (${phone})` : name;
+        customerInput.removeAttribute('aria-invalid');
+        document.getElementById('customer-err').hidden = true;
+        nameEl.value = '';
         document.getElementById('qc-phone').value = '';
+        document.getElementById('qc-notes').value = '';
         closeAllModals();
-        showToast('Pelanggan baru ditambahkan tanpa menghapus daftar item Anda.');
+        showToast('Pelanggan baru ditambahkan. Daftar item pesanan Anda tetap aman.');
       });
 
-      // Order Items state
-      let orderItems = [
-        {
-          id: 1,
-          name: 'Papan Bunga Grand Opening 2x1.2m',
-          qty: 1,
-          price: 1250000,
-          shippingMode: 'SEPARATE',
-          shippingFee: 150000,
-          recipient: 'Cabang Baru Mitra Jaya, Ruko Puri Indah',
-          deliveryDate: '2026-11-18'
-        }
-      ];
-
+      // Order Form Items State (Strictly aligned 1:1 with OrderRequest.php)
+      let formItems = [];
       const itemsContainer = document.getElementById('order-items-container');
 
-      function updateTotals() {
+      function loadOrderIntoForm(mode, orderId) {
+        orderFormMode = mode;
+        editingOrderId = orderId || null;
+        document.getElementById('order-error-summary').hidden = true;
+        const changeWrap = document.getElementById('edit-change-reason-wrap');
+        document.getElementById('order-change-reason').value = '';
+        document.getElementById('change-reason-err').hidden = true;
+
+        if (mode === 'edit' && orderId) {
+          const ord = orders.find((o) => o.id === orderId) || orders[0];
+          const cust = getCustomer(ord.customer_id);
+          const hasPayments = calcOrderPaid(ord) > 0;
+          document.getElementById('h1-order-form').textContent = `Edit Pesanan ${ord.order_number}`;
+          document.getElementById('order-form-subtitle').textContent = 'Perubahan pada pesanan yang sudah menerima pembayaran wajib mencantumkan alasan perubahan.';
+          customerIdHidden.value = String(cust.id);
+          customerInput.value = cust.phone ? `${cust.name} (${cust.phone})` : cust.name;
+          document.getElementById('order-date-input').value = ord.order_date;
+          document.getElementById('order-general-note').value = ord.notes || '';
+          changeWrap.hidden = !hasPayments;
+          formItems = ord.items.map((it) => ({ ...it }));
+        } else {
+          document.getElementById('h1-order-form').textContent = 'Buat Pesanan Baru';
+          document.getElementById('order-form-subtitle').textContent = 'Seluruh rincian dihitung ulang oleh server saat disimpan; nominal memakai Rupiah bulat';
+          customerIdHidden.value = '';
+          customerInput.value = '';
+          document.getElementById('order-date-input').value = TODAY_ISO;
+          document.getElementById('order-general-note').value = '';
+          changeWrap.hidden = true;
+          formItems = [
+            {
+              flower_type: 'Papan Bunga Grand Opening 2x1.2m',
+              recipient: 'Pimpinan Cabang Mitra Jaya',
+              sender_name: 'PT Sinar Harapan Nusantara',
+              delivery_date: '2026-11-18',
+              delivery_location: 'Ruko Puri Indah Blok B2, Jakarta Barat',
+              quantity: 1,
+              unit_price: 1250000,
+              shipping_mode: 'SEPARATE',
+              shipping_fee: 150000,
+              notes: 'Selamat Sukses Grand Opening'
+            }
+          ];
+        }
+        renderFormItems();
+        updateFormTotals();
+        switchScreen('order-form');
+      }
+
+      document.querySelectorAll('[data-new-order-trigger]').forEach((btn) => {
+        btn.addEventListener('click', () => loadOrderIntoForm('create', null));
+      });
+
+      function updateFormTotals() {
         let itemsSub = 0;
         let shipTotal = 0;
-        orderItems.forEach((it) => {
-          itemsSub += (it.qty || 1) * (it.price || 0);
-          if (it.shippingMode === 'SEPARATE') {
-            shipTotal += (it.shippingFee || 0);
-          }
+        formItems.forEach((it) => {
+          itemsSub += (it.quantity || 1) * (it.unit_price || 0);
+          if (it.shipping_mode === 'SEPARATE') shipTotal += (it.shipping_fee || 0);
         });
         const grand = itemsSub + shipTotal;
         document.getElementById('sum-items').textContent = formatRp(itemsSub);
         document.getElementById('sum-shipping').textContent = formatRp(shipTotal);
         document.getElementById('sum-grand').textContent = formatRp(grand);
         document.getElementById('sticky-bar-total').textContent = formatRp(grand);
-        document.getElementById('item-count-label').textContent = String(orderItems.length);
+        document.getElementById('item-count-label').textContent = String(formItems.length);
       }
 
-      function renderItems() {
+      function renderFormItems() {
         itemsContainer.innerHTML = '';
-        orderItems.forEach((item, idx) => {
+        formItems.forEach((item, idx) => {
+          const isIncluded = item.shipping_mode === 'INCLUDED';
           const card = document.createElement('div');
           card.className = 'item-editor';
           card.innerHTML = `
             <div class="item-editor-head">
-              <strong>Item #${idx + 1}</strong>
+              <strong>Bunga #${idx + 1}</strong>
               <div class="action-row">
                 <button type="button" class="btn btn-secondary btn-sm" data-dup-idx="${idx}">Duplikat Item</button>
-                ${orderItems.length > 1 ? `<button type="button" class="btn btn-ghost btn-sm" data-del-idx="${idx}">Hapus</button>` : ''}
+                ${formItems.length > 1 ? `<button type="button" class="btn btn-ghost btn-sm" data-del-idx="${idx}">Hapus</button>` : ''}
               </div>
             </div>
+
             <div class="form-grid-2">
               <div class="field-group">
-                <label for="item-name-${idx}" class="field-label">Jenis &amp; Ukuran Karangan Bunga *</label>
-                <input id="item-name-${idx}" type="text" class="input" value="${item.name}" data-field="name" data-idx="${idx}">
+                <label for="f-flower-${idx}" class="field-label">Jenis &amp; Ukuran Bunga *</label>
+                <input id="f-flower-${idx}" type="text" class="input" value="${item.flower_type}" data-field="flower_type" data-idx="${idx}" aria-describedby="err-flower-${idx}">
+                <p id="err-flower-${idx}" class="field-error" hidden></p>
               </div>
               <div class="field-group">
-                <label for="item-date-${idx}" class="field-label">Jadwal Kirim *</label>
-                <input id="item-date-${idx}" type="date" class="input" value="${item.deliveryDate}" data-field="deliveryDate" data-idx="${idx}">
+                <label for="f-ddate-${idx}" class="field-label">Tanggal Kirim *</label>
+                <input id="f-ddate-${idx}" type="date" class="input" value="${item.delivery_date}" data-field="delivery_date" data-idx="${idx}" aria-describedby="err-ddate-${idx}">
+                <p id="err-ddate-${idx}" class="field-error" hidden></p>
               </div>
             </div>
-            <div class="form-grid-3">
+
+            <div class="form-grid-2">
               <div class="field-group">
-                <label for="item-qty-${idx}" class="field-label">Jumlah *</label>
-                <input id="item-qty-${idx}" type="number" min="1" class="input num" value="${item.qty}" data-field="qty" data-idx="${idx}">
+                <label for="f-recipient-${idx}" class="field-label">Nama Penerima *</label>
+                <input id="f-recipient-${idx}" type="text" class="input" value="${item.recipient}" placeholder="Nama orang/pimpinan penerima" data-field="recipient" data-idx="${idx}" aria-describedby="err-recipient-${idx}">
+                <p id="err-recipient-${idx}" class="field-error" hidden></p>
               </div>
               <div class="field-group">
-                <label for="item-price-${idx}" class="field-label">Harga Satuan (Rupiah) *</label>
+                <label for="f-sender-${idx}" class="field-label">Nama Pengirim di Pita/Kartu *</label>
+                <input id="f-sender-${idx}" type="text" class="input" value="${item.sender_name}" placeholder="Nama yang tertulis di ucapan" data-field="sender_name" data-idx="${idx}" aria-describedby="err-sender-${idx}">
+                <p id="err-sender-${idx}" class="field-error" hidden></p>
+              </div>
+            </div>
+
+            <div class="field-group">
+              <label for="f-loc-${idx}" class="field-label">Lokasi / Alamat Pengiriman *</label>
+              <input id="f-loc-${idx}" type="text" class="input" value="${item.delivery_location}" placeholder="Alamat lengkap atau gedung tujuan" data-field="delivery_location" data-idx="${idx}" aria-describedby="err-loc-${idx}">
+              <p id="err-loc-${idx}" class="field-error" hidden></p>
+            </div>
+
+            <div class="form-grid-3">
+              <div class="field-group">
+                <label for="f-qty-${idx}" class="field-label">Jumlah *</label>
+                <input id="f-qty-${idx}" type="number" min="1" class="input num" value="${item.quantity}" data-field="quantity" data-idx="${idx}">
+              </div>
+              <div class="field-group">
+                <label for="f-price-${idx}" class="field-label">Harga Satuan (Rupiah) *</label>
                 <div class="input-currency-wrap">
                   <span class="input-currency-prefix">Rp</span>
-                  <input id="item-price-${idx}" type="text" inputmode="numeric" value="${formatRupiahDigits(item.price)}" data-currency="price" data-idx="${idx}">
+                  <input id="f-price-${idx}" type="text" inputmode="numeric" value="${formatRupiahDigits(item.unit_price)}" data-currency="unit_price" data-idx="${idx}">
                 </div>
               </div>
               <div class="field-group">
-                <label for="item-ship-mode-${idx}" class="field-label">Skema Ongkir</label>
-                <select id="item-ship-mode-${idx}" class="select" data-field="shippingMode" data-idx="${idx}">
-                  <option value="SEPARATE" ${item.shippingMode === 'SEPARATE' ? 'selected' : ''}>Ditagih Terpisah (SEPARATE)</option>
-                  <option value="INCLUDED" ${item.shippingMode === 'INCLUDED' ? 'selected' : ''}>Termasuk Harga (INCLUDED)</option>
+                <label for="f-shipmode-${idx}" class="field-label">Skema Ongkos Kirim *</label>
+                <select id="f-shipmode-${idx}" class="select" data-field="shipping_mode" data-idx="${idx}">
+                  <option value="SEPARATE" ${item.shipping_mode === 'SEPARATE' ? 'selected' : ''}>Ditagih terpisah</option>
+                  <option value="INCLUDED" ${item.shipping_mode === 'INCLUDED' ? 'selected' : ''}>Sudah termasuk harga bunga</option>
                 </select>
               </div>
             </div>
+
             <div class="form-grid-2">
               <div class="field-group" style="margin-bottom: 0;">
-                <label for="item-recipient-${idx}" class="field-label">Penerima &amp; Alamat Tujuan *</label>
-                <input id="item-recipient-${idx}" type="text" class="input" value="${item.recipient}" data-field="recipient" data-idx="${idx}">
-              </div>
-              <div class="field-group" style="margin-bottom: 0; ${item.shippingMode === 'INCLUDED' ? 'opacity: 0.6;' : ''}">
-                <label for="item-ship-fee-${idx}" class="field-label">Biaya Ongkir ${item.shippingMode === 'INCLUDED' ? '(Otomatis Rp0 karena INCLUDED)' : '(Rupiah)'}</label>
-                <div class="input-currency-wrap">
+                <label for="f-shipfee-${idx}" class="field-label">Biaya Ongkir ${isIncluded ? '(Otomatis Rp0)' : '(Wajib > Rp0)*'}</label>
+                <div class="input-currency-wrap ${isIncluded ? 'is-disabled' : ''}" id="wrap-shipfee-${idx}">
                   <span class="input-currency-prefix">Rp</span>
-                  <input id="item-ship-fee-${idx}" type="text" inputmode="numeric" value="${item.shippingMode === 'INCLUDED' ? '0' : formatRupiahDigits(item.shippingFee)}" ${item.shippingMode === 'INCLUDED' ? 'disabled' : ''} data-currency="shippingFee" data-idx="${idx}">
+                  <input id="f-shipfee-${idx}" type="text" inputmode="numeric" value="${isIncluded ? '0' : formatRupiahDigits(item.shipping_fee)}" ${isIncluded ? 'disabled' : ''} data-currency="shipping_fee" data-idx="${idx}" aria-describedby="err-shipfee-${idx}">
                 </div>
+                <p id="err-shipfee-${idx}" class="field-error" hidden></p>
+              </div>
+              <div class="field-group" style="margin-bottom: 0;">
+                <label for="f-notes-${idx}" class="field-label">Catatan Item / Isi Ucapan Pita (Opsional)</label>
+                <input id="f-notes-${idx}" type="text" class="input" value="${item.notes || ''}" placeholder="Tulisan pita ucapan atau patokan lokasi" data-field="notes" data-idx="${idx}">
               </div>
             </div>
           `;
@@ -2559,12 +3153,21 @@
         });
 
         itemsContainer.querySelectorAll('[data-field]').forEach((el) => {
-          el.addEventListener('change', (e) => {
+          const evType = el.tagName === 'SELECT' || el.type === 'date' ? 'change' : 'input';
+          el.addEventListener(evType, (e) => {
             const i = Number(e.target.dataset.idx);
             const f = e.target.dataset.field;
-            orderItems[i][f] = f === 'qty' ? Math.max(1, parseInt(e.target.value || '1', 10)) : e.target.value;
-            if (f === 'shippingMode') renderItems();
-            updateTotals();
+            if (f === 'quantity') {
+              formItems[i][f] = Math.max(1, parseInt(e.target.value || '1', 10));
+            } else {
+              formItems[i][f] = e.target.value;
+            }
+            if (f === 'shipping_mode') {
+              if (e.target.value === 'INCLUDED') formItems[i].shipping_fee = 0;
+              else if (formItems[i].shipping_fee <= 0) formItems[i].shipping_fee = 100000;
+              renderFormItems();
+            }
+            updateFormTotals();
           });
         });
 
@@ -2573,114 +3176,255 @@
             const i = Number(e.target.dataset.idx);
             const f = e.target.dataset.currency;
             const num = parseDigits(e.target.value);
-            orderItems[i][f] = num;
+            formItems[i][f] = num;
             e.target.value = formatRupiahDigits(num);
-            updateTotals();
+            updateFormTotals();
           });
         });
 
         itemsContainer.querySelectorAll('[data-dup-idx]').forEach((btn) => {
           btn.addEventListener('click', () => {
             const i = Number(btn.dataset.dupIdx);
-            const src = orderItems[i];
-            orderItems.push({ ...src, id: Date.now() });
-            renderItems();
-            updateTotals();
-            showToast(`Item #${i + 1} berhasil diduplikat. Tinggal sesuaikan penerima/alamat.`);
+            formItems.push({ ...formItems[i], id: undefined });
+            renderFormItems();
+            updateFormTotals();
+            showToast(`Bunga #${i + 1} diduplikat. Silakan sesuaikan penerima dan lokasi.`);
           });
         });
 
         itemsContainer.querySelectorAll('[data-del-idx]').forEach((btn) => {
           btn.addEventListener('click', () => {
             const i = Number(btn.dataset.delIdx);
-            orderItems.splice(i, 1);
-            renderItems();
-            updateTotals();
+            formItems.splice(i, 1);
+            renderFormItems();
+            updateFormTotals();
           });
         });
       }
 
       document.getElementById('add-blank-item-btn').addEventListener('click', () => {
-        orderItems.push({
-          id: Date.now(),
-          name: '',
-          qty: 1,
-          price: 750000,
-          shippingMode: 'SEPARATE',
-          shippingFee: 100000,
+        formItems.push({
+          flower_type: '',
           recipient: '',
-          deliveryDate: '2026-11-18'
+          sender_name: '',
+          delivery_date: TODAY_ISO,
+          delivery_location: '',
+          quantity: 1,
+          unit_price: 500000,
+          shipping_mode: 'INCLUDED',
+          shipping_fee: 0,
+          notes: ''
         });
-        renderItems();
-        updateTotals();
+        renderFormItems();
+        updateFormTotals();
       });
 
-      renderItems();
-      updateTotals();
-
-      // GOV.UK Error Summary Validation
-      function runOrderValidation(forceEmptyTest) {
+      function validateOrderForm() {
         const errors = [];
         const summary = document.getElementById('order-error-summary');
         const list = document.getElementById('order-error-list');
         const custErr = document.getElementById('customer-err');
-
-        if (forceEmptyTest) {
-          customerIdHidden.value = '';
-          customerInput.value = '';
-          if (orderItems[0]) orderItems[0].name = '';
-          renderItems();
-        }
+        const dateInput = document.getElementById('order-date-input');
+        const dateErr = document.getElementById('order-date-err');
 
         if (!customerIdHidden.value) {
           customerInput.setAttribute('aria-invalid', 'true');
-          custErr.textContent = 'Pilih pelanggan dari daftar atau tambahkan pelanggan baru.';
+          custErr.textContent = 'Pelanggan wajib dipilih atau ditambahkan terlebih dahulu.';
           custErr.hidden = false;
-          errors.push({ id: 'customer-search-input', text: 'Pilih pelanggan terlebih dahulu.' });
+          errors.push({ id: 'customer-search-input', text: 'Pilih pelanggan dari daftar.' });
         } else {
           customerInput.removeAttribute('aria-invalid');
           custErr.hidden = true;
         }
 
-        const firstNameInput = document.getElementById('item-name-0');
-        if (firstNameInput && !firstNameInput.value.trim()) {
-          firstNameInput.setAttribute('aria-invalid', 'true');
-          errors.push({ id: 'item-name-0', text: 'Isi jenis dan ukuran karangan bunga pada Item #1.' });
+        if (!dateInput.value) {
+          dateInput.setAttribute('aria-invalid', 'true');
+          dateErr.textContent = 'Tanggal pesanan wajib diisi.';
+          dateErr.hidden = false;
+          errors.push({ id: 'order-date-input', text: 'Isi tanggal nota pesanan.' });
+        } else {
+          dateInput.removeAttribute('aria-invalid');
+          dateErr.hidden = true;
         }
+
+        if (orderFormMode === 'edit' && !document.getElementById('edit-change-reason-wrap').hidden) {
+          const crEl = document.getElementById('order-change-reason');
+          const crErr = document.getElementById('change-reason-err');
+          if (!crEl.value.trim()) {
+            crEl.setAttribute('aria-invalid', 'true');
+            crErr.textContent = 'Alasan perubahan wajib diisi untuk pesanan berbayar.';
+            crErr.hidden = false;
+            errors.push({ id: 'order-change-reason', text: 'Isi alasan perubahan pesanan.' });
+          } else {
+            crEl.removeAttribute('aria-invalid');
+            crErr.hidden = true;
+          }
+        }
+
+        formItems.forEach((it, i) => {
+          const checks = [
+            ['flower_type', `f-flower-${i}`, `err-flower-${i}`, `Bunga #${i + 1}: Jenis bunga wajib diisi.`],
+            ['recipient', `f-recipient-${i}`, `err-recipient-${i}`, `Bunga #${i + 1}: Nama penerima wajib diisi.`],
+            ['sender_name', `f-sender-${i}`, `err-sender-${i}`, `Bunga #${i + 1}: Nama pengirim ucapan wajib diisi.`],
+            ['delivery_date', `f-ddate-${i}`, `err-ddate-${i}`, `Bunga #${i + 1}: Tanggal kirim wajib diisi.`],
+            ['delivery_location', `f-loc-${i}`, `err-loc-${i}`, `Bunga #${i + 1}: Lokasi pengiriman wajib diisi.`]
+          ];
+          checks.forEach(([key, inputId, errId, msg]) => {
+            const el = document.getElementById(inputId);
+            const eEl = document.getElementById(errId);
+            if (!String(it[key] || '').trim()) {
+              el.setAttribute('aria-invalid', 'true');
+              eEl.textContent = msg;
+              eEl.hidden = false;
+              errors.push({ id: inputId, text: msg });
+            } else {
+              el.removeAttribute('aria-invalid');
+              eEl.hidden = true;
+            }
+          });
+
+          const feeEl = document.getElementById(`f-shipfee-${i}`);
+          const feeErr = document.getElementById(`err-shipfee-${i}`);
+          const feeWrap = document.getElementById(`wrap-shipfee-${i}`);
+          if (it.shipping_mode === 'SEPARATE' && (it.shipping_fee || 0) <= 0) {
+            feeEl.setAttribute('aria-invalid', 'true');
+            feeWrap.classList.add('is-invalid');
+            const msg = `Bunga #${i + 1}: Ongkir terpisah harus lebih dari Rp0.`;
+            feeErr.textContent = msg;
+            feeErr.hidden = false;
+            errors.push({ id: `f-shipfee-${i}`, text: msg });
+          } else {
+            feeEl.removeAttribute('aria-invalid');
+            feeWrap.classList.remove('is-invalid');
+            feeErr.hidden = true;
+          }
+        });
 
         if (errors.length > 0) {
           list.innerHTML = errors.map((er) => `<li><a href="#${er.id}">${er.text}</a></li>`).join('');
           list.querySelectorAll('a').forEach((link) => {
             link.addEventListener('click', (ev) => {
               ev.preventDefault();
-              const target = document.getElementById(link.getAttribute('href').slice(1));
-              if (target) target.focus();
+              const t = document.getElementById(link.getAttribute('href').slice(1));
+              if (t) t.focus();
             });
           });
           summary.hidden = false;
           summary.focus();
           return false;
         }
-
         summary.hidden = true;
         return true;
       }
 
-      document.getElementById('test-invalid-submit-btn').addEventListener('click', () => {
-        runOrderValidation(true);
-      });
-
       document.getElementById('order-create-form').addEventListener('submit', (e) => {
         e.preventDefault();
-        if (!runOrderValidation(false)) return;
-        showToast('Pesanan baru tersimpan & diverifikasi server.');
-        switchScreen('order-detail');
+        if (!validateOrderForm()) return;
+
+        if (orderFormMode === 'edit' && editingOrderId) {
+          const targetOrd = orders.find((o) => o.id === editingOrderId);
+          targetOrd.customer_id = Number(customerIdHidden.value);
+          targetOrd.order_date = document.getElementById('order-date-input').value;
+          targetOrd.notes = document.getElementById('order-general-note').value.trim();
+          targetOrd.items = formItems.map((it, idx) => ({
+            ...it,
+            id: it.id || (Date.now() + idx),
+            fulfillment_status: it.fulfillment_status || 'NEW'
+          }));
+          renderAll();
+          renderOrderDetail(targetOrd.id);
+          switchScreen('order-detail');
+          showToast(`Perubahan nota ${targetOrd.order_number} disimpan.`);
+        } else {
+          const newOrd = {
+            id: Date.now(),
+            order_number: 'MF-261117-0' + (orders.length + 1),
+            customer_id: Number(customerIdHidden.value),
+            order_date: document.getElementById('order-date-input').value,
+            notes: document.getElementById('order-general-note').value.trim(),
+            items: formItems.map((it, idx) => ({
+              ...it,
+              id: Date.now() + idx + 1,
+              fulfillment_status: 'NEW'
+            })),
+            payments: []
+          };
+          orders.unshift(newOrd);
+          renderAll();
+          renderOrderDetail(newOrd.id);
+          switchScreen('order-detail');
+          showToast(`Pesanan baru ${newOrd.order_number} berhasil dicatat.`);
+        }
       });
 
-      // Wire toast-only demo triggers
-      document.querySelectorAll('[data-toast]').forEach((btn) => {
-        btn.addEventListener('click', () => showToast(btn.dataset.toast));
+      // Global Delegated Clicks for Dynamic Rows
+      document.addEventListener('click', (e) => {
+        const openOrd = e.target.closest('[data-open-order]');
+        if (openOrd) {
+          renderOrderDetail(Number(openOrd.dataset.openOrder));
+          switchScreen('order-detail');
+          return;
+        }
+        const openPay = e.target.closest('[data-open-payment]');
+        if (openPay) {
+          const oid = Number(openPay.dataset.openPayment) || 101;
+          openPaymentModal(oid);
+          return;
+        }
+        const stepBtn = e.target.closest('[data-step-order]');
+        if (stepBtn) {
+          handleFulfillmentClick(
+            Number(stepBtn.dataset.stepOrder),
+            Number(stepBtn.dataset.stepItem),
+            stepBtn.dataset.nextStatus
+          );
+          return;
+        }
+        const voidBtn = e.target.closest('[data-open-void-ord]');
+        if (voidBtn) {
+          openVoidModal(Number(voidBtn.dataset.openVoidOrd), Number(voidBtn.dataset.openVoidPay));
+        }
       });
+
+      // Design Review Scenario Switcher (ONLY inside preview strip)
+      document.getElementById('demo-scenario-select').addEventListener('change', (e) => {
+        const val = e.target.value;
+        if (val === 'normal') {
+          ordersScenarioMode = 'normal';
+          renderAll();
+          switchScreen('dashboard');
+        } else if (val === 'form-error') {
+          loadOrderIntoForm('create', null);
+          formItems[0].recipient = '';
+          formItems[0].sender_name = '';
+          formItems[0].delivery_location = '';
+          renderFormItems();
+          validateOrderForm();
+        } else if (val === 'form-edit') {
+          loadOrderIntoForm('edit', 101);
+        } else if (val === 'orders-empty') {
+          ordersScenarioMode = 'empty';
+          renderOrders();
+          switchScreen('orders');
+        } else if (val === 'orders-loading') {
+          ordersScenarioMode = 'loading';
+          renderOrders();
+          switchScreen('orders');
+        } else if (val === 'orders-error') {
+          ordersScenarioMode = 'error';
+          renderOrders();
+          switchScreen('orders');
+        }
+      });
+
+      function renderAll() {
+        renderDashboard();
+        renderOrders();
+        renderOrderDetail(activeOrderDetailId);
+        renderPaymentsScreen();
+      }
+
+      renderAll();
     })();
   </script>
 </body>
