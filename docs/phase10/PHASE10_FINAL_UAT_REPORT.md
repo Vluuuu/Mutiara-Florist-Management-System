@@ -34,19 +34,15 @@
 | `DB_CONNECTION` (Operasional) | `mysql` -> `127.0.0.1:3307` (`mutiara_florist`) | Tidak dimodifikasi selama verifikasi |
 | `mariadb_testing` | `127.0.0.1:3307` (`mfms_testing`, `is_testing => true`) | Terisolasi untuk seluruh uji mutasi |
 
-### 1.3 Baseline Data Operasional `mutiara_florist` (Read-Only Pra & Pasca Pengujian)
-| Metrik / Tabel | Baseline Awal | Verifikasi Akhir (Pasca Stage 1–5) | Status |
+### 1.3 Verifikasi Baseline Database Operasional (Read-Only Pra & Pasca Pengujian)
+
+Untuk menjaga privasi repository publik, rincian jumlah record dan nominal finansial database operasional tidak dipublikasikan. Pemeriksaan dilakukan secara read-only sebelum Stage 1 dan diulang setelah Stage 5 selesai:
+
+| Cakupan Audit Operasional (`mutiara_florist`) | Metode Verifikasi | Konsistensi Pra vs Pasca Uji | Status |
 | --- | --- | --- | --- |
-| `users` | `2` (`Dewo` & `QA Dashboard Temp` `@example.test`) | `2` | Tidak Berubah |
-| `customers` | `2` (aktif `2`) | `2` | Tidak Berubah |
-| `orders` | `2` (`Rp1.600.000`) | `2` (`Rp1.600.000`) | Tidak Berubah |
-| `order_items` | `4` | `4` | Tidak Berubah |
-| `payments` | `2` (`POSTED`: `2`, `VOIDED`: `0`, `Rp1.300.000`) | `2` (`Rp1.300.000`) | Tidak Berubah |
-| `expense_categories` | `1` | `1` | Tidak Berubah |
-| `expenses` | `1` (`POSTED`: `1`, `VOIDED`: `0`, `Rp100.000`) | `1` (`Rp100.000`) | Tidak Berubah |
-| `audit_logs` | `17` | `17` | Tidak Berubah |
-| `migrations` | `6` | `6` | Tidak Berubah |
-| Sisa Piutang Berjalan | `Rp300.000` | `Rp300.000` | Tidak Berubah |
+| Seluruh 9 tabel inti (`users`, `customers`, `orders`, `order_items`, `payments`, `expense_categories`, `expenses`, `audit_logs`, `migrations`) | Query `COUNT(*)` read-only | Identik `100%` (`0` baris berubah) | **PASS** |
+| Invarian finansial (`orders.total_amount`, `payments POSTED`, `expenses POSTED`, piutang berjalan) | Query agregasi read-only | Identik `100%` (`Rp0` selisih) | **PASS** |
+| Audit akun pengguna | Pemeriksaan metadata akun (tanpa kredensial) | Teridentifikasi `1` akun operator utama resmi (identitas dianonimkan) dan `1` akun demo/pengujian (`@example.test`) yang menunggu persetujuan penghapusan pemilik | **CONDITIONAL (Gate Pemilik)** |
 
 ---
 
@@ -110,15 +106,11 @@ Dijalankan terhadap server uji terisolasi `http://127.0.0.1:8010` yang tersambun
 
 - **Audit Kode:** `BackupService` (`app/Services/BackupService.php`) dan `routes/console.php` menerapkan snapshot konsisten `REPEATABLE READ` + `START TRANSACTION WITH CONSISTENT SNAPSHOT`, enkripsi terotentikasi `AES-256-GCM` dengan `AAD`, checksum `SHA-256`, penulisan atomik `.tmp`, izin file `0600`, dan guard keras yang menolak restorasi ke database operasional (`mutiara_florist`, `mfms`, `laravel`, `default`).
 - **Eksekusi Backup Operasional Read-Only (`php artisan mfms:backup`):**
-  - File baru terbentuk tanpa menimpa arsip tanggal 17/11/2026:
-    - `storage/app/backups/mfms_backup_2026-11-18_012445_708271_520924f5.enc` (`9,127 bytes`)
-    - `storage/app/backups/mfms_backup_2026-11-18_012445_708271_520924f5.meta.json` (`1,354 bytes`)
-  - Algoritma: `AES-256-GCM`
-  - Checksum SHA-256: `ef372f279cab3f80c8d5aa1c07f5a89bbaef121a338977aab4d9ca1b6d897234`
-- **Eksekusi Uji Pemulihan Terisolasi (`php artisan mfms:restore-test ... --connection=mariadb_testing`):**
+  - Sepasang arsip terenkripsi baru (`mfms_backup_<timestamp>.enc` dan `.meta.json`, ukuran terenkripsi `9,127 bytes`, sandi `AES-256-GCM` + `AAD` + `SHA-256`) terbentuk di `storage/app/backups/` tanpa menimpa arsip sebelumnya maupun mengubah database operasional.
+- **Eksekusi Uji Pemulihan Terisolasi (`php artisan mfms:restore-test <arsip>.enc --connection=mariadb_testing`):**
   - Checksum SHA-256: **VALID**
-  - Rekonsiliasi Baris Tabel (`users=2, customers=2, orders=2, order_items=4, payments=2, expense_categories=1, expenses=1, audit_logs=17, migrations=6`): **VALID**
-  - Integritas Metrik Keuangan (`orders_total_amount=1600000`, `payments_posted_amount=1300000`, `expenses_posted_amount=100000`): **VALID**
+  - Rekonsiliasi Baris Seluruh 9 Tabel Inti (`users`, `customers`, `orders`, `order_items`, `payments`, `expense_categories`, `expenses`, `audit_logs`, `migrations`): **VALID (100% identik dengan snapshot)**
+  - Integritas Metrik Keuangan (`orders_total_amount`, `payments_posted_amount`, `expenses_posted_amount`): **VALID (100% identik dengan snapshot)**
   - Relasi Foreign Key (No Orphans): **VALID**
 - **Gate Penyimpanan Off-Site (Belum Lulus):** Pemeriksaan `Win32_LogicalDisk` hanya mendeteksi disk lokal `C:` dan `D:` (`DriveType = 3`), tanpa media eksternal USB maupun folder sinkronisasi off-site yang terpasang/terverifikasi. Gate backup off-site dicatat sebagai **BELUM LULUS** sampai pemilik menyalin `.enc`, `.meta.json`, dan salinan kunci enkripsi ke media eksternal.
 
@@ -159,14 +151,18 @@ Diperiksa terhadap `scripts/Start-MFMS.bat`, `scripts/Stop-MFMS.bat`, `scripts/s
 
 ---
 
-## 7. Stage 6 & Stage 7 — UAT Manusia, Audit Keamanan Produksi, & Bukti Visual
+## 7. Stage 6, Stage 7, & Public Documentation Privacy Gate
 
 - Simulasi UAT teknis oleh agent telah selesai dengan data sintetis di `mfms_testing`. **Penerimaan operator manusia tidak boleh dipalsukan** dan disiapkan pada `docs/phase10/PHASE10_OPERATOR_ACCEPTANCE.md` serta `docs/PILOT_UAT_ACCEPTANCE_AND_RISKS.md`.
-- Bukti tangkapan layar Botanical Studio tersimpan di `docs/phase10/screenshots/` (tanpa kredensial/rahasia):
+- Bukti tangkapan layar Botanical Studio tersimpan di `docs/phase10/screenshots/` (**seluruhnya berasal dari data sintetis `mfms_testing`**, tanpa data pelanggan nyata maupun kredensial/rahasia):
   - `dashboard-1440.png`, `dashboard-1024.png`, `dashboard-768.png`, `dashboard-360.png`, `dashboard-empty-1440.png`
   - `orders-1440.png`, `orders-360.png`, `order-detail-1440.png`
   - `payments-1440.png`, `expenses-1440.png`, `categories-1440.png`
   - `reports-1440.png`, `reports-360.png`
+- **Audit Privasi Publik (PATCH-01):**
+  - Identitas email/nama personal operator serta angka transaksi dan jumlah record dari database operasional telah direduksi/dianonimkan dari dokumen pada HEAD saat ini.
+  - Tidak ada file `.env`, token, encryption key, maupun file backup (`.enc`/`.meta.json`) yang dimasukkan ke Git.
+  - **Catatan Riwayat Git:** Data yang sempat tercatat pada commit publik sebelumnya (`ae748955e9708bf49903b31da7d9e8c586a0a2a5`) **tidak otomatis terhapus** oleh commit redaksi baru pada Git history. Evaluasi penanganan riwayat commit publik (misal squash/rewrite sebelum atau sesudah review oleh pemilik repository) perlu diputuskan secara terpisah tanpa force-push atau rewrite otomatis oleh agent.
 
 ### Keputusan Akhir Phase 10: **CONDITIONAL**
-Aplikasi aman secara arsitektur, perhitungan keuangan, enkripsi backup, pemulihan MariaDB, dan tata letak responsif Botanical Studio. Status pilot akan naik menjadi **PILOT READY** segera setelah seluruh item owner-gate pada `docs/phase10/PHASE10_RELEASE_READINESS_CHECKLIST.md` diselesaikan dan ditandatangani oleh operator & pemilik toko.
+Aplikasi aman secara arsitektur, perhitungan keuangan, enkripsi backup, pemulihan MariaDB, dan tata letak responsif Botanical Studio. Status pilot tetap **CONDITIONAL** dan akan naik menjadi **PILOT READY** setelah seluruh item owner-gate pada `docs/phase10/PHASE10_RELEASE_READINESS_CHECKLIST.md` diselesaikan dan ditandatangani oleh operator & pemilik toko.
