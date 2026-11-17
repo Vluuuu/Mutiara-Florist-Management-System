@@ -1,49 +1,54 @@
-# Phase 9: Implementation Plan (Mapped to P0 / P1 / P2 Audit Backlog)
+# Phase 9: Implementation Plan (Locked to Approved Botanical Studio Design)
 **Mutiara Florist Management System (MFMS)**
 
-Rencana ini dijalankan **setelah pemilik memilih opsi visual final** pada Phase 8 (Opsi A, Opsi B, atau Opsi C) dan mengunci `docs/DESIGN.md`. Seluruh pengerjaan Phase 9 tidak boleh mengubah logika perhitungan tagihan, pembayaran idempoten, status item linier, maupun integritas audit.
+- **Desain Disetujui:** **Arah 2 - Botanical Studio Workspace (`commit 3177c6f`)**
+- **Referensi Visual Resmi:** `docs/phase8-2/direction-2-botanical-studio.html`
+- **Spesifikasi Terkunci:** `docs/DESIGN.md`
+- **Catatan Persetujuan:** `docs/PHASE8_2_DESIGN_APPROVAL.md`
+
+Seluruh pengerjaan Phase 9 tidak boleh mengubah `OrderService`, `PaymentService`, `ExpenseService`, `ReportService`, `BackupService`, schema database operasional, maupun rumus bisnis keuangan.
 
 ---
 
-## Prinsip Pengaman Implementasi (Non-Negotiable)
+## 1. Prinsip Pengaman Implementasi (Non-Negotiable)
 
-1. **Zero Business Logic Regression:** `OrderService`, `PaymentService`, `ExpenseService`, `ReportService`, `BackupService`, dan seluruh rumus integer Rupiah tidak diubah.
-2. **Backend Read-Formatting Only:** Perubahan backend dibatasi pada:
-   - Penambahan `messages()` & `attributes()` Bahasa Indonesia pada 7 `FormRequest` (UX-P0-01).
-   - Format tanggal zona `Asia/Jakarta` pada `UiExpenseController::index()` (UX-P0-02).
-   - Penyelarasan prop `nav` & tambahan data ringkas read-only untuk Dashboard/Customer Show (`agenda kirim`, `riwayat order pelanggan`) dengan `DashboardService`/`OrderService` teruji.
-3. **Gate Verifikasi di Setiap Batch:** `npm run typecheck`, `npm run build`, `php artisan test`, serta verifikasi `agent-browser` pada `1440×900`, `768×1024`, dan `390×844` + `contrast-check.py` dan checklist Anti-Slop.
+1. **Zero Business Logic Regression:** `OrderService`, `PaymentService`, `ExpenseService`, `ReportService`, `BackupService`, dan seluruh rumus integer Rupiah tidak diubah pada Phase 9.
+2. **Backend Scope Terbatas:**
+   - **Sprint 1:** Penambahan `messages()` dan `attributes()` Bahasa Indonesia di seluruh 7 `FormRequest`, format tanggal `Asia/Jakarta` (WIB) serta format Rupiah konsisten, dan penyelarasan props `nav` di controller tanpa menyentuh rumus bisnis.
+   - **Sprint 2-3 (terpisah setelah Sprint 1 di-review):** Penambahan query read-only bila disetujui untuk antrean `delivery_date` Dashboard atau riwayat pembayaran di Piutang.
+3. **Strategi Git Stacked PR:**
+   - PR #6 (`audit/phase7-ui-ux` -> `main`) dan PR #7 (`design/phase8-human-centered-refinement` -> `main`) diintegrasikan berurutan (PR #6 lebih dahulu sebelum PR #7).
+   - Sprint 1 bekerja pada branch terpisah `feat/phase9-sprint1-foundation` yang dibuat dari `design/phase8-human-centered-refinement` dengan target PR stacked ke `design/phase8-human-centered-refinement` agar diff hanya memuat kode Sprint 1.
+4. **Gate Verifikasi Wajib:** `npm run typecheck`, `npm run build`, `php artisan test`, `contrast-check.py`, serta verifikasi `agent-browser` pada `360×780`, `390×844`, `768×1024`, `1024×768`, dan `1440×900` dengan database testing terisolasi.
 
 ---
 
-## Tahap 1 — Fondasi Design System, Shell, & Perbaikan Kritis P0 (Sprint 1)
+## 2. Sprint 1 — Fondasi Design System, Shell Botanical Studio, Validasi & Format (Fokus Saat Ini)
 
 | Task | Backlog ID | Ruang Lingkup Pekerjaan | Kriteria Selesai |
-| --- | --- | --- | --- |
-| **9.1.1 Lokalisasi Validasi Backend** | `UX-P0-01` | Tambah `messages()` & `attributes()` Bahasa Indonesia di seluruh 7 `FormRequest` (`CustomerRequest`, `OrderRequest`, `StorePaymentRequest`, `VoidPaymentRequest`, `StoreExpenseRequest`, `VoidExpenseRequest`, `ExpenseCategoryRequest`), termasuk label ramah item pesanan (`Bunga #1: Jenis bunga`). | Tidak ada teks validasi Inggris atau key `items.0.*`; feature test PHPUnit membuktikan pesan Bahasa Indonesia. |
-| **9.1.2 Fix Tanggal & Mata Uang Pengeluaran** | `UX-P0-02` | Format `expense_date` (`d/m/Y`) & `voided_at` (`d/m/Y H:i` WIB) di `UiExpenseController::index()`. Seragamkan `formatRupiah()` (`Rp...`, `-Rp...`) di `resources/js/lib/format.ts` dan pakai di seluruh halaman termasuk Pengeluaran & Laporan. | Tanggal WIB akurat (tidak mundur 1 hari UTC); semua nominal bertanda `Rp` + `tabular-nums`. |
-| **9.1.3 Token CSS & Komponen Inti** | `UX-P1-10`, `UX-P1-12`, `UX-P2-05` | Implementasi token warna & tipografi pilihan pemilik di `resources/css/app.css`. Bangun komponen bersama: `Modal`, `CurrencyInput`, `SearchableSelect`, `ResponsiveDataList`, `OrderCodeBadge`, `CharCounterTextarea`, `Badge`, `Button`. | Semua komponen memenuhi WCAG AA (`contrast-check.py` PASS), `cursor: pointer`, `Escape` modal, dan `min-h-[44px]` di mobile. |
-| **9.1.4 Shell Navigasi & Pembersihan Scaffolding** | `UX-P0-03`, `UX-P0-05`, `UX-P2-01`, `UX-P2-07` | Bangun `AppLayout` & navigasi baru sesuai opsi terpilih (Opsi A/B/C). Hapus blok `FALLBACK BLADE LAMA`, badge `Phase 3.3`, teks usang, dan topbar `<h2>` duplikat. Perbaiki scroll mobile drawer + `Keluar` tampak + `Escape`. Key flash banner agar reset bersih. | `overflowX: false` di `390×844`, `Keluar` tampak di mobile, `Escape` menutup drawer, urutan heading valid (`<h1>` dulu). |
+| :--- | :--- | :--- | :--- |
+| **9.1.1 Lokalisasi Validasi 7 FormRequest** | `UX-P0-01` | Tambah `messages()` dan `attributes()` Bahasa Indonesia pada seluruh 7 `FormRequest` (`OrderRequest`, `CustomerRequest`, `StorePaymentRequest`, `VoidPaymentRequest`, `StoreExpenseRequest`, `VoidExpenseRequest`, `ExpenseCategoryRequest`), termasuk pesan array item pesanan tanpa raw key `items.0.*`. | Tidak ada pesan validasi Inggris atau raw field key pada respons error; PHPUnit feature tests lulus. |
+| **9.1.2 Penyelarasan Format Rupiah & Tanggal WIB** | `UX-P0-02`, `UX-P2-05` | Seragamkan `formatRupiah()` (`Rp1.500.000`, `-Rp55.000`, `tabular-nums`) dan formatter tanggal WIB (`dd/mm/yyyy`, `dd/mm/yyyy HH:mm WIB`) di `resources/js/lib/format.ts` serta controller pembacaan tanggal (`UiExpenseController::index()`, dll.) tanpa menyentuh service keuangan. | Tidak ada pergeseran tanggal UTC -1 hari; seluruh nominal bertanda `Rp` + `tabular-nums`. |
+| **9.1.3 Token CSS & Komponen Bersama Botanical Studio** | `UX-P1-10`, `UX-P1-12`, `UX-P2-05` | Implementasi token CSS terkunci (`#FBF9F6`, `#143326`, `#8C3B4A`, `#858E87`, status semantik WCAG AA) di `resources/css/app.css`. Bangun komponen bersama: `Button`, `Input`, `Badge`, `Modal`, `CurrencyInput`, `SearchableSelect`, dan `ResponsiveDataList` (+ utilitas error summary / order badge). | Kontras lulus WCAG AA, `cursor: pointer`, `:focus-visible`, `Escape` modal + return focus, dan target tap mobile `>= 44px`. |
+| **9.1.4 AppLayout Desktop/Tablet/Mobile & Cleanup Scaffolding** | `UX-P0-03`, `UX-P0-05`, `UX-P2-01` | Bangun `AppLayout` sesuai referensi `direction-2-botanical-studio.html`: Dark Spruce Sidebar (`#143326`) pada `>= 1024px`, topbar tablet dengan trigger `Menu` (`768px-1023px`), dan 4-destinasi mobile bottom navigation (`Hari Ini`, `Pesanan`, `Buat`, `Menu`) dengan drawer halaman sekunder + `Keluar Akun` & `Escape`. Bersihkan badge `Phase 3.3`, blok `Pengembangan berikutnya`, serta fallback link `Blade lama` dari shell, dashboard, dan halaman login. | `overflowCount = 0` di `360px`..`1440px`, 4 tab bottom nav aktif, tombol `Keluar` tampak & berfungsi, `npm run typecheck` + `npm run build` + `php artisan test` lulus. |
 
 ---
 
-## Tahap 2 — Alur Inti Harian: Login, Dashboard, Pelanggan, & Pesanan (Sprint 2)
+## 3. Sprint 2 — Alur Harian Inti: Login, Dashboard, Pelanggan, & Pesanan (Menunggu Review Sprint 1)
 
-| Task | Backlog ID | Ruang Lingkup Pekerjaan | Kriteria Selesai |
-| --- | --- | --- | --- |
-| **9.2.1 Login & Dashboard Operasional** | `UX-P1-06`, `UX-P2-04` | Perbaiki `<Head title="Masuk" />`, tambah *eye toggle* password, hapus link Blade fallback. Ubah Dashboard menjadi ruang kerja operasional: CTA cepat (`+ Buat Pesanan`, `+ Catat Pengeluaran`), Agenda Pengiriman Hari Ini & Besok, serta hierarki Kas & Piutang. Samakan `nav` di `UiDashboardController`. | Operator melihat pengiriman hari ini dan bisa buat order/pengeluaran dalam 1 klik dari Dashboard. |
-| **9.2.2 Pelanggan (Index, Create, Edit, Show)** | `UX-P0-04`, `UX-P1-07` | Terapkan `<ResponsiveDataList>` pada daftar pelanggan (kartu di mobile/tablet). Pada Detail Pelanggan, tampilkan daftar riwayat order pelanggan, tombol `+ Buat Pesanan` (prefill `?customer_id=`), dan `<Modal>` arsip standar. | Tidak ada kolom terpotong di `390×844` & `768×1024`; flow Pelanggan -> Pesanan turun dari 7 klik menjadi <= 3 klik. |
-| **9.2.3 Daftar Pesanan (`/ui-orders`)** | `UX-P0-04`, `UX-P1-05` | Perbaiki tombol menjadi `+ Buat Pesanan`. Tambah chip filter cepat status (`Semua`, `Baru`, `Diproses`, `Siap Kirim`, `Selesai`). Tampilkan `<OrderCodeBadge>`, nama penerima & tanggal kirim terdekat, serta `<ResponsiveDataList>`. | Status & tagihan terbaca utuh di mobile/tablet; filter status cukup 1 klik. |
-| **9.2.4 Form Pesanan Create & Edit** | `UX-P0-06`, `UX-P1-01`, `UX-P1-03`, `UX-P1-12`, `UX-P2-02`, `UX-P2-03` | Hapus default `customers[0]`; pakai `<SearchableSelect>` + modal tambah pelanggan cepat tanpa menghapus form. Layout 2 kolom *sticky summary*. Tambah `Duplikat Bunga`, `<CurrencyInput>`, sembunyikan ongkir saat `INCLUDED`, ikat 100% `<label htmlFor>`. Di Edit: hapus `ID #...`, badge final untuk `DELIVERED`, peringatan wajib alasan perubahan dinamis. | `inputsNoLabel = 0`; tambah pelanggan baru tidak menghapus item; zero typo spasi. |
-| **9.2.5 Detail Pesanan & Modal Pembayaran/Void/Fulfillment** | `UX-P1-02`, `UX-P1-04`, `UX-P1-10`, `UX-P2-06` | Layout 2 kolom *sticky* keuangan, 1 tombol `+ Catat Pembayaran`, link profil & HP pelanggan. Satu badge status per item + stepper 4 tahap + perbaiki copy `Siap kirim`. Pakai `<Modal>` + `<CurrencyInput>` + `<CharCounterTextarea>` + regenerasi `idempotency_key` setelah error. | Tidak ada duplikasi CTA atau kebingungan copy status; semua modal lolos uji `Tab` & `Escape`. |
+| Task | Backlog ID | Ruang Lingkup | Referensi Desain |
+| :--- | :--- | :--- | :--- |
+| **9.2.1 Login & Dashboard Operasional** | `UX-P1-06`, `UX-P2-04` | Eye toggle password di Login, urutan mobile Dashboard menempatkan antrean kiriman terlambat/hari ini (berbasis `DATE`) di atas KPI ringkas `2×2`, tambahan query read-only `DashboardService` untuk kiriman aktif & top piutang. | `direction-2-botanical-studio.html` (`screen-dashboard`) |
+| **9.2.2 Pelanggan & Daftar Pesanan** | `UX-P0-04`, `UX-P1-05`, `UX-P1-07` | Terapkan `ResponsiveDataList`, chip filter status bahasa Indonesia, riwayat order di Detail Pelanggan, tombol langsung `+ Pesan`. | `direction-2-botanical-studio.html` (`screen-orders`, `screen-customers`) |
+| **9.2.3 Form Buat/Edit Pesanan & Detail Pesanan** | `UX-P0-06`, `UX-P1-01..04` | Field terpisah 1:1 `OrderRequest`, `SearchableSelect` + modal `+ Pelanggan Baru` tanpa reset item, `Duplikat Item`, 1 CTA `Simpan Pesanan` per viewport, error summary, konfirmasi aman `Tandai Terkirim`, `Salin Ringkasan WA` aktual, serta modal bayar & void min 10 karakter. | `direction-2-botanical-studio.html` (`screen-order-form`, `screen-order-detail`) |
 
 ---
 
-## Tahap 3 — Keuangan, Pengeluaran, Laporan, & Uji Penerimaan Final (Sprint 3)
+## 4. Sprint 3 — Keuangan, Pengeluaran, Laporan, & Delivery Gate Akhir (Menunggu Sprint 2)
 
-| Task | Backlog ID | Ruang Lingkup Pekerjaan | Kriteria Selesai |
-| --- | --- | --- | --- |
-| **9.3.1 Piutang & Pembayaran (`/ui-payments`)** | `UX-P0-04`, `UX-P1-08` | Tambah aksi cepat **`Catat Bayar`** langsung membuka `<Modal>` Pembayaran di halaman Piutang, plus `<ResponsiveDataList>` untuk mobile/tablet. | Pelunasan piutang dapat dilakukan langsung dari daftar piutang tanpa pindah halaman. |
-| **9.3.2 Pengeluaran & Kategori Biaya** | `UX-P0-02`, `UX-P0-04`, `UX-P1-09`, `UX-P1-10` | `<ResponsiveDataList>` di Pengeluaran, render `errors.to` saat filter tanggal terbalik, `<Modal>` Void dengan `CharCounterTextarea`, `<Modal>` nonaktifkan kategori (hapus `window.confirm()`), tombol ubah nama kategori `>= 40px` ber-`aria-label`, dan tambah kategori cepat di form pengeluaran. | `unlabeledBtns = 0`, tidak ada dialog native `confirm()`, nominal & tanggal WIB akurat. |
-| **9.3.3 Laporan (`/ui-reports`)** | `UX-P1-11`, `UX-P2-05` | Hapus istilah teknis (`order_date`, `(NEW)`, `(UNPAID)`), seragamkan `-Rp55.000` & `tabular-nums`, tambah toggle *"Hanya hari ada transaksi"*, perbesar chip filter preset (`>= 40px`), kartu harian untuk mobile `< 768px`. | Tabel laporan terbaca rapi di mobile tanpa `Rp` terpotong; zero istilah teknis SQL/enum. |
-| **9.3.4 Full Verification & Anti-Slop Delivery Gate** | Semua | Jalankan `npm run typecheck`, `npm run build`, `php artisan test`, `Ui*Test` + `contrast-check.py` + `agent-browser` click-through penuh (desktop `1440×900`, tablet `768×1024`, mobile `390×844`) + audit screenshot perbandingan sebelum/sesudah. | 100% tes lulus, Anti-Slop Delivery Gate seluruh blok PASS tanpa pengecualian. |
+| Task | Backlog ID | Ruang Lingkup |
+| :--- | :--- | :--- |
+| **9.3.1 Piutang & Pembayaran (`/ui-payments`)** | `UX-P0-04`, `UX-P1-08` | Utamakan daftar **Tagihan Belum Lunas** + `Catat Bayar` langsung modal; riwayat `Tercatat`/`Dibatalkan` di blok sekunder terpisah. |
+| **9.3.2 Pengeluaran & Kategori Biaya** | `UX-P0-02`, `UX-P1-09`, `UX-P1-10` | `ResponsiveDataList`, render `errors.to`, `<Modal>` Void & arsip kategori (hapus `window.confirm()`), tambah kategori cepat. |
+| **9.3.3 Laporan (`/ui-reports`)** | `UX-P1-11`, `UX-P2-05` | Hapus istilah teknis SQL/enum, seragamkan `-Rp...` & `tabular-nums`, filter transaksi, kartu mobile. |
+| **9.3.4 Verifikasi Menyeluruh Phase 9** | Semua | Gate akhir PHPUnit + TypeScript + Vite build + Anti-Slop browser QA lintas 5 viewport + perbandingan screenshot. |

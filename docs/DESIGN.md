@@ -1,66 +1,71 @@
-# DRAFT DESIGN SYSTEM: Mutiara Florist Management System (MFMS)
+# DESIGN SYSTEM: Mutiara Florist Management System (MFMS)
 
-- **Status:** **PENDING OWNER FINAL DESIGN APPROVAL (Kandidat Utama: Arah 2 *Botanical Studio Workspace* setelah Revisi Phase 8.2)**
-- **Arah Dasar:** *"Warm Florist Ledger & Workshop Desk"* (dipadukan dengan riset Shopify Polaris, Material 3, Atlassian, GOV.UK, Square POS, NN/g, serta diselaraskan 1:1 terhadap `OrderRequest`, `OrderService`, dan `PaymentService`)
-- **Cakupan:** Token warna terukur WCAG AA, sistem navigasi 5-breakpoint (`360px` s.d. `1440px`), kontrak field form tanpa kehilangan data wajib backend, larangan kode enum mentah di teks UI, serta spesifikasi halaman untuk Phase 9. Bagian token final baru dikunci setelah pemilik memberi persetujuan akhir.
+- **Status:** **APPROVED & LOCKED (Phase 8.2 -> Phase 9) | Arah 2: Botanical Studio Workspace (`commit 3177c6f`)**
+- **Arah Dasar:** *"Botanical Studio Workspace"* (gabungan fokus operasional & agenda Opsi A dengan identitas visual Botanical Studio, kontras tinggi, struktur form, dan kartu responsif Opsi C).
+- **Referensi Visual Resmi:** `docs/phase8-2/direction-2-botanical-studio.html`
+- **Sejarah Eksplorasi:** Diarsipkan utuh pada `docs/PHASE8_DESIGN_EXPLORATION.md` dan `docs/PHASE8_2_DESIGN_COMPARISON.md`.
 
 ---
 
 ## 1. Identitas, Dial, & Aturan Anti-Slop
 
 - **Prinsip Penggerak:** Antarmuka bekerja seperti buku catatan pesanan dan meja kerja toko bunga yang cepat dipindai, jujur secara akuntansi, dan bebas jargon teknis.
-- **Dial Liveliness (per opsi):**
-  - Opsi A (*Atelier Ledger*): `ENERGY 2 / RHYTHM 3 / MOTION 1`
-  - Opsi B (*Meja Kasir Cepat*): `ENERGY 1 / RHYTHM 2 / MOTION 1`
-  - Opsi C (*Studio Mutiara*): `ENERGY 2 / RHYTHM 2 / MOTION 1`
+- **Dial Liveliness Terkunci (Botanical Studio):** `ENERGY 2 / RHYTHM 2 / MOTION 1`
 - **Larangan Wajib (Anti-Slop Hard Gate):**
   - Tidak ada karakter em dash (`U+2014`) pada teks UI (R-02).
   - Tidak ada tautan `Blade lama`, `Phase 3.3`, atau status pengembangan di UI operasional.
-  - Tidak ada kode enum mentah (`NEW`, `PROCESSING`, `UNPAID`, `POSTED`, `VOIDED`, `order_date`) di label utama operator; seluruh status memakai Bahasa Indonesia yang jelas.
+  - Tidak ada kode enum mentah (`NEW`, `PROCESSING`, `UNPAID`, `POSTED`, `VOIDED`, `SEPARATE`, `INCLUDED`, `order_date`) di label utama operator; seluruh status memakai Bahasa Indonesia yang jelas.
   - Tidak ada angka statistik buatan atau dekorasi ikon/gradien tanpa fungsi hierarki.
 
 ---
 
 ## 2. Color Tokens & Status Semantik (WCAG AA Terverifikasi)
 
-Seluruh pasangan warna di bawah telah diuji memakai `.agents/skills/antislop-human/contrast-check.py` (minimal `4.5:1` teks normal, `3.0:1` teks besar >= 18px dan batas komponen input).
+Seluruh pasangan warna aktif di bawah telah diuji memakai `.agents/skills/antislop-human/contrast-check.py` (minimal `4.5:1` teks normal, `3.0:1` teks besar >= 18px dan batas komponen input).
 
-### 2.1 Token Kanvas & Merek (Varian Phase 8.2 Menunggu Persetujuan Pemilik)
+### 2.1 Token Aktif Terkunci (`Botanical Studio Workspace`)
 
-| Token CSS | Arah 1 (*Warm Atelier Workspace*) | Arah 2 (*Botanical Studio Workspace* - Rekomendasi) | Fungsi |
+| Token CSS | Nilai Terkunci | Rasio Kontras Terukur | Fungsi |
 | :--- | :--- | :--- | :--- |
-| `--bg-canvas` | `#FAF7F2` | `#FBF9F6` | Latar utama halaman |
-| `--bg-rail` | `#F5EFE6` | `#143326` (Dark Spruce Rail) | Permukaan sidebar desktop |
-| `--bg-surface` | `#FFFFFF` | `#FFFFFF` | Permukaan kartu & form |
-| `--bg-sunken` | `#F2ECE3` | `#F1EDE6` | Baki ringkasan & header tabel |
-| `--text-primary` | `#1C1917` (`16.37:1`) | `#1E2420` (`15.04:1`) | Teks primer |
-| `--text-secondary` | `#57534E` (`7.14:1`) | `#525B54` (`6.70:1`) | Teks sekunder & subjudul |
-| `--brand-primary` | `#163829` (`12.87:1`) | `#143326` (`13.71:1`) | Aksi utama & focus ring |
-| `--brand-urgent` | `#B44D2B` (`5.20:1`) | `#8C3B4A` (`7.40:1`) | Aksen prioritas/terlambat/void |
-| `--border-hairline` | `#E2D9CB` | `#E3DED4` | Garis pemisah kartu/tabel |
-| `--border-input` | `#8E8577` (`3.64:1`) | `#858E87` (`3.38:1`) | Batas input & tombol sekunder (lulus WCAG 1.4.11 >= `3.0:1`) |
+| `--bg-canvas` | `#FBF9F6` | - | Latar utama halaman |
+| `--bg-surface` | `#FFFFFF` | - | Permukaan kartu, modal, tabel & input |
+| `--bg-sunken` | `#F1EDE6` | - | Baki ringkasan kas & header tabel |
+| `--bg-rail` | `#143326` | - | Rel navigasi sidebar desktop (`>= 1024px`) |
+| `--bg-rail-hover` | `#1D4534` | - | Hover item navigasi pada dark rail |
+| `--bg-rail-active` | `#E6EFEA` | `11.69:1` vs `#143326` | Pil aktif sidebar & tab aktif bilah bawah mobile |
+| `--text-primary` | `#1E2420` | `15.04:1` (`#FBF9F6`) / `15.81:1` (`#FFFFFF`) | Teks primer & heading |
+| `--text-secondary` | `#525B54` | `6.70:1` (`#FBF9F6`) / `7.04:1` (`#FFFFFF`) | Teks sekunder, subjudul, label kolom |
+| `--text-on-rail` | `#F6F4EF` | `12.48:1` vs `#143326` | Teks menu sidebar desktop |
+| `--text-on-rail-muted` | `#C6D7CE` | `9.15:1` vs `#143326` | Label grup & peran operator pada sidebar |
+| `--brand-primary` | `#143326` | `13.71:1` vs `#FFFFFF` | CTA utama, focus ring, & batas aktif |
+| `--brand-primary-hover` | `#0E251B` | `15.96:1` vs `#FFFFFF` | State hover tombol utama |
+| `--brand-urgent` | `#8C3B4A` | `7.40:1` vs `#FFFFFF` | Aksen terukur: terlambat/piutang terbuka/void |
+| `--brand-urgent-soft` | `#FDF2F4` | `6.76:1` vs `#8C3B4A` | Latar baris prioritas mendesak |
+| `--border-hairline` | `#E3DED4` | - | Garis pemisah kartu, tabel, & seksi |
+| `--border-input` | `#858E87` | `3.38:1` vs `#FFFFFF` | Batas input form & tombol sekunder (WCAG 1.4.11 >= `3.0:1`) |
 
-### 2.2 Status Semantik (Konsisten Lintas Semua Opsi)
+### 2.2 Status Semantik (Konsisten di Seluruh Aplikasi)
 
 1. **Status Pengerjaan Item & Order:**
-   - **Baru (`NEW`):** Latar `#E7E5E4`, Teks `#1C1917`.
-   - **Diproses (`PROCESSING`):** Latar `#FEF3C7`, Teks `#92400E` (`6.37:1`).
-   - **Siap kirim (`READY`):** Latar `#DBEAFE`, Teks `#1E40AF` (`7.15:1`).
-   - **Terkirim / Selesai (`DELIVERED` / `COMPLETED`):** Latar `#DCFCE7`, Teks `#166534` (`6.49:1`).
+   - **Baru:** Latar `#E5E7EB`, Teks `#374151` (`8.33:1`).
+   - **Diproses:** Latar `#FEF3C7`, Teks `#92400E` (`6.37:1`).
+   - **Siap kirim:** Latar `#DBEAFE`, Teks `#1E40AF` (`7.15:1`).
+   - **Terkirim / Selesai:** Latar `#DCFCE7`, Teks `#166534` (`6.49:1`).
 2. **Status Pembayaran & Audit:**
-   - **Lunas / Tercatat (`PAID` / `POSTED`):** Latar `#DCFCE7`, Teks `#166534`.
-   - **Sebagian (`PARTIAL`):** Latar `#FEF3C7`, Teks `#92400E`.
-   - **Belum bayar (`UNPAID`):** Latar `#FFF7ED` / `#FDF2F4`, Teks `#9A3412` / `#8C3B4A`.
-   - **Dibatalkan / Void (`VOIDED`):** Latar `#F3F4F6`, Teks `#374151`, nominal dicoret (`<del>`) + blok alasan koreksi.
-   - **Error / Destructive:** Latar `#FEE2E2`, Batas `#FCA5A5`, Teks `#991B1B` (`6.80:1`).
+   - **Lunas / Tercatat:** Latar `#DCFCE7`, Teks `#166534` (`6.49:1`).
+   - **Sebagian:** Latar `#FEF3C7`, Teks `#92400E` (`6.37:1`).
+   - **Belum bayar:** Latar `#FEE2E2` atau `#FDF2F4`, Teks `#991B1B` (`6.80:1`) atau `#8C3B4A` (`6.76:1`).
+   - **Dibatalkan (Void):** Latar `#E5E7EB`, Teks `#374151` (`8.33:1`), nominal dicoret (`line-through`) + alasan wajib.
+   - **Error / Destructive:** Latar `#FEE2E2`, Teks `#991B1B` (`6.80:1`).
 
 ---
 
 ## 3. Typography & Numerical Styles
 
-- **Keluarga Font (Local-First, Tanpa CDN Wajib):**
-  - *Opsi A Heading (`h1`, `h2` bagian):* `Georgia, 'Times New Roman', serif` (memberi suara editorial buku catatan florist yang bekerja offline 100%).
-  - *Opsi B & C + Seluruh UI Body/Form/Tabel:* `'Segoe UI', ui-sans-serif, system-ui, -apple-system, sans-serif`.
+- **Keluarga Font (Local-First / System Safe):**
+  - *Judul Halaman (`h1`):* `Fraunces, Georgia, 'Times New Roman', serif` (memberi karakter editorial florist yang tetap terbaca rapi offline lewat fallback `Georgia`).
+  - *UI Body, Form, Tabel, & Angka:* `'Plus Jakarta Sans', 'Segoe UI', ui-sans-serif, system-ui, -apple-system, sans-serif` dengan `font-variant-numeric: tabular-nums`.
+  - *Kode Nota / Referensi (`MF-...`):* `'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace`.
 - **Skala Tipografi Bisnis Profesional (Revisi Phase 8.2):**
   - `h1` Halaman: `Fraunces` atau serif sistem hanya pada judul halaman dengan ukuran terkontrol `clamp(20px, 2.2vw, 25px)` (`20px` mobile -> `25px` desktop), `line-height: 1.25`, `font-weight: 600`, `letter-spacing: -0.015em` agar terasa seperti aplikasi operasional bisnis dan tidak terkesan blog/dekoratif. Hanya satu `<h1>` per halaman.
   - `h2` Seksi/Kartu: Sans-serif `1rem` (`16px`), bobot `700`.
