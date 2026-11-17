@@ -1,8 +1,8 @@
 # DRAFT DESIGN SYSTEM: Mutiara Florist Management System (MFMS)
 
-- **Status:** **DRAFT (Menunggu Konfirmasi Pilihan Visual Pemilik: Opsi A, Opsi B, atau Opsi C)**
-- **Arah Dasar:** *"Warm Florist Ledger & Workshop Desk"*
-- **Cakupan:** Fondasi sistem desain bersama serta varian token untuk Opsi A (*Atelier Ledger*), Opsi B (*Meja Kasir Cepat*), dan Opsi C (*Studio Mutiara*). Setelah pemilik memilih satu opsi, bagian token aktif pada dokumen ini dikunci sebelum Phase 9 dimulai.
+- **Status:** **PENDING OWNER VISUAL APPROVAL (Phase 8.2: Pilih Arah 1 *Warm Atelier Workspace* atau Arah 2 *Botanical Studio Workspace*)**
+- **Arah Dasar:** *"Warm Florist Ledger & Workshop Desk"* (disempurnakan pada Phase 8.2 berdasarkan riset Shopify Polaris, Material 3, Atlassian, GOV.UK, Square POS, dan NN/g)
+- **Cakupan:** Token warna terukur WCAG AA, sistem navigasi 5-breakpoint (`360px` s.d. `1440px`), komponen form anti-error, pola tabel/kartu adaptif, dan spesifikasi halaman untuk Phase 9. Bagian token final akan dikunci setelah pemilik menyetujui arah visual.
 
 ---
 
@@ -14,7 +14,7 @@
   - Opsi B (*Meja Kasir Cepat*): `ENERGY 1 / RHYTHM 2 / MOTION 1`
   - Opsi C (*Studio Mutiara*): `ENERGY 2 / RHYTHM 2 / MOTION 1`
 - **Larangan Wajib (Anti-Slop Hard Gate):**
-  - Tidak ada karakter em dash (`—`) pada teks UI (R-02).
+  - Tidak ada karakter em dash (`U+2014`) pada teks UI (R-02).
   - Tidak ada tautan `Blade lama`, `Phase 3.3`, atau status pengembangan di UI operasional.
   - Tidak ada kode enum mentah (`NEW`, `PROCESSING`, `UNPAID`, `POSTED`, `VOIDED`, `order_date`) di label utama operator; seluruh status memakai Bahasa Indonesia yang jelas.
   - Tidak ada angka statistik buatan atau dekorasi ikon/gradien tanpa fungsi hierarki.
@@ -25,20 +25,20 @@
 
 Seluruh pasangan warna di bawah telah diuji memakai `.agents/skills/antislop-human/contrast-check.py` (minimal `4.5:1` teks normal, `3.0:1` teks besar >= 18px dan batas komponen input).
 
-### 2.1 Token Kanvas & Merek (Tergantung Opsi Terpilih)
+### 2.1 Token Kanvas & Merek (Varian Phase 8.2 Menunggu Persetujuan Pemilik)
 
-| Token CSS | Opsi A (*Atelier Ledger*) | Opsi B (*Meja Kasir Cepat*) | Opsi C (*Studio Mutiara*) | Fungsi |
-| :--- | :--- | :--- | :--- | :--- |
-| `--bg-canvas` | `#FAF7F2` | `#F7F8F5` | `#FBF9F6` | Latar utama halaman |
-| `--bg-rail` | `#F3EFE6` | `#FFFFFF` (Topbar) | `#143326` (Dark Rail) | Permukaan navigasi utama |
-| `--bg-surface` | `#FFFFFF` | `#FFFFFF` | `#FFFFFF` | Permukaan kartu & form |
-| `--bg-subtle` | `#F7F4EC` | `#EFF2EC` | `#E6EFEA` / `#FDF2F4` | Panel ringkasan & struk |
-| `--ink-main` | `#1C1917` | `#111827` | `#1E2420` | Teks primer (kontras >= `15:1`) |
-| `--ink-muted` | `#57534E` | `#4B5563` | `#525B54` | Teks sekunder (kontras >= `6.7:1`) |
-| `--primary` | `#163829` | `#123524` | `#143326` | Aksi utama & heading merek |
-| `--accent` | `#B44D2B` (`5.20:1`) | `#9A5B06` (`5.42:1`) | `#8C3B4A` (`7.40:1`) | 1 aksen terukur: piutang terbuka / agenda mendesak |
-| `--border-soft` | `#D6D0C4` | `#D1D5DB` | `#D6D3CE` | Garis pemisah kartu/tabel |
-| `--border-input` | `#78716C` (`4.80:1`) | `#6B7280` (`4.83:1`) | `#6B7280` (`4.83:1`) | Batas input & tombol sekunder (>= `3.0:1`) |
+| Token CSS | Arah 1 (*Warm Atelier Workspace*) | Arah 2 (*Botanical Studio Workspace* - Rekomendasi) | Fungsi |
+| :--- | :--- | :--- | :--- |
+| `--bg-canvas` | `#FAF7F2` | `#FBF9F6` | Latar utama halaman |
+| `--bg-rail` | `#F5EFE6` | `#143326` (Dark Spruce Rail) | Permukaan sidebar desktop |
+| `--bg-surface` | `#FFFFFF` | `#FFFFFF` | Permukaan kartu & form |
+| `--bg-sunken` | `#F2ECE3` | `#F1EDE6` | Baki ringkasan & header tabel |
+| `--text-primary` | `#1C1917` (`16.37:1`) | `#1E2420` (`15.04:1`) | Teks primer |
+| `--text-secondary` | `#57534E` (`7.14:1`) | `#525B54` (`6.70:1`) | Teks sekunder & subjudul |
+| `--brand-primary` | `#163829` (`12.87:1`) | `#143326` (`13.71:1`) | Aksi utama & focus ring |
+| `--brand-urgent` | `#B44D2B` (`5.20:1`) | `#8C3B4A` (`7.40:1`) | Aksen prioritas/terlambat/void |
+| `--border-hairline` | `#E2D9CB` | `#E3DED4` | Garis pemisah kartu/tabel |
+| `--border-input` | `#8E8577` (`3.64:1`) | `#858E87` (`3.38:1`) | Batas input & tombol sekunder (lulus WCAG 1.4.11 >= `3.0:1`) |
 
 ### 2.2 Status Semantik (Konsisten Lintas Semua Opsi)
 
@@ -81,9 +81,9 @@ Seluruh pasangan warna di bawah telah diuji memakai `.agents/skills/antislop-hum
 
 - **Skala Spasi:** `4px` base grid (`4, 8, 12, 16, 20, 24, 32, 48`).
 - **Breakpoints Berbasis Konten (`antislop-layoutmobile`):**
-  - **Mobile (`< 768px`, diuji pada `390×844`):** 1 kolom penuh, tabel beralih ke **Mobile Card List**, tombol aksi `min-height: 44px`, padding konten `16px`.
-  - **Tablet (`768px - 1039px`, diuji pada `768×1024`):** Grid 2 kolom untuk KPI/kartu, tabel ringkas atau kartu 2 kolom agar kolom kanan tidak pernah terpotong, navigasi memakai trigger drawer yang jelas.
-  - **Desktop (`>= 1040px`, diuji pada `1440×900`):** Layout kerja 2 kolom asimetris (`minmax(0, 1fr) 340px`) untuk form/detail pesanan agar ringkasan tagihan selalu *sticky* di kanan; maks lebar kontainer `1220px - 1320px`.
+  - **Mobile (`< 768px`, diuji pada `360×780` & `390×844`):** 1 kolom penuh, dilarang memakai inline `grid-template-columns`, tabel beralih ke **Mobile Card List**, tombol aksi `min-height: 44px`, bilah navigasi bawah tepat 4 destinasi (`Hari Ini`, `Pesanan`, `Buat`, `Menu`) dengan `env(safe-area-inset-bottom)` serta padding bawah `164px` agar bilah tidak menutupi tombol/input.
+  - **Tablet (`768px - 1023px`, diuji pada `768×1024`):** Grid 2 kolom untuk KPI/kartu, tabel beralih ke kartu `< 900px`, topbar menampilkan tombol `.btn.tablet-menu-btn` (`Menu`) untuk membuka drawer navigasi sekunder & `Keluar Akun`.
+  - **Desktop (`>= 1024px`, diuji pada `1024×768` & `1440×900`):** Left sidebar `248px` tampil penuh + `.btn.tablet-menu-btn` disembunyikan. Layout kerja 2 kolom asimetris (`minmax(0, 1.6fr) minmax(300px, 1fr)`) menempatkan ringkasan tagihan + tombol simpan utama *sticky* di kanan (tidak melayang di atas input form).
 
 ---
 
@@ -156,7 +156,7 @@ Seluruh pasangan warna di bawah telah diuji memakai `.agents/skills/antislop-hum
 ## 8. Spesifikasi Desain Tiap Halaman (Untuk Phase 9)
 
 1. **Login (`/login`):**
-   - `<Head title="Masuk" />` (tab: `Masuk — MFMS`), hapus tautan Blade fallback, tambahkan toggle lihat/sembunyikan password (`aria-label`), fokus otomatis pada email, dan pesan error throttling/kredensial dalam bahasa jelas.
+   - `<Head title="Masuk" />` (tab: `Masuk - MFMS`), hapus tautan Blade fallback, tambahkan toggle lihat/sembunyikan password (`aria-label`), fokus otomatis pada email, dan pesan error throttling/kredensial dalam bahasa jelas.
 2. **Dashboard (`/dashboard` & `/ui-dashboard`):**
    - Hapus badge `Phase 3.3 · React` dan kartu `Pengembangan berikutnya`. Samakan props `nav` antara `UiDashboardController` dan `HandleInertiaRequests`.
    - Tampilkan CTA cepat (`+ Buat Pesanan`, `+ Catat Pengeluaran`), Agenda Pengiriman Hari Ini & Besok (dari `OrderItem` dengan `delivery_date` dekat dan belum `DELIVERED`), serta Ringkasan Kas & Piutang yang membedakan jelas `Uang Diterima`, `Piutang Saat Ini`, dan `Selisih Kas Sederhana (Bukan laba bersih akuntansi)`.

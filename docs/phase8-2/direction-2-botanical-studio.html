@@ -1,0 +1,2687 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arah 2 (Rekomendasi): Botanical Studio Workspace - Mutiara Florist MS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-canvas: #FBF9F6;
+      --bg-surface: #FFFFFF;
+      --bg-sunken: #F1EDE6;
+      --bg-rail: #143326;
+      --bg-rail-hover: #1D4534;
+      --bg-rail-active: #E6EFEA;
+
+      --text-primary: #1E2420;
+      --text-secondary: #525B54;
+      --text-on-rail: #F6F4EF;
+      --text-on-rail-muted: #C6D7CE;
+
+      --brand-primary: #143326;
+      --brand-primary-hover: #0E251B;
+      --brand-urgent: #8C3B4A;
+      --brand-urgent-hover: #712D3A;
+      --brand-urgent-soft: #FDF2F4;
+
+      --border-hairline: #E3DED4;
+      --border-input: #858E87;
+
+      --status-paid-bg: #DCFCE7;
+      --status-paid-fg: #166534;
+      --status-warn-bg: #FEF3C7;
+      --status-warn-fg: #92400E;
+      --status-ready-bg: #DBEAFE;
+      --status-ready-fg: #1E40AF;
+      --status-danger-bg: #FEE2E2;
+      --status-danger-fg: #991B1B;
+      --status-neutral-bg: #E5E7EB;
+      --status-neutral-fg: #374151;
+
+      --font-display: 'Fraunces', Georgia, serif;
+      --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --bottom-nav-h: 64px;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-canvas);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 16px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button, input, select, textarea {
+      font-family: inherit;
+      font-size: inherit;
+    }
+
+    button, a, [role="button"], select {
+      cursor: pointer;
+    }
+
+    :focus-visible {
+      outline: 3px solid var(--brand-primary);
+      outline-offset: 2px;
+    }
+
+    .sidebar :focus-visible {
+      outline-color: #E6EFEA;
+    }
+
+    .skip-link {
+      position: absolute;
+      left: -9999px;
+      top: 0;
+      background: var(--brand-primary);
+      color: #FFFFFF;
+      padding: 10px 16px;
+      z-index: 9999;
+      font-weight: 700;
+      border-radius: var(--radius-sm);
+    }
+    .skip-link:focus {
+      left: 12px;
+      top: 12px;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .num {
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: "tnum" 1;
+    }
+
+    .mono {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Preview bar (clearly marked design review banner) */
+    .preview-strip {
+      background: var(--bg-sunken);
+      border-bottom: 1px solid var(--border-hairline);
+      padding: 8px 16px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .preview-controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .preview-select {
+      min-height: 36px;
+      padding: 4px 10px;
+      border: 1px solid var(--border-input);
+      border-radius: var(--radius-sm);
+      background: var(--bg-surface);
+      color: var(--text-primary);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    /* Shell */
+    .app-shell {
+      display: flex;
+      min-height: calc(100vh - 48px);
+    }
+
+    /* Deep Botanical Sidebar (>= 1024px) */
+    .sidebar {
+      display: none;
+      width: 248px;
+      flex-shrink: 0;
+      background: var(--bg-rail);
+      color: var(--text-on-rail);
+      padding: 20px 14px;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    @media (min-width: 1024px) {
+      .sidebar {
+        display: flex;
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        overflow-y: auto;
+      }
+    }
+
+    .brand-lockup {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 4px 8px 18px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+      margin-bottom: 16px;
+    }
+
+    .brand-mark {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      background: #E6EFEA;
+      color: #143326;
+      display: grid;
+      place-items: center;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .brand-text strong {
+      display: block;
+      font-family: var(--font-display);
+      font-size: 17px;
+      line-height: 1.2;
+      color: var(--text-on-rail);
+    }
+
+    .brand-text span {
+      font-size: 12px;
+      color: var(--text-on-rail-muted);
+    }
+
+    .nav-group {
+      margin-bottom: 18px;
+    }
+
+    .nav-group-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-on-rail-muted);
+      padding: 0 12px 6px;
+      margin: 0;
+    }
+
+    .nav-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .nav-btn {
+      width: 100%;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 0;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--text-on-rail);
+      font-weight: 500;
+      font-size: 14px;
+      text-align: left;
+    }
+
+    .nav-btn:hover {
+      background: var(--bg-rail-hover);
+    }
+
+    .nav-btn[aria-current="page"] {
+      background: var(--bg-rail-active);
+      color: var(--brand-primary);
+      font-weight: 700;
+    }
+
+    .nav-btn-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-count {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #FEF3C7;
+      color: #92400E;
+    }
+
+    .sidebar-footer {
+      border-top: 1px solid rgba(255, 255, 255, 0.14);
+      padding-top: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .operator-pill {
+      padding: 6px 10px;
+      font-size: 13px;
+      color: var(--text-on-rail-muted);
+    }
+    .operator-pill strong {
+      display: block;
+      color: var(--text-on-rail);
+      font-size: 14px;
+    }
+
+    .logout-btn {
+      width: 100%;
+      min-height: 44px;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--text-on-rail);
+      font-weight: 600;
+      font-size: 14px;
+      padding: 8px 12px;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .logout-btn:hover {
+      background: var(--bg-rail-hover);
+    }
+
+    /* Main Column & Sticky Topbar */
+    .main-column {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .topbar {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-hairline);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+
+    @media (min-width: 1024px) {
+      .topbar {
+        padding: 12px 28px;
+      }
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .mobile-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 17px;
+      color: var(--text-primary);
+    }
+
+    @media (min-width: 1024px) {
+      .mobile-brand {
+        display: none;
+      }
+    }
+
+    .topbar-search {
+      display: none;
+    }
+
+    @media (min-width: 768px) {
+      .topbar-search {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 340px;
+      }
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn.tablet-menu-btn {
+      display: none;
+    }
+
+    @media (min-width: 768px) and (max-width: 1023px) {
+      .btn.tablet-menu-btn {
+        display: inline-flex;
+      }
+    }
+
+    /* Workspace Container */
+    .workspace {
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px 16px calc(var(--bottom-nav-h) + 100px);
+    }
+
+    @media (min-width: 768px) {
+      .workspace {
+        padding: 24px 24px 80px;
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .workspace {
+        padding: 28px 32px 64px;
+      }
+    }
+
+    .page-head {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    @media (min-width: 768px) {
+      .page-head {
+        flex-direction: row;
+        align-items: flex-end;
+        justify-content: space-between;
+      }
+    }
+
+    h1.page-title {
+      font-family: var(--font-display);
+      font-size: clamp(24px, 3vw, 30px);
+      line-height: 1.2;
+      margin: 0;
+      color: var(--text-primary);
+      font-weight: 700;
+    }
+
+    .page-subtitle {
+      margin: 4px 0 0;
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    /* Buttons */
+    .btn {
+      min-height: 44px;
+      padding: 10px 16px;
+      border-radius: var(--radius-sm);
+      border: 1px solid transparent;
+      font-weight: 600;
+      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: var(--brand-primary);
+      color: #FFFFFF;
+    }
+    .btn-primary:hover {
+      background: var(--brand-primary-hover);
+    }
+
+    .btn-urgent {
+      background: var(--brand-urgent);
+      color: #FFFFFF;
+    }
+    .btn-urgent:hover {
+      background: var(--brand-urgent-hover);
+    }
+
+    .btn-secondary {
+      background: var(--bg-surface);
+      color: var(--text-primary);
+      border-color: var(--border-input);
+    }
+    .btn-secondary:hover {
+      background: var(--bg-sunken);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-secondary);
+    }
+    .btn-ghost:hover {
+      background: var(--bg-sunken);
+      color: var(--text-primary);
+    }
+
+    .btn-sm {
+      min-height: 44px;
+      padding: 8px 12px;
+      font-size: 13px;
+    }
+
+    /* Form Controls */
+    .field-group {
+      margin-bottom: 14px;
+    }
+
+    label.field-label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+    }
+
+    .field-hint {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin: 4px 0 0;
+    }
+
+    .field-error {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--status-danger-fg);
+      margin: 4px 0 0;
+    }
+
+    .input, .select, .textarea {
+      width: 100%;
+      min-height: 44px;
+      padding: 10px 12px;
+      background: var(--bg-surface);
+      color: var(--text-primary);
+      border: 1.5px solid var(--border-input);
+      border-radius: var(--radius-sm);
+      font-size: 15px;
+    }
+
+    .input[aria-invalid="true"],
+    .select[aria-invalid="true"] {
+      border-color: var(--status-danger-fg);
+      background: #FFF9F9;
+    }
+
+    .input-currency-wrap {
+      display: flex;
+      align-items: stretch;
+      border: 1.5px solid var(--border-input);
+      border-radius: var(--radius-sm);
+      background: var(--bg-surface);
+      overflow: hidden;
+    }
+    .input-currency-wrap.is-invalid {
+      border-color: var(--status-danger-fg);
+      background: #FFF9F9;
+    }
+    .input-currency-prefix {
+      display: grid;
+      place-items: center;
+      padding: 0 12px;
+      background: var(--bg-sunken);
+      border-right: 1px solid var(--border-hairline);
+      font-weight: 700;
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+    .input-currency-wrap input {
+      border: 0;
+      flex: 1;
+      min-width: 0;
+      min-height: 42px;
+      padding: 10px 12px;
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+      background: transparent;
+      color: var(--text-primary);
+    }
+    .input-currency-wrap input:focus {
+      outline: none;
+    }
+    .input-currency-wrap:focus-within {
+      outline: 3px solid var(--brand-primary);
+      outline-offset: 2px;
+    }
+
+    /* Searchable Customer Combobox */
+    .combobox {
+      position: relative;
+    }
+    .combobox-list {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      background: var(--bg-surface);
+      border: 1.5px solid var(--border-input);
+      border-radius: var(--radius-sm);
+      z-index: 25;
+      max-height: 240px;
+      overflow-y: auto;
+      display: none;
+      padding: 4px;
+    }
+    .combobox-list.is-open {
+      display: block;
+    }
+    .combobox-option {
+      width: 100%;
+      min-height: 44px;
+      padding: 8px 10px;
+      border: 0;
+      background: transparent;
+      text-align: left;
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+      color: var(--text-primary);
+    }
+    .combobox-option:hover, .combobox-option:focus-visible {
+      background: var(--bg-rail-active);
+    }
+    .combobox-option span {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    /* GOV.UK Error Summary */
+    .error-summary {
+      background: #FEF2F2;
+      border: 2px solid var(--status-danger-fg);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      margin-bottom: 18px;
+    }
+    .error-summary[hidden] {
+      display: none;
+    }
+    .error-summary h2 {
+      font-size: 16px;
+      margin: 0 0 8px;
+      color: var(--status-danger-fg);
+    }
+    .error-summary ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+    .error-summary a {
+      color: var(--status-danger-fg);
+      font-weight: 600;
+      display: inline-block;
+      padding: 4px 0;
+    }
+
+    /* Cards & Surfaces */
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-md);
+      padding: 18px;
+    }
+
+    .card-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin: 0;
+      color: var(--text-primary);
+    }
+
+    /* Responsive Grids - PURE CSS media queries only */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    @media (min-width: 640px) {
+      .kpi-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .kpi-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+    }
+
+    .kpi-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+    }
+
+    .kpi-card-sunken {
+      background: var(--bg-sunken);
+    }
+
+    .kpi-label {
+      font-size: 13px;
+      color: var(--text-secondary);
+      font-weight: 600;
+      margin: 0 0 6px;
+    }
+
+    .kpi-value {
+      font-size: 24px;
+      font-weight: 700;
+      margin: 0;
+      color: var(--text-primary);
+      line-height: 1.2;
+    }
+
+    .kpi-note {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin: 6px 0 0;
+    }
+
+    .split-layout {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 18px;
+    }
+
+    @media (min-width: 1024px) {
+      .split-layout {
+        grid-template-columns: minmax(0, 1.6fr) minmax(300px, 1fr);
+        align-items: start;
+      }
+    }
+
+    .form-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    @media (min-width: 768px) {
+      .form-grid-2 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    .form-grid-3 {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    @media (min-width: 768px) {
+      .form-grid-3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    /* Status Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+    .badge-paid { background: var(--status-paid-bg); color: var(--status-paid-fg); }
+    .badge-warn { background: var(--status-warn-bg); color: var(--status-warn-fg); }
+    .badge-ready { background: var(--status-ready-bg); color: var(--status-ready-fg); }
+    .badge-danger { background: var(--status-danger-bg); color: var(--status-danger-fg); }
+    .badge-neutral { background: var(--status-neutral-bg); color: var(--status-neutral-fg); }
+
+    /* Agenda & Cards */
+    .stack-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .agenda-row {
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      background: var(--bg-surface);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    @media (min-width: 768px) {
+      .agenda-row-inline {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+    }
+
+    .agenda-row-urgent {
+      background: var(--brand-urgent-soft);
+      border-color: #E5B9C2;
+    }
+
+    .agenda-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .agenda-title {
+      font-weight: 700;
+      font-size: 15px;
+      margin: 0 0 2px;
+      color: var(--text-primary);
+    }
+
+    .agenda-sub {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin: 0;
+    }
+
+    .action-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Filter Chips & Toolbar */
+    .toolbar {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    @media (min-width: 768px) {
+      .toolbar {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip-btn {
+      min-height: 44px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--border-hairline);
+      background: var(--bg-surface);
+      color: var(--text-secondary);
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .chip-btn[aria-pressed="true"] {
+      background: var(--brand-primary);
+      color: #FFFFFF;
+      border-color: var(--brand-primary);
+    }
+
+    /* Desktop Table + Mobile Card Switch */
+    .table-desktop {
+      display: none;
+    }
+
+    .cards-mobile {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    @media (min-width: 900px) {
+      .table-desktop {
+        display: block;
+        overflow-x: auto;
+      }
+      .cards-mobile {
+        display: none;
+      }
+    }
+
+    table.ledger-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    table.ledger-table th {
+      text-align: left;
+      padding: 10px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-secondary);
+      border-bottom: 1.5px solid var(--border-hairline);
+      background: var(--bg-sunken);
+    }
+
+    table.ledger-table td {
+      padding: 12px;
+      border-bottom: 1px solid var(--border-hairline);
+      vertical-align: top;
+    }
+
+    table.ledger-table tr:hover td {
+      background: #FAF8F4;
+    }
+
+    table.ledger-table td.num-cell,
+    table.ledger-table th.num-cell {
+      text-align: right;
+    }
+
+    /* Stepper / Linear Status Progress */
+    .stepper {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .step-pill {
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: var(--bg-sunken);
+      color: var(--text-secondary);
+    }
+    .step-pill.is-done {
+      background: var(--status-paid-bg);
+      color: var(--status-paid-fg);
+    }
+    .step-pill.is-current {
+      background: var(--brand-primary);
+      color: #FFFFFF;
+    }
+
+    /* Form Action Footer Bar (non-overlapping natural document flow + visible below items) */
+    .sticky-save-bar {
+      background: var(--bg-surface);
+      border: 1.5px solid var(--brand-primary);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      margin-top: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    /* Item Editor Card */
+    .item-editor {
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      background: var(--bg-canvas);
+      margin-bottom: 14px;
+    }
+
+    .item-editor-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding-bottom: 10px;
+      margin-bottom: 12px;
+      border-bottom: 1px solid var(--border-hairline);
+    }
+
+    /* Summary Ledger Card (Desktop sticky right) */
+    @media (min-width: 1024px) {
+      .sticky-aside {
+        position: sticky;
+        top: 84px;
+      }
+    }
+
+    .summary-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 8px 0;
+      font-size: 14px;
+      border-bottom: 1px solid var(--border-hairline);
+    }
+
+    .summary-total {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding-top: 12px;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--brand-primary);
+    }
+
+    /* Empty / Loading / Error State Panels */
+    .state-panel {
+      background: var(--bg-surface);
+      border: 1px dashed var(--border-input);
+      border-radius: var(--radius-md);
+      padding: 28px 20px;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    .state-panel[hidden] {
+      display: none;
+    }
+    .state-panel h3 {
+      margin: 0 0 6px;
+      font-size: 17px;
+    }
+    .state-panel p {
+      margin: 0 0 14px;
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    /* Screens visibility */
+    .screen {
+      display: none;
+    }
+    .screen.is-active {
+      display: block;
+    }
+
+    /* Mobile Bottom Nav (< 768px only) */
+    .mobile-bottom-nav {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom));
+      padding-bottom: env(safe-area-inset-bottom);
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border-hairline);
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      z-index: 30;
+    }
+
+    @media (min-width: 768px) {
+      .mobile-bottom-nav {
+        display: none;
+      }
+    }
+
+    .bottom-nav-btn {
+      border: 0;
+      background: transparent;
+      color: var(--text-secondary);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      font-size: 12px;
+      font-weight: 600;
+      min-height: 44px;
+      padding: 6px 4px;
+    }
+
+    .bottom-nav-btn[aria-current="page"] {
+      color: var(--brand-primary);
+      font-weight: 700;
+      background: var(--bg-rail-active);
+    }
+
+    /* Modals / Drawers */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(20, 51, 38, 0.52);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 50;
+    }
+    .modal-backdrop.is-open {
+      display: flex;
+    }
+    .modal-card {
+      width: 100%;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow-y: auto;
+      background: var(--bg-surface);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-hairline);
+      padding: 20px;
+    }
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 18px;
+      flex-wrap: wrap;
+    }
+
+    .voided-amount {
+      text-decoration: line-through;
+      color: var(--text-secondary);
+    }
+
+    .toast {
+      position: fixed;
+      right: 16px;
+      bottom: calc(var(--bottom-nav-h) + 16px);
+      background: var(--brand-primary);
+      color: #FFFFFF;
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 600;
+      display: none;
+      z-index: 60;
+      max-width: calc(100vw - 32px);
+    }
+    .toast.is-visible {
+      display: block;
+    }
+    @media (min-width: 768px) {
+      .toast {
+        bottom: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Langsung ke konten utama</a>
+  <div id="live-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Design Review Banner -->
+  <div class="preview-strip">
+    <div>
+      <strong>Arah 2 (Rekomendasi): Botanical Studio Workspace</strong> | Data sintetis Phase 8.2 (5 Layar Inti + 4 Blueprint Pendukung)
+    </div>
+    <div class="preview-controls">
+      <label for="view-state-mode" style="font-weight: 600;">Simulasi State:</label>
+      <select id="view-state-mode" class="preview-select" aria-label="Simulasi tampilan state daftar pesanan">
+        <option value="normal">Normal (Data Aktif)</option>
+        <option value="empty">Kosong (Empty State)</option>
+        <option value="loading">Memuat (Loading State)</option>
+        <option value="error">Gagal Muat (Error State)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="app-shell">
+    <!-- Deep Botanical Sidebar (Desktop >= 1024px) -->
+    <aside class="sidebar" aria-label="Navigasi utama desktop">
+      <div>
+        <div class="brand-lockup">
+          <div class="brand-mark" aria-hidden="true">M</div>
+          <div class="brand-text">
+            <strong>Mutiara Florist</strong>
+            <span>Manajemen Pesanan &amp; Kas</span>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <p class="nav-group-label">Operasional Harian</p>
+          <ul class="nav-list">
+            <li>
+              <button type="button" class="nav-btn" data-nav="dashboard" aria-current="page">
+                <span class="nav-btn-left">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  Hari Ini
+                </span>
+                <span class="nav-count">4</span>
+              </button>
+            </li>
+            <li>
+              <button type="button" class="nav-btn" data-nav="orders">
+                <span class="nav-btn-left">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+                  Pesanan
+                </span>
+              </button>
+            </li>
+            <li>
+              <button type="button" class="nav-btn" data-nav="order-form">
+                <span class="nav-btn-left">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                  Buat Pesanan
+                </span>
+              </button>
+            </li>
+            <li>
+              <button type="button" class="nav-btn" data-nav="payments">
+                <span class="nav-btn-left">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                  Pembayaran
+                </span>
+                <span class="nav-count">2</span>
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <div class="nav-group">
+          <p class="nav-group-label">Pelanggan &amp; Biaya</p>
+          <ul class="nav-list">
+            <li>
+              <button type="button" class="nav-btn" data-nav="customers">
+                <span class="nav-btn-left">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                  Pelanggan
+                </span>
+              </button>
+            </li>
+            <li>
+              <button type="button" class="nav-btn" data-nav="expenses">
+                <span class="nav-btn-left">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                  Pengeluaran
+                </span>
+              </button>
+            </li>
+            <li>
+              <button type="button" class="nav-btn" data-nav="categories">
+                <span class="nav-btn-left">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                  Kategori Biaya
+                </span>
+              </button>
+            </li>
+            <li>
+              <button type="button" class="nav-btn" data-nav="reports">
+                <span class="nav-btn-left">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                  Laporan
+                </span>
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="operator-pill">
+          <strong>Sari Wijaya</strong>
+          Admin Kasir &amp; Jadwal
+        </div>
+        <button type="button" class="logout-btn" id="desktop-logout-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Keluar Akun
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Column -->
+    <div class="main-column">
+      <header class="topbar">
+        <div class="topbar-left">
+          <div class="mobile-brand">
+            <div class="brand-mark" style="width: 32px; height: 32px; font-size: 16px; background: #143326; color: #FFFFFF;" aria-hidden="true">M</div>
+            <span>Mutiara Florist</span>
+          </div>
+          <div class="topbar-search">
+            <label for="global-order-search" class="sr-only">Cari cepat nota atau pelanggan</label>
+            <input id="global-order-search" type="search" class="input" placeholder="Cari nota (MF-...), pemesan, atau penerima...">
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <button type="button" class="btn btn-secondary tablet-menu-btn" data-open-menu>Menu</button>
+          <button type="button" class="btn btn-primary" data-nav="order-form">+ Pesanan Baru</button>
+        </div>
+      </header>
+
+      <main id="main-content" class="workspace">
+        <!-- ========================================================= -->
+        <!-- CORE SCREEN 1: DASHBOARD ("Hari Ini")                      -->
+        <!-- ========================================================= -->
+        <section id="screen-dashboard" class="screen is-active" aria-labelledby="h1-dash">
+          <div class="page-head">
+            <div>
+              <h1 id="h1-dash" class="page-title">Jadwal &amp; Kas Hari Ini</h1>
+              <p class="page-subtitle">Selasa, 17 November 2026 | Kiriman terdekat ditampilkan paling atas agar tidak terlewat</p>
+            </div>
+            <div class="action-row">
+              <button type="button" class="btn btn-secondary" data-nav="orders">Semua Pesanan</button>
+              <button type="button" class="btn btn-primary" data-open-payment data-order="MF-261117-01">+ Catat Pembayaran</button>
+            </div>
+          </div>
+
+          <div class="kpi-grid">
+            <div class="kpi-card">
+              <p class="kpi-label">Kirim Hari Ini</p>
+              <p class="kpi-value num">4 Item</p>
+              <p class="kpi-note" style="color: var(--brand-urgent); font-weight: 600;">1 melewati jam kirim</p>
+            </div>
+            <div class="kpi-card">
+              <p class="kpi-label">Siap Diambil / Kurir</p>
+              <p class="kpi-value num">2 Item</p>
+              <p class="kpi-note">Menunggu serah terima</p>
+            </div>
+            <div class="kpi-card">
+              <p class="kpi-label">Sisa Piutang Aktif</p>
+              <p class="kpi-value num">Rp4.250.000</p>
+              <p class="kpi-note">Dari 2 pesanan berjalan</p>
+            </div>
+            <div class="kpi-card kpi-card-sunken">
+              <p class="kpi-label">Kas Masuk Hari Ini</p>
+              <p class="kpi-value num" style="color: var(--status-paid-fg);">Rp3.150.000</p>
+              <p class="kpi-note">3 pembayaran POSTED</p>
+            </div>
+          </div>
+
+          <div class="split-layout">
+            <section class="card" aria-labelledby="dash-agenda-title">
+              <div class="card-header">
+                <h2 id="dash-agenda-title" class="card-title">Prioritas Pengiriman &amp; Pengerjaan</h2>
+                <span class="badge badge-danger">1 Terlambat</span>
+              </div>
+
+              <div class="stack-list" id="dash-agenda-list">
+                <article class="agenda-row agenda-row-inline agenda-row-urgent" data-agenda-item="ag1">
+                  <div>
+                    <div class="agenda-meta">
+                      <span class="badge badge-danger">Lewat 30 mnt (13:00)</span>
+                      <span class="badge badge-ready" data-status-pill>Siap Kirim</span>
+                      <span class="mono" style="font-size: 13px;">MF-261117-01</span>
+                    </div>
+                    <h3 class="agenda-title">Papan Bunga Grand Opening 2x1.2m (1 buah)</h3>
+                    <p class="agenda-sub">Ruko Puri Indah Blok B2 | Pemesan: PT Sinar Harapan Tbk</p>
+                  </div>
+                  <div class="action-row">
+                    <button type="button" class="btn btn-urgent btn-sm" data-advance-agenda="ag1">Tandai Terkirim</button>
+                    <button type="button" class="btn btn-secondary btn-sm" data-nav="order-detail">Detail</button>
+                  </div>
+                </article>
+
+                <article class="agenda-row agenda-row-inline" data-agenda-item="ag2">
+                  <div>
+                    <div class="agenda-meta">
+                      <span class="badge badge-warn">Jadwal 15:30 WIB</span>
+                      <span class="badge badge-neutral" data-status-pill>Diproses</span>
+                      <span class="mono" style="font-size: 13px;">MF-261117-02</span>
+                    </div>
+                    <h3 class="agenda-title">Standing Flower Anggrek Putih (2 buah)</h3>
+                    <p class="agenda-sub">Menara Imperium Lt. 12 | Pemesan: Ibu Ratna Dewi</p>
+                  </div>
+                  <div class="action-row">
+                    <button type="button" class="btn btn-primary btn-sm" data-advance-agenda="ag2">Tandai Siap</button>
+                    <button type="button" class="btn btn-secondary btn-sm" data-nav="order-detail">Detail</button>
+                  </div>
+                </article>
+
+                <article class="agenda-row agenda-row-inline" data-agenda-item="ag3">
+                  <div>
+                    <div class="agenda-meta">
+                      <span class="badge badge-ready">Jadwal 17:00 WIB</span>
+                      <span class="badge badge-neutral" data-status-pill>Baru</span>
+                      <span class="mono" style="font-size: 13px;">MF-261117-03</span>
+                    </div>
+                    <h3 class="agenda-title">Buket Mawar Peach &amp; Eucalyptus</h3>
+                    <p class="agenda-sub">Ambil di toko oleh Klinik Gigi Sentosa | Status bayar: Lunas</p>
+                  </div>
+                  <div class="action-row">
+                    <button type="button" class="btn btn-secondary btn-sm" data-advance-agenda="ag3">Mulai Proses</button>
+                    <button type="button" class="btn btn-secondary btn-sm" data-nav="order-detail">Detail</button>
+                  </div>
+                </article>
+              </div>
+            </section>
+
+            <aside class="card sticky-aside" aria-labelledby="dash-piutang-title">
+              <div class="card-header">
+                <h2 id="dash-piutang-title" class="card-title">Tagihan Belum Lunas</h2>
+                <button type="button" class="btn btn-ghost btn-sm" data-nav="payments">Lihat Buku</button>
+              </div>
+              <div class="stack-list">
+                <div class="agenda-row">
+                  <div>
+                    <div class="agenda-meta">
+                      <span class="badge badge-warn">DP Sebagian</span>
+                      <span class="mono" style="font-size: 13px;">MF-261117-01</span>
+                    </div>
+                    <p class="agenda-title">PT Sinar Harapan Tbk</p>
+                    <p class="agenda-sub num">Total Rp2.675.000 | Sisa: <strong>Rp1.175.000</strong></p>
+                  </div>
+                  <div class="action-row">
+                    <button type="button" class="btn btn-primary btn-sm" data-open-payment data-order="MF-261117-01" data-balance="1175000">Catat Pelunasan</button>
+                    <button type="button" class="btn btn-secondary btn-sm" data-nav="order-detail">Buka</button>
+                  </div>
+                </div>
+
+                <div class="agenda-row">
+                  <div>
+                    <div class="agenda-meta">
+                      <span class="badge badge-danger">Belum Bayar</span>
+                      <span class="mono" style="font-size: 13px;">MF-261116-09</span>
+                    </div>
+                    <p class="agenda-title">Hotel Puri Anggrek</p>
+                    <p class="agenda-sub num">Total Rp3.075.000 | Sisa: <strong>Rp3.075.000</strong></p>
+                  </div>
+                  <div class="action-row">
+                    <button type="button" class="btn btn-primary btn-sm" data-open-payment data-order="MF-261116-09" data-balance="3075000">Catat Bayar</button>
+                  </div>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- CORE SCREEN 2: DAFTAR PESANAN                             -->
+        <!-- ========================================================= -->
+        <section id="screen-orders" class="screen" aria-labelledby="h1-orders">
+          <div class="page-head">
+            <div>
+              <h1 id="h1-orders" class="page-title">Daftar Pesanan</h1>
+              <p class="page-subtitle">Cari berdasarkan nomor nota, pemesan, atau status pengerjaan</p>
+            </div>
+            <button type="button" class="btn btn-primary" data-nav="order-form">+ Pesanan Baru</button>
+          </div>
+
+          <div class="card">
+            <div class="toolbar">
+              <div class="chip-row" role="group" aria-label="Filter status pesanan">
+                <button type="button" class="chip-btn" data-order-filter="all" aria-pressed="true">Semua (4)</button>
+                <button type="button" class="chip-btn" data-order-filter="unpaid" aria-pressed="false">Belum Lunas (2)</button>
+                <button type="button" class="chip-btn" data-order-filter="ready" aria-pressed="false">Siap Kirim (1)</button>
+                <button type="button" class="chip-btn" data-order-filter="process" aria-pressed="false">Diproses (1)</button>
+              </div>
+              <div style="min-width: 220px;">
+                <label for="orders-inline-search" class="sr-only">Saring pesanan</label>
+                <input id="orders-inline-search" type="search" class="input" placeholder="Ketik nama atau kode MF-...">
+              </div>
+            </div>
+
+            <!-- Simulated Edge States (Empty / Loading / Error) -->
+            <div id="orders-state-empty" class="state-panel" hidden>
+              <h3>Belum ada pesanan pada filter ini</h3>
+              <p>Ubah kata kunci pencarian atau catat pesanan baru untuk toko hari ini.</p>
+              <button type="button" class="btn btn-primary" data-nav="order-form">+ Buat Pesanan Pertama</button>
+            </div>
+
+            <div id="orders-state-loading" class="state-panel" hidden aria-busy="true">
+              <h3>Memuat daftar pesanan terbaru...</h3>
+              <p>Mengambil jadwal kiriman dan status pembayaran dari server.</p>
+            </div>
+
+            <div id="orders-state-error" class="state-panel" role="alert" hidden>
+              <h3>Gagal memuat daftar pesanan</h3>
+              <p>Koneksi ke server terputus. Data pesanan tetap aman dan bisa dicoba muat ulang.</p>
+              <button type="button" class="btn btn-secondary" id="orders-retry-btn">Coba Muat Ulang</button>
+            </div>
+
+            <div id="orders-data-wrap">
+              <div class="table-desktop">
+                <table class="ledger-table">
+                  <thead>
+                    <tr>
+                      <th>No. Pesanan</th>
+                      <th>Pemesan &amp; Item</th>
+                      <th>Jadwal Kirim</th>
+                      <th>Pengerjaan</th>
+                      <th>Pembayaran</th>
+                      <th class="num-cell">Total</th>
+                      <th>Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="orders-table-body">
+                    <tr data-status="ready" data-paid="unpaid" data-search="mf-261117-01 pt sinar harapan papan bunga">
+                      <td class="mono"><strong>MF-261117-01</strong></td>
+                      <td><strong>PT Sinar Harapan Tbk</strong><br><span style="color: var(--text-secondary);">2 item (Papan Bunga + Standing Flower)</span></td>
+                      <td class="num">17/11/2026 13:00</td>
+                      <td><span class="badge badge-ready">Siap Kirim</span></td>
+                      <td><span class="badge badge-warn">DP Sebagian</span></td>
+                      <td class="num-cell num"><strong>Rp2.675.000</strong></td>
+                      <td><button type="button" class="btn btn-secondary btn-sm" data-nav="order-detail">Buka</button></td>
+                    </tr>
+                    <tr data-status="process" data-paid="paid" data-search="mf-261117-02 ibu ratna dewi standing flower anggrek">
+                      <td class="mono"><strong>MF-261117-02</strong></td>
+                      <td><strong>Ibu Ratna Dewi</strong><br><span style="color: var(--text-secondary);">2 buah Standing Flower Anggrek</span></td>
+                      <td class="num">17/11/2026 15:30</td>
+                      <td><span class="badge badge-neutral">Diproses</span></td>
+                      <td><span class="badge badge-paid">Lunas</span></td>
+                      <td class="num-cell num"><strong>Rp1.850.000</strong></td>
+                      <td><button type="button" class="btn btn-secondary btn-sm" data-nav="order-detail">Buka</button></td>
+                    </tr>
+                    <tr data-status="new" data-paid="paid" data-search="mf-261117-03 klinik gigi sentosa buket mawar">
+                      <td class="mono"><strong>MF-261117-03</strong></td>
+                      <td><strong>Klinik Gigi Sentosa</strong><br><span style="color: var(--text-secondary);">Buket Mawar Peach</span></td>
+                      <td class="num">17/11/2026 17:00</td>
+                      <td><span class="badge badge-neutral">Baru</span></td>
+                      <td><span class="badge badge-paid">Lunas</span></td>
+                      <td class="num-cell num"><strong>Rp650.000</strong></td>
+                      <td><button type="button" class="btn btn-secondary btn-sm" data-nav="order-detail">Buka</button></td>
+                    </tr>
+                    <tr data-status="delivered" data-paid="unpaid" data-search="mf-261116-09 hotel puri anggrek rangkaian lobby">
+                      <td class="mono"><strong>MF-261116-09</strong></td>
+                      <td><strong>Hotel Puri Anggrek</strong><br><span style="color: var(--text-secondary);">3 Rangkaian Meja Lobby</span></td>
+                      <td class="num">16/11/2026 09:00</td>
+                      <td><span class="badge badge-paid">Terkirim</span></td>
+                      <td><span class="badge badge-danger">Belum Bayar</span></td>
+                      <td class="num-cell num"><strong>Rp3.075.000</strong></td>
+                      <td><button type="button" class="btn btn-primary btn-sm" data-open-payment data-order="MF-261116-09" data-balance="3075000">Bayar</button></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="cards-mobile" id="orders-cards-mobile">
+                <article class="agenda-row agenda-row-urgent" data-status="ready" data-paid="unpaid" data-search="mf-261117-01 pt sinar harapan papan bunga">
+                  <div>
+                    <div class="agenda-meta">
+                      <span class="mono" style="font-size: 13px;">MF-261117-01</span>
+                      <span class="badge badge-ready">Siap Kirim</span>
+                      <span class="badge badge-warn">DP Sebagian</span>
+                    </div>
+                    <h3 class="agenda-title">PT Sinar Harapan Tbk</h3>
+                    <p class="agenda-sub num">Kirim 17/11 13:00 | Total Rp2.675.000 (Sisa Rp1.175.000)</p>
+                  </div>
+                  <div class="action-row">
+                    <button type="button" class="btn btn-secondary btn-sm" data-nav="order-detail">Buka Detail</button>
+                    <button type="button" class="btn btn-primary btn-sm" data-open-payment data-order="MF-261117-01" data-balance="1175000">Catat Bayar</button>
+                  </div>
+                </article>
+
+                <article class="agenda-row" data-status="process" data-paid="paid" data-search="mf-261117-02 ibu ratna dewi standing flower anggrek">
+                  <div>
+                    <div class="agenda-meta">
+                      <span class="mono" style="font-size: 13px;">MF-261117-02</span>
+                      <span class="badge badge-neutral">Diproses</span>
+                      <span class="badge badge-paid">Lunas</span>
+                    </div>
+                    <h3 class="agenda-title">Ibu Ratna Dewi</h3>
+                    <p class="agenda-sub num">Kirim 17/11 15:30 | Total Rp1.850.000</p>
+                  </div>
+                  <button type="button" class="btn btn-secondary btn-sm" data-nav="order-detail">Buka Detail</button>
+                </article>
+
+                <article class="agenda-row" data-status="new" data-paid="paid" data-search="mf-261117-03 klinik gigi sentosa buket mawar">
+                  <div>
+                    <div class="agenda-meta">
+                      <span class="mono" style="font-size: 13px;">MF-261117-03</span>
+                      <span class="badge badge-neutral">Baru</span>
+                      <span class="badge badge-paid">Lunas</span>
+                    </div>
+                    <h3 class="agenda-title">Klinik Gigi Sentosa</h3>
+                    <p class="agenda-sub num">Ambil 17/11 17:00 | Total Rp650.000</p>
+                  </div>
+                  <button type="button" class="btn btn-secondary btn-sm" data-nav="order-detail">Buka Detail</button>
+                </article>
+
+                <article class="agenda-row" data-status="delivered" data-paid="unpaid" data-search="mf-261116-09 hotel puri anggrek rangkaian lobby">
+                  <div>
+                    <div class="agenda-meta">
+                      <span class="mono" style="font-size: 13px;">MF-261116-09</span>
+                      <span class="badge badge-paid">Terkirim</span>
+                      <span class="badge badge-danger">Belum Bayar</span>
+                    </div>
+                    <h3 class="agenda-title">Hotel Puri Anggrek</h3>
+                    <p class="agenda-sub num">Terkirim 16/11 | Tagihan Rp3.075.000</p>
+                  </div>
+                  <button type="button" class="btn btn-primary btn-sm" data-open-payment data-order="MF-261116-09" data-balance="3075000">Catat Pelunasan</button>
+                </article>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- CORE SCREEN 3: BUAT / EDIT PESANAN                        -->
+        <!-- ========================================================= -->
+        <section id="screen-order-form" class="screen" aria-labelledby="h1-order-form">
+          <div class="page-head">
+            <div>
+              <h1 id="h1-order-form" class="page-title">Buat Pesanan Baru</h1>
+              <p class="page-subtitle">Isi data pemesan dan rangkaian bunga; perhitungan total Rupiah final diverifikasi server saat simpan</p>
+            </div>
+            <button type="button" class="btn btn-secondary" data-nav="orders">Kembali ke Daftar</button>
+          </div>
+
+          <!-- GOV.UK Accessible Error Summary -->
+          <div id="order-error-summary" class="error-summary" role="alert" tabindex="-1" hidden>
+            <h2>Ada bagian yang perlu dilengkapi sebelum menyimpan</h2>
+            <ul id="order-error-list"></ul>
+          </div>
+
+          <form id="order-create-form" novalidate>
+            <div class="split-layout">
+              <div>
+                <!-- Step 1: Customer & Date -->
+                <section class="card" style="margin-bottom: 16px;" aria-labelledby="sec-customer-info">
+                  <div class="card-header">
+                    <h2 id="sec-customer-info" class="card-title">1. Informasi Pemesan &amp; Nota</h2>
+                    <button type="button" class="btn btn-secondary btn-sm" id="open-quick-customer-btn">+ Pelanggan Baru</button>
+                  </div>
+
+                  <div class="form-grid-2">
+                    <div class="field-group">
+                      <label for="customer-search-input" class="field-label">Pilih Pelanggan *</label>
+                      <div class="combobox">
+                        <input id="customer-search-input" type="text" class="input" value="PT Sinar Harapan Nusantara Tbk (0812-8800-1122)" autocomplete="off" aria-expanded="false" aria-controls="customer-listbox" aria-describedby="customer-err">
+                        <input type="hidden" id="selected-customer-id" value="c1">
+                        <div id="customer-listbox" class="combobox-list" role="listbox" aria-label="Daftar pelanggan">
+                          <button type="button" class="combobox-option" role="option" data-cid="c1" data-label="PT Sinar Harapan Nusantara Tbk (0812-8800-1122)">
+                            <strong>PT Sinar Harapan Nusantara Tbk</strong>
+                            <span>0812-8800-1122 | Perusahaan</span>
+                          </button>
+                          <button type="button" class="combobox-option" role="option" data-cid="c2" data-label="Ibu Ratna Dewi (0811-9220-4411)">
+                            <strong>Ibu Ratna Dewi</strong>
+                            <span>0811-9220-4411 | Pelanggan tetap</span>
+                          </button>
+                          <button type="button" class="combobox-option" role="option" data-cid="c3" data-label="Klinik Gigi Sentosa (0813-7700-9900)">
+                            <strong>Klinik Gigi Sentosa</strong>
+                            <span>0813-7700-9900</span>
+                          </button>
+                          <button type="button" class="combobox-option" role="option" data-cid="c4" data-label="Hotel Puri Anggrek (021-555-0192)">
+                            <strong>Hotel Puri Anggrek</strong>
+                            <span>021-555-0192 | Korporat</span>
+                          </button>
+                        </div>
+                      </div>
+                      <p class="field-hint">Ketik nama atau nomor HP, atau klik + Pelanggan Baru tanpa menghapus item.</p>
+                      <p id="customer-err" class="field-error" hidden></p>
+                    </div>
+
+                    <div class="field-group">
+                      <label for="order-date-input" class="field-label">Tanggal Pesanan *</label>
+                      <input id="order-date-input" type="date" class="input" value="2026-11-17" aria-describedby="order-date-err">
+                      <p id="order-date-err" class="field-error" hidden></p>
+                    </div>
+                  </div>
+
+                  <div class="field-group" style="margin-bottom: 0;">
+                    <label for="order-general-note" class="field-label">Catatan Pesanan (Opsional)</label>
+                    <input id="order-general-note" type="text" class="input" placeholder="Misal: Minta foto hasil rangkaian sebelum kurir berangkat">
+                  </div>
+                </section>
+
+                <!-- Step 2: Order Items -->
+                <section class="card" aria-labelledby="sec-order-items">
+                  <div class="card-header">
+                    <h2 id="sec-order-items" class="card-title">2. Daftar Item Karangan Bunga (<span id="item-count-label">1</span>)</h2>
+                    <button type="button" class="btn btn-secondary btn-sm" id="add-blank-item-btn">+ Tambah Item Lain</button>
+                  </div>
+
+                  <div id="order-items-container"></div>
+                </section>
+              </div>
+
+              <!-- Sticky Live Summary Rail (Desktop) -->
+              <aside class="card sticky-aside" aria-labelledby="sec-summary-receipt">
+                <h2 id="sec-summary-receipt" class="card-title" style="margin-bottom: 12px;">Ringkasan Hitungan Nota</h2>
+                <div class="summary-line">
+                  <span>Subtotal Rangkaian</span>
+                  <strong id="sum-items" class="num">Rp1.250.000</strong>
+                </div>
+                <div class="summary-line">
+                  <span>Ongkos Kirim Terpisah</span>
+                  <strong id="sum-shipping" class="num">Rp150.000</strong>
+                </div>
+                <div class="summary-total">
+                  <span>Perkiraan Total</span>
+                  <span id="sum-grand" class="num">Rp1.400.000</span>
+                </div>
+                <p class="field-hint" style="margin-top: 10px;">Nominal bulat Rupiah tanpa desimal. Total resmi dikunci server saat Anda menekan Simpan Pesanan.</p>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 14px;">Simpan Pesanan</button>
+              </aside>
+            </div>
+
+            <!-- Sticky Save Bar (Always visible, sits safely above mobile bottom nav) -->
+            <div class="sticky-save-bar">
+              <div>
+                <span style="font-size: 13px; color: var(--text-secondary);">Total Sementara</span>
+                <div id="sticky-bar-total" class="num" style="font-size: 20px; font-weight: 700;">Rp1.400.000</div>
+              </div>
+              <div class="action-row">
+                <button type="button" class="btn btn-secondary" id="test-invalid-submit-btn">Uji Validasi Kosong</button>
+                <button type="submit" class="btn btn-primary">Simpan Pesanan</button>
+              </div>
+            </div>
+          </form>
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- CORE SCREEN 4: DETAIL PESANAN                             -->
+        <!-- ========================================================= -->
+        <section id="screen-order-detail" class="screen" aria-labelledby="h1-order-detail">
+          <div class="page-head">
+            <div>
+              <h1 id="h1-order-detail" class="page-title">Nota <span class="mono">MF-261117-01</span></h1>
+              <p class="page-subtitle">PT Sinar Harapan Nusantara Tbk (0812-8800-1122) | Tanggal Pesan 17/11/2026</p>
+            </div>
+            <div class="action-row">
+              <button type="button" class="btn btn-secondary" data-nav="order-form">Edit Pesanan</button>
+              <button type="button" class="btn btn-secondary" data-toast="Ringkasan nota siap disalin untuk WhatsApp pemesan.">Salin Ringkasan WA</button>
+              <button type="button" class="btn btn-primary" data-open-payment data-order="MF-261117-01" data-balance="1175000">+ Catat Pembayaran</button>
+            </div>
+          </div>
+
+          <div class="kpi-grid">
+            <div class="kpi-card">
+              <p class="kpi-label">Total Tagihan</p>
+              <p class="kpi-value num">Rp2.675.000</p>
+            </div>
+            <div class="kpi-card">
+              <p class="kpi-label">Diterima (POSTED)</p>
+              <p class="kpi-value num" style="color: var(--status-paid-fg);">Rp1.500.000</p>
+            </div>
+            <div class="kpi-card">
+              <p class="kpi-label">Sisa Tagihan</p>
+              <p class="kpi-value num" style="color: var(--brand-urgent);">Rp1.175.000</p>
+            </div>
+            <div class="kpi-card">
+              <p class="kpi-label">Status Pembayaran</p>
+              <p style="margin: 4px 0 0;"><span class="badge badge-warn">DP Sebagian</span></p>
+            </div>
+          </div>
+
+          <div class="split-layout">
+            <section class="card" aria-labelledby="detail-items-heading">
+              <div class="card-header">
+                <h2 id="detail-items-heading" class="card-title">Status Pengerjaan Per Item (2)</h2>
+              </div>
+
+              <div class="stack-list">
+                <article class="agenda-row">
+                  <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; align-items: start;">
+                    <div>
+                      <div class="agenda-meta">
+                        <span class="badge badge-paid">Terkirim</span>
+                        <span class="num" style="font-size: 13px; color: var(--text-secondary);">17/11/2026 10:00 | Ongkir: Sudah Termasuk</span>
+                      </div>
+                      <h3 class="agenda-title">1. Standing Flower Anggrek Putih (1 buah)</h3>
+                      <p class="agenda-sub">Penerima: Direktur PT Mitra Jaya, Menara Imperium Lt. 12</p>
+                      <p class="agenda-sub">Pita ucapan: Selamat &amp; Sukses Atas Peresmian Kantor</p>
+                    </div>
+                    <strong class="num" style="font-size: 16px;">Rp1.375.000</strong>
+                  </div>
+                  <div class="stepper" aria-label="Tahap pengerjaan selesai">
+                    <span class="step-pill is-done">Baru</span>
+                    <span class="step-pill is-done">Diproses</span>
+                    <span class="step-pill is-done">Siap Kirim</span>
+                    <span class="step-pill is-current">Terkirim</span>
+                  </div>
+                </article>
+
+                <article class="agenda-row agenda-row-urgent" id="detail-item-2">
+                  <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; align-items: start;">
+                    <div>
+                      <div class="agenda-meta">
+                        <span class="badge badge-ready" id="detail-item2-badge">Siap Kirim</span>
+                        <span class="num" style="font-size: 13px; color: var(--text-secondary);">17/11/2026 13:00 | Ongkir Terpisah Rp150.000</span>
+                      </div>
+                      <h3 class="agenda-title">2. Papan Bunga Grand Opening 2x1.2m (1 buah)</h3>
+                      <p class="agenda-sub">Penerima: Cabang Baru Mitra Jaya, Ruko Puri Indah Blok B2</p>
+                      <p class="agenda-sub">Pita ucapan: Selamat Grand Opening - Dari PT Sinar Harapan</p>
+                    </div>
+                    <strong class="num" style="font-size: 16px;">Rp1.300.000</strong>
+                  </div>
+                  <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px;">
+                    <div class="stepper" aria-label="Tahap pengerjaan item 2">
+                      <span class="step-pill is-done">Baru</span>
+                      <span class="step-pill is-done">Diproses</span>
+                      <span class="step-pill is-current" id="detail-step-ready">Siap Kirim</span>
+                      <span class="step-pill" id="detail-step-delivered">Terkirim</span>
+                    </div>
+                    <button type="button" class="btn btn-primary btn-sm" id="detail-advance-btn">Tandai Terkirim</button>
+                  </div>
+                </article>
+              </div>
+            </section>
+
+            <section class="card" aria-labelledby="detail-payments-heading">
+              <div class="card-header">
+                <h2 id="detail-payments-heading" class="card-title">Riwayat Pembayaran &amp; Audit</h2>
+              </div>
+              <div class="stack-list">
+                <div class="agenda-row">
+                  <div style="display: flex; justify-content: space-between; gap: 8px; align-items: center;">
+                    <span class="badge badge-paid">POSTED</span>
+                    <span class="num" style="font-size: 13px; color: var(--text-secondary);">17/11/2026</span>
+                  </div>
+                  <p class="agenda-title num">Rp1.500.000</p>
+                  <p class="agenda-sub">Transfer BCA | Ref: <span class="mono">TRX-4411-BCA</span></p>
+                  <div class="action-row">
+                    <button type="button" class="btn btn-secondary btn-sm" data-open-void data-pay-label="Rp1.500.000 (MF-261117-01)">Void / Koreksi</button>
+                  </div>
+                </div>
+
+                <div class="agenda-row">
+                  <div style="display: flex; justify-content: space-between; gap: 8px; align-items: center;">
+                    <span class="badge badge-neutral">VOIDED</span>
+                    <span class="num" style="font-size: 13px; color: var(--text-secondary);">17/11/2026</span>
+                  </div>
+                  <p class="agenda-title num voided-amount">Rp1.000.000</p>
+                  <p class="agenda-sub">Alasan void: Salah ketik nominal DP saat input pertama</p>
+                </div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- CORE SCREEN 5: PEMBAYARAN & PIUTANG                       -->
+        <!-- ========================================================= -->
+        <section id="screen-payments" class="screen" aria-labelledby="h1-payments">
+          <div class="page-head">
+            <div>
+              <h1 id="h1-payments" class="page-title">Pembayaran &amp; Buku Piutang</h1>
+              <p class="page-subtitle">Pembayaran tercatat tidak dihapus permanen; koreksi memakai status VOIDED beserta alasan</p>
+            </div>
+            <button type="button" class="btn btn-primary" data-open-payment data-order="MF-261117-01" data-balance="1175000">+ Catat Pembayaran</button>
+          </div>
+
+          <div class="card">
+            <div class="chip-row" role="group" aria-label="Filter transaksi pembayaran">
+              <button type="button" class="chip-btn" aria-pressed="true" data-pay-filter="all">Semua Catatan (3)</button>
+              <button type="button" class="chip-btn" aria-pressed="false" data-pay-filter="POSTED">Hanya POSTED (2)</button>
+              <button type="button" class="chip-btn" aria-pressed="false" data-pay-filter="VOIDED">Hanya VOIDED (1)</button>
+            </div>
+
+            <div class="table-desktop">
+              <table class="ledger-table">
+                <thead>
+                  <tr>
+                    <th>Tanggal</th>
+                    <th>Pesanan &amp; Pemesan</th>
+                    <th>Metode / Referensi</th>
+                    <th>Status Audit</th>
+                    <th class="num-cell">Nominal</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="payments-table-body">
+                  <tr data-pay-status="POSTED">
+                    <td class="num">17/11/2026</td>
+                    <td><strong class="mono">MF-261117-01</strong><br>PT Sinar Harapan Tbk</td>
+                    <td>Transfer BCA <span class="mono">TRX-4411</span></td>
+                    <td><span class="badge badge-paid">POSTED</span></td>
+                    <td class="num-cell num"><strong>Rp1.500.000</strong></td>
+                    <td><button type="button" class="btn btn-secondary btn-sm" data-open-void data-pay-label="Rp1.500.000 (MF-261117-01)">Void</button></td>
+                  </tr>
+                  <tr data-pay-status="POSTED">
+                    <td class="num">17/11/2026</td>
+                    <td><strong class="mono">MF-261117-02</strong><br>Ibu Ratna Dewi</td>
+                    <td>QRIS Toko <span class="mono">QR-8821</span></td>
+                    <td><span class="badge badge-paid">POSTED</span></td>
+                    <td class="num-cell num"><strong>Rp1.850.000</strong></td>
+                    <td><button type="button" class="btn btn-secondary btn-sm" data-open-void data-pay-label="Rp1.850.000 (MF-261117-02)">Void</button></td>
+                  </tr>
+                  <tr data-pay-status="VOIDED">
+                    <td class="num">17/11/2026</td>
+                    <td><strong class="mono">MF-261117-01</strong><br>PT Sinar Harapan Tbk</td>
+                    <td>Koreksi: Salah input nominal DP</td>
+                    <td><span class="badge badge-neutral">VOIDED</span></td>
+                    <td class="num-cell num voided-amount">Rp1.000.000</td>
+                    <td><span style="font-size: 13px; color: var(--text-secondary);">Terkunci</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="cards-mobile" id="payments-cards-mobile">
+              <article class="agenda-row" data-pay-status="POSTED">
+                <div>
+                  <div class="agenda-meta">
+                    <span class="badge badge-paid">POSTED</span>
+                    <span class="mono" style="font-size: 13px;">MF-261117-01</span>
+                  </div>
+                  <h3 class="agenda-title num">Rp1.500.000 - PT Sinar Harapan Tbk</h3>
+                  <p class="agenda-sub">17/11/2026 | Transfer BCA TRX-4411</p>
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm" data-open-void data-pay-label="Rp1.500.000 (MF-261117-01)">Void / Koreksi</button>
+              </article>
+              <article class="agenda-row" data-pay-status="POSTED">
+                <div>
+                  <div class="agenda-meta">
+                    <span class="badge badge-paid">POSTED</span>
+                    <span class="mono" style="font-size: 13px;">MF-261117-02</span>
+                  </div>
+                  <h3 class="agenda-title num">Rp1.850.000 - Ibu Ratna Dewi</h3>
+                  <p class="agenda-sub">17/11/2026 | QRIS Toko QR-8821</p>
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm" data-open-void data-pay-label="Rp1.850.000 (MF-261117-02)">Void / Koreksi</button>
+              </article>
+              <article class="agenda-row" data-pay-status="VOIDED">
+                <div>
+                  <div class="agenda-meta">
+                    <span class="badge badge-neutral">VOIDED</span>
+                    <span class="mono" style="font-size: 13px;">MF-261117-01</span>
+                  </div>
+                  <h3 class="agenda-title num voided-amount">Rp1.000.000</h3>
+                  <p class="agenda-sub">Alasan: Salah input nominal DP</p>
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- SUPPORTING BLUEPRINT SCREENS (Customers, Expenses, Cats, Reports) -->
+        <!-- ========================================================= -->
+        <section id="screen-customers" class="screen" aria-labelledby="h1-customers">
+          <div class="page-head">
+            <div>
+              <h1 id="h1-customers" class="page-title">Direktori Pelanggan (Blueprint Layout)</h1>
+              <p class="page-subtitle">Pencarian cepat nama &amp; nomor WA serta riwayat pesanan per pelanggan</p>
+            </div>
+            <button type="button" class="btn btn-primary" id="customers-add-btn">+ Tambah Pelanggan</button>
+          </div>
+          <div class="card">
+            <p class="agenda-sub" style="margin-bottom: 12px;">Pola konsisten dengan Daftar Pesanan: tabel di desktop (`&gt;= 900px`) dan kartu ringkas di HP, plus tombol langsung "+ Pesan untuk Pelanggan Ini".</p>
+            <div class="table-desktop">
+              <table class="ledger-table">
+                <thead>
+                  <tr><th>Nama Pelanggan</th><th>No. WhatsApp</th><th class="num-cell">Total Pesanan</th><th class="num-cell">Sisa Piutang</th><th>Aksi</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td><strong>PT Sinar Harapan Nusantara Tbk</strong></td><td class="mono">0812-8800-1122</td><td class="num-cell num">5</td><td class="num-cell num">Rp1.175.000</td><td><button type="button" class="btn btn-secondary btn-sm" data-nav="order-form">+ Pesan</button></td></tr>
+                  <tr><td><strong>Ibu Ratna Dewi</strong></td><td class="mono">0811-9220-4411</td><td class="num-cell num">8</td><td class="num-cell num">Rp0</td><td><button type="button" class="btn btn-secondary btn-sm" data-nav="order-form">+ Pesan</button></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="cards-mobile">
+              <div class="agenda-row">
+                <div>
+                  <p class="agenda-title">PT Sinar Harapan Nusantara Tbk</p>
+                  <p class="agenda-sub mono">0812-8800-1122 | Piutang Rp1.175.000</p>
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm" data-nav="order-form">+ Pesan</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="screen-expenses" class="screen" aria-labelledby="h1-expenses">
+          <div class="page-head">
+            <div>
+              <h1 id="h1-expenses" class="page-title">Pengeluaran Toko (Blueprint Layout)</h1>
+              <p class="page-subtitle">Pencatatan belanja bunga segar, perlengkapan papan, dan ongkos kurir dengan audit POSTED / VOIDED</p>
+            </div>
+            <button type="button" class="btn btn-primary" data-toast="Modal catat pengeluaran akan memakai CurrencyInput + idempotency guard.">+ Catat Pengeluaran</button>
+          </div>
+          <div class="card">
+            <div class="agenda-row agenda-row-inline">
+              <div>
+                <div class="agenda-meta"><span class="badge badge-paid">POSTED</span><span class="badge badge-neutral">Bunga Segar</span></div>
+                <p class="agenda-title">Belanja Anggrek Bulan &amp; Mawar Segar (Rawa Belong)</p>
+                <p class="agenda-sub num">17/11/2026 | Nominal: <strong>Rp1.200.000</strong></p>
+              </div>
+              <button type="button" class="btn btn-secondary btn-sm" data-open-void data-pay-label="Pengeluaran Bunga Rp1.200.000">Void</button>
+            </div>
+          </div>
+        </section>
+
+        <section id="screen-categories" class="screen" aria-labelledby="h1-categories">
+          <div class="page-head">
+            <div>
+              <h1 id="h1-categories" class="page-title">Kategori Biaya (Blueprint Layout)</h1>
+              <p class="page-subtitle">Pengelompokan belanja operasional agar laporan bulanan rapi</p>
+            </div>
+            <button type="button" class="btn btn-primary" data-toast="Tambah kategori biaya baru.">+ Tambah Kategori</button>
+          </div>
+          <div class="card">
+            <div class="stack-list">
+              <div class="agenda-row agenda-row-inline">
+                <div><p class="agenda-title">Bunga Segar &amp; Daun</p><p class="agenda-sub">Aktif dipakai pada 14 transaksi bulan ini</p></div>
+                <span class="badge badge-paid">Aktif</span>
+              </div>
+              <div class="agenda-row agenda-row-inline">
+                <div><p class="agenda-title">Bahan Papan &amp; Spons</p><p class="agenda-sub">Aktif dipakai pada 6 transaksi bulan ini</p></div>
+                <span class="badge badge-paid">Aktif</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="screen-reports" class="screen" aria-labelledby="h1-reports">
+          <div class="page-head">
+            <div>
+              <h1 id="h1-reports" class="page-title">Laporan Keuangan Toko (Blueprint Layout)</h1>
+              <p class="page-subtitle">Rekap hanya menghitung transaksi POSTED; baris VOIDED dikecualikan otomatis</p>
+            </div>
+            <button type="button" class="btn btn-secondary" data-toast="Unduh laporan Excel / CSV periode berjalan.">Ekspor Excel</button>
+          </div>
+          <div class="kpi-grid">
+            <div class="kpi-card"><p class="kpi-label">Omzet Bulan Ini</p><p class="kpi-value num">Rp28.450.000</p></div>
+            <div class="kpi-card"><p class="kpi-label">Kas Masuk (POSTED)</p><p class="kpi-value num" style="color: var(--status-paid-fg);">Rp24.200.000</p></div>
+            <div class="kpi-card"><p class="kpi-label">Pengeluaran (POSTED)</p><p class="kpi-value num">Rp9.850.000</p></div>
+            <div class="kpi-card kpi-card-sunken"><p class="kpi-label">Selisih Kas Bersih</p><p class="kpi-value num">Rp14.350.000</p></div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- Clean 4-Tab Mobile Bottom Navigation (< 768px) -->
+  <nav class="mobile-bottom-nav" aria-label="Navigasi utama mobile">
+    <button type="button" class="bottom-nav-btn" data-nav="dashboard" aria-current="page">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span>Hari Ini</span>
+    </button>
+    <button type="button" class="bottom-nav-btn" data-nav="orders">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/></svg>
+      <span>Pesanan</span>
+    </button>
+    <button type="button" class="bottom-nav-btn" data-nav="order-form">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      <span>Buat</span>
+    </button>
+    <button type="button" class="bottom-nav-btn" data-open-menu>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      <span>Menu</span>
+    </button>
+  </nav>
+
+  <!-- MODAL 1: Mobile & Tablet Menu Drawer -->
+  <div id="modal-menu" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-menu-title">
+    <div class="modal-card">
+      <div class="card-header">
+        <h2 id="modal-menu-title" class="card-title">Menu Mutiara Florist</h2>
+        <button type="button" class="btn btn-secondary btn-sm" data-close-modal="modal-menu">Tutup</button>
+      </div>
+      <div class="stack-list">
+        <button type="button" class="btn btn-secondary" data-nav="payments">Pembayaran &amp; Piutang</button>
+        <button type="button" class="btn btn-secondary" data-nav="order-detail">Contoh Detail Pesanan</button>
+        <button type="button" class="btn btn-secondary" data-nav="customers">Direktori Pelanggan</button>
+        <button type="button" class="btn btn-secondary" data-nav="expenses">Pengeluaran Toko</button>
+        <button type="button" class="btn btn-secondary" data-nav="categories">Kategori Biaya</button>
+        <button type="button" class="btn btn-secondary" data-nav="reports">Laporan Keuangan</button>
+        <hr style="width: 100%; border: 0; border-top: 1px solid var(--border-hairline); margin: 4px 0;">
+        <button type="button" class="btn btn-urgent" id="mobile-logout-btn">Keluar Akun (Sari Wijaya)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: Quick Create Customer (without resetting order items!) -->
+  <div id="modal-customer" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-customer-title">
+    <div class="modal-card">
+      <div class="card-header">
+        <h2 id="modal-customer-title" class="card-title">Tambah Pelanggan Baru</h2>
+        <button type="button" class="btn btn-secondary btn-sm" data-close-modal="modal-customer">Tutup</button>
+      </div>
+      <form id="quick-customer-form" novalidate>
+        <div class="field-group">
+          <label for="qc-name" class="field-label">Nama Pemesan / Perusahaan *</label>
+          <input id="qc-name" type="text" class="input" placeholder="Misal: CV Karya Mandiri">
+        </div>
+        <div class="field-group">
+          <label for="qc-phone" class="field-label">Nomor WhatsApp / HP *</label>
+          <input id="qc-phone" type="tel" class="input" placeholder="0812-3456-7890">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close-modal="modal-customer">Batal</button>
+          <button type="submit" class="btn btn-primary">Simpan &amp; Pilih</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 3: Catat Pembayaran (CurrencyInput + Double-submit Lock) -->
+  <div id="modal-payment" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-payment-title">
+    <div class="modal-card">
+      <div class="card-header">
+        <h2 id="modal-payment-title" class="card-title">Catat Pembayaran Pesanan</h2>
+        <button type="button" class="btn btn-secondary btn-sm" data-close-modal="modal-payment">Tutup</button>
+      </div>
+      <form id="payment-record-form" novalidate>
+        <p class="agenda-sub" style="margin-bottom: 12px;">Nota target: <strong id="pay-modal-order" class="mono">MF-261117-01</strong></p>
+        <div class="field-group">
+          <label for="pay-amount-input" class="field-label">Nominal Diterima (Rupiah bulat) *</label>
+          <div class="input-currency-wrap">
+            <span class="input-currency-prefix">Rp</span>
+            <input id="pay-amount-input" type="text" inputmode="numeric" value="1.175.000">
+          </div>
+          <p class="field-hint">Hanya bilangan bulat tanpa koma desimal.</p>
+        </div>
+        <div class="form-grid-2">
+          <div class="field-group">
+            <label for="pay-method-select" class="field-label">Metode Bayar *</label>
+            <select id="pay-method-select" class="select">
+              <option value="Transfer Bank">Transfer BCA</option>
+              <option value="Tunai">Tunai Kasir</option>
+              <option value="QRIS">QRIS Toko</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label for="pay-date-input" class="field-label">Tanggal Bayar *</label>
+            <input id="pay-date-input" type="date" class="input" value="2026-11-17">
+          </div>
+        </div>
+        <div class="field-group">
+          <label for="pay-ref-input" class="field-label">Catatan / Nomor Referensi</label>
+          <input id="pay-ref-input" type="text" class="input" placeholder="Opsional, misal TRX-9910">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close-modal="modal-payment">Batal</button>
+          <button type="submit" class="btn btn-primary" id="submit-payment-btn">Simpan Pembayaran</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 4: Void / Koreksi dengan Alasan Wajib -->
+  <div id="modal-void" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-void-title">
+    <div class="modal-card">
+      <div class="card-header">
+        <h2 id="modal-void-title" class="card-title">Konfirmasi Void Transaksi</h2>
+        <button type="button" class="btn btn-secondary btn-sm" data-close-modal="modal-void">Tutup</button>
+      </div>
+      <form id="void-confirm-form" novalidate>
+        <p class="agenda-sub" style="margin-bottom: 12px;">Transaksi <strong id="void-target-label"></strong> akan ditandai <strong>VOIDED</strong> dan tetap tersimpan di riwayat audit.</p>
+        <div class="field-group">
+          <label for="void-reason-input" class="field-label">Alasan Koreksi / Void (Wajib) *</label>
+          <input id="void-reason-input" type="text" class="input" placeholder="Misal: Salah input nominal transfer">
+          <p id="void-reason-err" class="field-error" hidden></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close-modal="modal-void">Batalkan</button>
+          <button type="submit" class="btn btn-urgent">Ya, Tandai VOIDED</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast-box" class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (function () {
+      // Utilities: Integer Rupiah formatting
+      function parseDigits(str) {
+        const clean = String(str || '').replace(/\D/g, '');
+        return clean ? parseInt(clean, 10) : 0;
+      }
+
+      function formatRupiahDigits(num) {
+        const val = Math.max(0, Math.round(Number(num) || 0));
+        return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      }
+
+      function formatRp(num) {
+        return 'Rp' + formatRupiahDigits(num);
+      }
+
+      // Live announcements & Toast
+      const toastEl = document.getElementById('toast-box');
+      const liveEl = document.getElementById('live-announcer');
+      let toastTimer = null;
+
+      function showToast(msg) {
+        toastEl.textContent = msg;
+        toastEl.classList.add('is-visible');
+        liveEl.textContent = '';
+        requestAnimationFrame(() => { liveEl.textContent = msg; });
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toastEl.classList.remove('is-visible'), 3000);
+      }
+
+      // Modal management with focus return & Escape key
+      let lastFocused = null;
+      function openModal(id, focusTargetId) {
+        lastFocused = document.activeElement;
+        document.querySelectorAll('.modal-backdrop').forEach((m) => m.classList.remove('is-open'));
+        const modal = document.getElementById(id);
+        modal.classList.add('is-open');
+        const target = focusTargetId ? document.getElementById(focusTargetId) : modal.querySelector('input, button');
+        if (target) target.focus();
+      }
+
+      function closeAllModals() {
+        const wasOpen = document.querySelector('.modal-backdrop.is-open');
+        document.querySelectorAll('.modal-backdrop').forEach((m) => m.classList.remove('is-open'));
+        if (wasOpen && lastFocused && typeof lastFocused.focus === 'function') {
+          lastFocused.focus();
+        }
+      }
+
+      document.querySelectorAll('[data-close-modal]').forEach((btn) => {
+        btn.addEventListener('click', closeAllModals);
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          closeAllModals();
+          customerListbox.classList.remove('is-open');
+          customerInput.setAttribute('aria-expanded', 'false');
+        }
+      });
+
+      // Screen navigation
+      const screens = document.querySelectorAll('.screen');
+      const navButtons = document.querySelectorAll('[data-nav]');
+      function switchScreen(target) {
+        screens.forEach((s) => s.classList.toggle('is-active', s.id === 'screen-' + target));
+        navButtons.forEach((b) => {
+          if (b.dataset.nav === target) {
+            b.setAttribute('aria-current', 'page');
+          } else {
+            b.removeAttribute('aria-current');
+          }
+        });
+        document.getElementById('modal-menu').classList.remove('is-open');
+        window.scrollTo({ top: 0, behavior: 'auto' });
+      }
+
+      navButtons.forEach((btn) => {
+        btn.addEventListener('click', () => switchScreen(btn.dataset.nav));
+      });
+
+      document.querySelectorAll('[data-open-menu]').forEach((btn) => {
+        btn.addEventListener('click', () => openModal('modal-menu'));
+      });
+
+      document.getElementById('desktop-logout-btn').addEventListener('click', () => {
+        showToast('Sesi ditutup (simulasi logout aman).');
+      });
+      document.getElementById('mobile-logout-btn').addEventListener('click', () => {
+        closeAllModals();
+        showToast('Sesi ditutup (simulasi logout aman).');
+      });
+
+      // Dashboard linear progression demo
+      document.querySelectorAll('[data-advance-agenda]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.advanceAgenda;
+          const row = document.querySelector(`[data-agenda-item="${id}"]`);
+          const pill = row.querySelector('[data-status-pill]');
+          if (pill.textContent === 'Baru') {
+            pill.textContent = 'Diproses';
+            pill.className = 'badge badge-warn';
+            btn.textContent = 'Tandai Siap';
+            showToast('Status kerja diperbarui: Diproses.');
+          } else if (pill.textContent === 'Diproses') {
+            pill.textContent = 'Siap Kirim';
+            pill.className = 'badge badge-ready';
+            btn.textContent = 'Tandai Terkirim';
+            showToast('Status kerja diperbarui: Siap Kirim.');
+          } else if (pill.textContent === 'Siap Kirim') {
+            pill.textContent = 'Terkirim';
+            pill.className = 'badge badge-paid';
+            row.classList.remove('agenda-row-urgent');
+            btn.remove();
+            showToast('Pesanan selesai dikirim.');
+          }
+        });
+      });
+
+      // Orders filter & Edge state simulator
+      const orderFilterBtns = document.querySelectorAll('[data-order-filter]');
+      const orderSearchInput = document.getElementById('orders-inline-search');
+      const stateSelect = document.getElementById('view-state-mode');
+      let currentOrderFilter = 'all';
+
+      function applyOrdersView() {
+        const mode = stateSelect.value;
+        const emptyBox = document.getElementById('orders-state-empty');
+        const loadBox = document.getElementById('orders-state-loading');
+        const errBox = document.getElementById('orders-state-error');
+        const dataWrap = document.getElementById('orders-data-wrap');
+
+        emptyBox.hidden = true;
+        loadBox.hidden = true;
+        errBox.hidden = true;
+        dataWrap.hidden = true;
+
+        if (mode === 'empty') { emptyBox.hidden = false; return; }
+        if (mode === 'loading') { loadBox.hidden = false; return; }
+        if (mode === 'error') { errBox.hidden = false; return; }
+
+        const q = (orderSearchInput.value || '').trim().toLowerCase();
+        let visibleCount = 0;
+        const rows = document.querySelectorAll('#orders-table-body tr, #orders-cards-mobile article');
+        rows.forEach((el) => {
+          const matchesFilter = currentOrderFilter === 'all' ||
+            (currentOrderFilter === 'unpaid' && el.dataset.paid === 'unpaid') ||
+            (currentOrderFilter === el.dataset.status);
+          const matchesSearch = !q || (el.dataset.search || '').includes(q);
+          const show = matchesFilter && matchesSearch;
+          el.style.display = show ? '' : 'none';
+          if (show && el.tagName === 'TR') visibleCount++;
+        });
+
+        if (visibleCount === 0) {
+          emptyBox.hidden = false;
+        } else {
+          dataWrap.hidden = false;
+        }
+      }
+
+      orderFilterBtns.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          currentOrderFilter = btn.dataset.orderFilter;
+          orderFilterBtns.forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+          applyOrdersView();
+        });
+      });
+      orderSearchInput.addEventListener('input', applyOrdersView);
+      stateSelect.addEventListener('change', () => {
+        switchScreen('orders');
+        applyOrdersView();
+      });
+      document.getElementById('orders-retry-btn').addEventListener('click', () => {
+        stateSelect.value = 'normal';
+        applyOrdersView();
+        showToast('Daftar pesanan berhasil dimuat ulang.');
+      });
+
+      // Order Detail progression
+      const detailAdvBtn = document.getElementById('detail-advance-btn');
+      detailAdvBtn.addEventListener('click', () => {
+        document.getElementById('detail-item2-badge').textContent = 'Terkirim';
+        document.getElementById('detail-item2-badge').className = 'badge badge-paid';
+        document.getElementById('detail-step-ready').className = 'step-pill is-done';
+        document.getElementById('detail-step-delivered').className = 'step-pill is-current';
+        document.getElementById('detail-item-2').classList.remove('agenda-row-urgent');
+        detailAdvBtn.remove();
+        showToast('Item #2 ditandai Terkirim.');
+      });
+
+      // Payments filter & modal
+      document.querySelectorAll('[data-pay-filter]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const target = btn.dataset.payFilter;
+          document.querySelectorAll('[data-pay-filter]').forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+          document.querySelectorAll('#payments-table-body tr, #payments-cards-mobile article').forEach((row) => {
+            row.style.display = (target === 'all' || row.dataset.payStatus === target) ? '' : 'none';
+          });
+        });
+      });
+
+      document.querySelectorAll('[data-open-payment]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          document.getElementById('pay-modal-order').textContent = btn.dataset.order || 'MF-261117-01';
+          document.getElementById('pay-amount-input').value = formatRupiahDigits(btn.dataset.balance || 1175000);
+          openModal('modal-payment', 'pay-amount-input');
+        });
+      });
+
+      document.getElementById('pay-amount-input').addEventListener('input', (e) => {
+        e.target.value = formatRupiahDigits(parseDigits(e.target.value));
+      });
+
+      document.getElementById('payment-record-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const val = parseDigits(document.getElementById('pay-amount-input').value);
+        if (val <= 0) {
+          showToast('Nominal pembayaran harus lebih dari Rp0.');
+          return;
+        }
+        closeAllModals();
+        showToast(`Pembayaran ${formatRp(val)} tercatat dengan status POSTED.`);
+      });
+
+      // Void modal with required reason
+      document.querySelectorAll('[data-open-void]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          document.getElementById('void-target-label').textContent = btn.dataset.payLabel || '';
+          document.getElementById('void-reason-input').value = '';
+          document.getElementById('void-reason-err').hidden = true;
+          document.getElementById('void-reason-input').removeAttribute('aria-invalid');
+          openModal('modal-void', 'void-reason-input');
+        });
+      });
+
+      document.getElementById('void-confirm-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const reasonEl = document.getElementById('void-reason-input');
+        const errEl = document.getElementById('void-reason-err');
+        if (!reasonEl.value.trim()) {
+          errEl.textContent = 'Alasan pembatalan wajib diisi untuk menjaga jejak audit.';
+          errEl.hidden = false;
+          reasonEl.setAttribute('aria-invalid', 'true');
+          reasonEl.focus();
+          return;
+        }
+        closeAllModals();
+        showToast('Transaksi berhasil ditandai VOIDED beserta alasannya.');
+      });
+
+      // Order Create Form: Combobox + Quick Customer + Dynamic Items + Shipping Toggle + Error Summary
+      const customerInput = document.getElementById('customer-search-input');
+      const customerListbox = document.getElementById('customer-listbox');
+      const customerIdHidden = document.getElementById('selected-customer-id');
+
+      function attachComboboxOption(btn) {
+        btn.addEventListener('click', () => {
+          customerInput.value = btn.dataset.label;
+          customerIdHidden.value = btn.dataset.cid;
+          customerListbox.classList.remove('is-open');
+          customerInput.setAttribute('aria-expanded', 'false');
+          customerInput.removeAttribute('aria-invalid');
+          document.getElementById('customer-err').hidden = true;
+        });
+      }
+
+      document.querySelectorAll('.combobox-option').forEach(attachComboboxOption);
+
+      customerInput.addEventListener('focus', () => {
+        customerListbox.classList.add('is-open');
+        customerInput.setAttribute('aria-expanded', 'true');
+      });
+
+      customerInput.addEventListener('input', () => {
+        customerIdHidden.value = '';
+        const q = customerInput.value.toLowerCase();
+        customerListbox.classList.add('is-open');
+        customerListbox.querySelectorAll('.combobox-option').forEach((opt) => {
+          opt.style.display = opt.textContent.toLowerCase().includes(q) ? 'flex' : 'none';
+        });
+      });
+
+      document.getElementById('open-quick-customer-btn').addEventListener('click', () => openModal('modal-customer', 'qc-name'));
+      document.getElementById('customers-add-btn').addEventListener('click', () => openModal('modal-customer', 'qc-name'));
+
+      document.getElementById('quick-customer-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = document.getElementById('qc-name').value.trim();
+        const phone = document.getElementById('qc-phone').value.trim();
+        if (!name || !phone) {
+          showToast('Lengkapi nama dan nomor WhatsApp pelanggan baru.');
+          return;
+        }
+        const label = `${name} (${phone})`;
+        const cid = 'c-' + Date.now();
+        const opt = document.createElement('button');
+        opt.type = 'button';
+        opt.className = 'combobox-option';
+        opt.setAttribute('role', 'option');
+        opt.dataset.cid = cid;
+        opt.dataset.label = label;
+        opt.innerHTML = `<strong>${name}</strong><span>${phone} | Baru ditambahkan</span>`;
+        attachComboboxOption(opt);
+        customerListbox.prepend(opt);
+        customerInput.value = label;
+        customerIdHidden.value = cid;
+        document.getElementById('qc-name').value = '';
+        document.getElementById('qc-phone').value = '';
+        closeAllModals();
+        showToast('Pelanggan baru ditambahkan tanpa menghapus daftar item Anda.');
+      });
+
+      // Order Items state
+      let orderItems = [
+        {
+          id: 1,
+          name: 'Papan Bunga Grand Opening 2x1.2m',
+          qty: 1,
+          price: 1250000,
+          shippingMode: 'SEPARATE',
+          shippingFee: 150000,
+          recipient: 'Cabang Baru Mitra Jaya, Ruko Puri Indah',
+          deliveryDate: '2026-11-18'
+        }
+      ];
+
+      const itemsContainer = document.getElementById('order-items-container');
+
+      function updateTotals() {
+        let itemsSub = 0;
+        let shipTotal = 0;
+        orderItems.forEach((it) => {
+          itemsSub += (it.qty || 1) * (it.price || 0);
+          if (it.shippingMode === 'SEPARATE') {
+            shipTotal += (it.shippingFee || 0);
+          }
+        });
+        const grand = itemsSub + shipTotal;
+        document.getElementById('sum-items').textContent = formatRp(itemsSub);
+        document.getElementById('sum-shipping').textContent = formatRp(shipTotal);
+        document.getElementById('sum-grand').textContent = formatRp(grand);
+        document.getElementById('sticky-bar-total').textContent = formatRp(grand);
+        document.getElementById('item-count-label').textContent = String(orderItems.length);
+      }
+
+      function renderItems() {
+        itemsContainer.innerHTML = '';
+        orderItems.forEach((item, idx) => {
+          const card = document.createElement('div');
+          card.className = 'item-editor';
+          card.innerHTML = `
+            <div class="item-editor-head">
+              <strong>Item #${idx + 1}</strong>
+              <div class="action-row">
+                <button type="button" class="btn btn-secondary btn-sm" data-dup-idx="${idx}">Duplikat Item</button>
+                ${orderItems.length > 1 ? `<button type="button" class="btn btn-ghost btn-sm" data-del-idx="${idx}">Hapus</button>` : ''}
+              </div>
+            </div>
+            <div class="form-grid-2">
+              <div class="field-group">
+                <label for="item-name-${idx}" class="field-label">Jenis &amp; Ukuran Karangan Bunga *</label>
+                <input id="item-name-${idx}" type="text" class="input" value="${item.name}" data-field="name" data-idx="${idx}">
+              </div>
+              <div class="field-group">
+                <label for="item-date-${idx}" class="field-label">Jadwal Kirim *</label>
+                <input id="item-date-${idx}" type="date" class="input" value="${item.deliveryDate}" data-field="deliveryDate" data-idx="${idx}">
+              </div>
+            </div>
+            <div class="form-grid-3">
+              <div class="field-group">
+                <label for="item-qty-${idx}" class="field-label">Jumlah *</label>
+                <input id="item-qty-${idx}" type="number" min="1" class="input num" value="${item.qty}" data-field="qty" data-idx="${idx}">
+              </div>
+              <div class="field-group">
+                <label for="item-price-${idx}" class="field-label">Harga Satuan (Rupiah) *</label>
+                <div class="input-currency-wrap">
+                  <span class="input-currency-prefix">Rp</span>
+                  <input id="item-price-${idx}" type="text" inputmode="numeric" value="${formatRupiahDigits(item.price)}" data-currency="price" data-idx="${idx}">
+                </div>
+              </div>
+              <div class="field-group">
+                <label for="item-ship-mode-${idx}" class="field-label">Skema Ongkir</label>
+                <select id="item-ship-mode-${idx}" class="select" data-field="shippingMode" data-idx="${idx}">
+                  <option value="SEPARATE" ${item.shippingMode === 'SEPARATE' ? 'selected' : ''}>Ditagih Terpisah (SEPARATE)</option>
+                  <option value="INCLUDED" ${item.shippingMode === 'INCLUDED' ? 'selected' : ''}>Termasuk Harga (INCLUDED)</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-grid-2">
+              <div class="field-group" style="margin-bottom: 0;">
+                <label for="item-recipient-${idx}" class="field-label">Penerima &amp; Alamat Tujuan *</label>
+                <input id="item-recipient-${idx}" type="text" class="input" value="${item.recipient}" data-field="recipient" data-idx="${idx}">
+              </div>
+              <div class="field-group" style="margin-bottom: 0; ${item.shippingMode === 'INCLUDED' ? 'opacity: 0.6;' : ''}">
+                <label for="item-ship-fee-${idx}" class="field-label">Biaya Ongkir ${item.shippingMode === 'INCLUDED' ? '(Otomatis Rp0 karena INCLUDED)' : '(Rupiah)'}</label>
+                <div class="input-currency-wrap">
+                  <span class="input-currency-prefix">Rp</span>
+                  <input id="item-ship-fee-${idx}" type="text" inputmode="numeric" value="${item.shippingMode === 'INCLUDED' ? '0' : formatRupiahDigits(item.shippingFee)}" ${item.shippingMode === 'INCLUDED' ? 'disabled' : ''} data-currency="shippingFee" data-idx="${idx}">
+                </div>
+              </div>
+            </div>
+          `;
+          itemsContainer.appendChild(card);
+        });
+
+        itemsContainer.querySelectorAll('[data-field]').forEach((el) => {
+          el.addEventListener('change', (e) => {
+            const i = Number(e.target.dataset.idx);
+            const f = e.target.dataset.field;
+            orderItems[i][f] = f === 'qty' ? Math.max(1, parseInt(e.target.value || '1', 10)) : e.target.value;
+            if (f === 'shippingMode') renderItems();
+            updateTotals();
+          });
+        });
+
+        itemsContainer.querySelectorAll('[data-currency]').forEach((el) => {
+          el.addEventListener('input', (e) => {
+            const i = Number(e.target.dataset.idx);
+            const f = e.target.dataset.currency;
+            const num = parseDigits(e.target.value);
+            orderItems[i][f] = num;
+            e.target.value = formatRupiahDigits(num);
+            updateTotals();
+          });
+        });
+
+        itemsContainer.querySelectorAll('[data-dup-idx]').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const i = Number(btn.dataset.dupIdx);
+            const src = orderItems[i];
+            orderItems.push({ ...src, id: Date.now() });
+            renderItems();
+            updateTotals();
+            showToast(`Item #${i + 1} berhasil diduplikat. Tinggal sesuaikan penerima/alamat.`);
+          });
+        });
+
+        itemsContainer.querySelectorAll('[data-del-idx]').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const i = Number(btn.dataset.delIdx);
+            orderItems.splice(i, 1);
+            renderItems();
+            updateTotals();
+          });
+        });
+      }
+
+      document.getElementById('add-blank-item-btn').addEventListener('click', () => {
+        orderItems.push({
+          id: Date.now(),
+          name: '',
+          qty: 1,
+          price: 750000,
+          shippingMode: 'SEPARATE',
+          shippingFee: 100000,
+          recipient: '',
+          deliveryDate: '2026-11-18'
+        });
+        renderItems();
+        updateTotals();
+      });
+
+      renderItems();
+      updateTotals();
+
+      // GOV.UK Error Summary Validation
+      function runOrderValidation(forceEmptyTest) {
+        const errors = [];
+        const summary = document.getElementById('order-error-summary');
+        const list = document.getElementById('order-error-list');
+        const custErr = document.getElementById('customer-err');
+
+        if (forceEmptyTest) {
+          customerIdHidden.value = '';
+          customerInput.value = '';
+          if (orderItems[0]) orderItems[0].name = '';
+          renderItems();
+        }
+
+        if (!customerIdHidden.value) {
+          customerInput.setAttribute('aria-invalid', 'true');
+          custErr.textContent = 'Pilih pelanggan dari daftar atau tambahkan pelanggan baru.';
+          custErr.hidden = false;
+          errors.push({ id: 'customer-search-input', text: 'Pilih pelanggan terlebih dahulu.' });
+        } else {
+          customerInput.removeAttribute('aria-invalid');
+          custErr.hidden = true;
+        }
+
+        const firstNameInput = document.getElementById('item-name-0');
+        if (firstNameInput && !firstNameInput.value.trim()) {
+          firstNameInput.setAttribute('aria-invalid', 'true');
+          errors.push({ id: 'item-name-0', text: 'Isi jenis dan ukuran karangan bunga pada Item #1.' });
+        }
+
+        if (errors.length > 0) {
+          list.innerHTML = errors.map((er) => `<li><a href="#${er.id}">${er.text}</a></li>`).join('');
+          list.querySelectorAll('a').forEach((link) => {
+            link.addEventListener('click', (ev) => {
+              ev.preventDefault();
+              const target = document.getElementById(link.getAttribute('href').slice(1));
+              if (target) target.focus();
+            });
+          });
+          summary.hidden = false;
+          summary.focus();
+          return false;
+        }
+
+        summary.hidden = true;
+        return true;
+      }
+
+      document.getElementById('test-invalid-submit-btn').addEventListener('click', () => {
+        runOrderValidation(true);
+      });
+
+      document.getElementById('order-create-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (!runOrderValidation(false)) return;
+        showToast('Pesanan baru tersimpan & diverifikasi server.');
+        switchScreen('order-detail');
+      });
+
+      // Wire toast-only demo triggers
+      document.querySelectorAll('[data-toast]').forEach((btn) => {
+        btn.addEventListener('click', () => showToast(btn.dataset.toast));
+      });
+    })();
+  </script>
+</body>
+</html>

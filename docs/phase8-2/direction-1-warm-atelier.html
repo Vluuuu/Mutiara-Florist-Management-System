@@ -1,0 +1,1516 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arah 1: Warm Atelier Workspace - Mutiara Florist MS (Phase 8.2)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-canvas: #FAF7F2;
+      --bg-surface: #FFFFFF;
+      --bg-subtle: #F2ECE3;
+      --bg-rail: #F5EFE6;
+      --bg-active-nav: #E9EFEA;
+
+      --text-primary: #1C1917;
+      --text-secondary: #57534E;
+      --text-subtle: #6B655E;
+
+      --brand-primary: #163829;
+      --brand-primary-hover: #0F281D;
+      --brand-urgent: #B44D2B;
+      --brand-urgent-hover: #933D20;
+
+      --border-hairline: #E2D9CB;
+      --border-input: #8E8577;
+
+      --status-paid-bg: #DCFCE7;
+      --status-paid-fg: #166534;
+      --status-warn-bg: #FEF3C7;
+      --status-warn-fg: #92400E;
+      --status-ready-bg: #DBEAFE;
+      --status-ready-fg: #1E40AF;
+      --status-danger-bg: #FEE2E2;
+      --status-danger-fg: #991B1B;
+      --status-neutral-bg: #E5E7EB;
+      --status-neutral-fg: #374151;
+
+      --font-display: 'Fraunces', Georgia, serif;
+      --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --bottom-nav-h: 64px;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-canvas);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 16px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button, input, select, textarea {
+      font-family: inherit;
+      font-size: inherit;
+    }
+
+    button, a, [role="button"], select {
+      cursor: pointer;
+    }
+
+    :focus-visible {
+      outline: 3px solid var(--brand-primary);
+      outline-offset: 2px;
+    }
+
+    .skip-link {
+      position: absolute;
+      left: -9999px;
+      top: 0;
+      background: var(--brand-primary);
+      color: #FFFFFF;
+      padding: 10px 16px;
+      z-index: 9999;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+    }
+    .skip-link:focus {
+      left: 12px;
+      top: 12px;
+    }
+
+    .num {
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: "tnum" 1;
+    }
+
+    .mono {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Preview bar (design review strip) */
+    .preview-strip {
+      background: #EFE7DA;
+      border-bottom: 1px solid var(--border-hairline);
+      padding: 8px 16px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .preview-strip strong {
+      color: var(--text-primary);
+    }
+
+    /* App Shell */
+    .app-shell {
+      display: flex;
+      min-height: calc(100vh - 40px);
+    }
+
+    /* Warm Atelier Left Rail (Desktop >= 1024px) */
+    .sidebar {
+      display: none;
+      width: 248px;
+      flex-shrink: 0;
+      background: var(--bg-rail);
+      border-right: 1px solid var(--border-hairline);
+      padding: 20px 14px;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    @media (min-width: 1024px) {
+      .sidebar {
+        display: flex;
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        overflow-y: auto;
+      }
+    }
+
+    .brand-lockup {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 4px 10px 18px;
+      border-bottom: 1px solid var(--border-hairline);
+      margin-bottom: 16px;
+    }
+
+    .brand-mark {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      background: var(--brand-primary);
+      color: #FFFFFF;
+      display: grid;
+      place-items: center;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .brand-text strong {
+      display: block;
+      font-family: var(--font-display);
+      font-size: 16px;
+      line-height: 1.2;
+      color: var(--text-primary);
+    }
+
+    .brand-text span {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .nav-group {
+      margin-bottom: 18px;
+    }
+
+    .nav-group-label {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-subtle);
+      padding: 0 12px 6px;
+      margin: 0;
+    }
+
+    .nav-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .nav-btn {
+      width: 100%;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 1px solid transparent;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--text-secondary);
+      font-weight: 500;
+      font-size: 14px;
+      text-align: left;
+    }
+
+    .nav-btn:hover {
+      background: #ECE4D7;
+      color: var(--text-primary);
+    }
+
+    .nav-btn[aria-current="page"] {
+      background: var(--bg-active-nav);
+      color: var(--brand-primary);
+      border-color: #C7D7CC;
+      font-weight: 700;
+    }
+
+    .nav-btn-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-count {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--status-warn-bg);
+      color: var(--status-warn-fg);
+    }
+
+    .sidebar-footer {
+      border-top: 1px solid var(--border-hairline);
+      padding-top: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .operator-pill {
+      padding: 8px 12px;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+    .operator-pill strong {
+      display: block;
+      color: var(--text-primary);
+      font-size: 14px;
+    }
+
+    /* Main Column */
+    .main-column {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top Header */
+    .topbar {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-hairline);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+
+    @media (min-width: 1024px) {
+      .topbar {
+        padding: 12px 28px;
+      }
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .mobile-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 17px;
+      color: var(--text-primary);
+    }
+
+    @media (min-width: 1024px) {
+      .mobile-brand {
+        display: none;
+      }
+    }
+
+    .topbar-search {
+      display: none;
+    }
+
+    @media (min-width: 768px) {
+      .topbar-search {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 320px;
+      }
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn.tablet-menu-btn {
+      display: none;
+    }
+
+    @media (min-width: 768px) and (max-width: 1023px) {
+      .btn.tablet-menu-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+    }
+
+    /* Main Workspace Container */
+    .workspace {
+      width: 100%;
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 20px 16px calc(var(--bottom-nav-h) + 88px);
+    }
+
+    @media (min-width: 768px) {
+      .workspace {
+        padding: 24px 24px 80px;
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .workspace {
+        padding: 28px 32px 64px;
+      }
+    }
+
+    /* Typography & Page Header */
+    .page-head {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    @media (min-width: 768px) {
+      .page-head {
+        flex-direction: row;
+        align-items: flex-end;
+        justify-content: space-between;
+      }
+    }
+
+    h1.page-title {
+      font-family: var(--font-display);
+      font-size: clamp(24px, 3vw, 30px);
+      line-height: 1.2;
+      margin: 0;
+      color: var(--text-primary);
+      font-weight: 700;
+    }
+
+    .page-subtitle {
+      margin: 4px 0 0;
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    /* Buttons */
+    .btn {
+      min-height: 44px;
+      padding: 10px 16px;
+      border-radius: var(--radius-sm);
+      border: 1px solid transparent;
+      font-weight: 600;
+      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: var(--brand-primary);
+      color: #FFFFFF;
+    }
+    .btn-primary:hover {
+      background: var(--brand-primary-hover);
+    }
+
+    .btn-urgent {
+      background: var(--brand-urgent);
+      color: #FFFFFF;
+    }
+    .btn-urgent:hover {
+      background: var(--brand-urgent-hover);
+    }
+
+    .btn-secondary {
+      background: var(--bg-surface);
+      color: var(--text-primary);
+      border-color: var(--border-input);
+    }
+    .btn-secondary:hover {
+      background: var(--bg-subtle);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-secondary);
+      border-color: transparent;
+    }
+    .btn-ghost:hover {
+      background: var(--bg-subtle);
+      color: var(--text-primary);
+    }
+
+    .btn-sm {
+      min-height: 44px;
+      padding: 8px 12px;
+      font-size: 13px;
+    }
+
+    /* Inputs */
+    label.field-label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+    }
+
+    .field-hint {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin: 4px 0 0;
+    }
+
+    .input, .select, .textarea {
+      width: 100%;
+      min-height: 44px;
+      padding: 10px 12px;
+      background: var(--bg-surface);
+      color: var(--text-primary);
+      border: 1.5px solid var(--border-input);
+      border-radius: var(--radius-sm);
+      font-size: 15px;
+    }
+
+    .input-currency-wrap {
+      display: flex;
+      align-items: stretch;
+      border: 1.5px solid var(--border-input);
+      border-radius: var(--radius-sm);
+      background: var(--bg-surface);
+      overflow: hidden;
+    }
+    .input-currency-prefix {
+      display: grid;
+      place-items: center;
+      padding: 0 12px;
+      background: var(--bg-subtle);
+      border-right: 1px solid var(--border-hairline);
+      font-weight: 700;
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+    .input-currency-wrap input {
+      border: 0;
+      flex: 1;
+      min-width: 0;
+      min-height: 42px;
+      padding: 10px 12px;
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+      background: transparent;
+      color: var(--text-primary);
+    }
+    .input-currency-wrap input:focus {
+      outline: none;
+    }
+    .input-currency-wrap:focus-within {
+      outline: 3px solid var(--brand-primary);
+      outline-offset: 2px;
+    }
+
+    /* Cards & Surfaces */
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-md);
+      padding: 18px;
+    }
+
+    .card-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin: 0;
+      color: var(--text-primary);
+    }
+
+    /* Responsive Grids - ZERO inline grid-template-columns */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    @media (min-width: 640px) {
+      .kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .kpi-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+
+    .kpi-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+    }
+
+    .kpi-label {
+      font-size: 13px;
+      color: var(--text-secondary);
+      font-weight: 600;
+      margin: 0 0 6px;
+    }
+
+    .kpi-value {
+      font-size: 24px;
+      font-weight: 700;
+      margin: 0;
+      color: var(--text-primary);
+      line-height: 1.2;
+    }
+
+    .kpi-note {
+      font-size: 13px;
+      color: var(--text-subtle);
+      margin: 6px 0 0;
+    }
+
+    .split-layout {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 18px;
+    }
+
+    @media (min-width: 1024px) {
+      .split-layout {
+        grid-template-columns: minmax(0, 1.65fr) minmax(300px, 1fr);
+        align-items: start;
+      }
+    }
+
+    .form-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    @media (min-width: 768px) {
+      .form-grid-2 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    /* Status Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+    .badge-paid { background: var(--status-paid-bg); color: var(--status-paid-fg); }
+    .badge-warn { background: var(--status-warn-bg); color: var(--status-warn-fg); }
+    .badge-ready { background: var(--status-ready-bg); color: var(--status-ready-fg); }
+    .badge-danger { background: var(--status-danger-bg); color: var(--status-danger-fg); }
+    .badge-neutral { background: var(--status-neutral-bg); color: var(--status-neutral-fg); }
+
+    /* Delivery Agenda Items */
+    .agenda-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .agenda-row {
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      background: var(--bg-surface);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    @media (min-width: 768px) {
+      .agenda-row {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+    }
+
+    .agenda-row-urgent {
+      background: #FEF9F5;
+      border-color: #E7B8A2;
+    }
+
+    .agenda-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .agenda-title {
+      font-weight: 700;
+      font-size: 15px;
+      margin: 0 0 2px;
+    }
+
+    .agenda-sub {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin: 0;
+    }
+
+    .agenda-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Desktop Table + Mobile Card Switch */
+    .table-desktop {
+      display: none;
+    }
+
+    .cards-mobile {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    @media (min-width: 900px) {
+      .table-desktop {
+        display: block;
+        overflow-x: auto;
+      }
+      .cards-mobile {
+        display: none;
+      }
+    }
+
+    table.ledger-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    table.ledger-table th {
+      text-align: left;
+      padding: 10px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-secondary);
+      border-bottom: 1.5px solid var(--border-hairline);
+      background: var(--bg-subtle);
+    }
+
+    table.ledger-table td {
+      padding: 12px;
+      border-bottom: 1px solid var(--border-hairline);
+      vertical-align: top;
+    }
+
+    table.ledger-table td.num-cell,
+    table.ledger-table th.num-cell {
+      text-align: right;
+    }
+
+    /* Tabs / Filter chips */
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .chip-btn {
+      min-height: 44px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--border-hairline);
+      background: var(--bg-surface);
+      color: var(--text-secondary);
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .chip-btn[aria-pressed="true"] {
+      background: var(--brand-primary);
+      color: #FFFFFF;
+      border-color: var(--brand-primary);
+    }
+
+    /* Screens visibility */
+    .screen {
+      display: none;
+    }
+    .screen.is-active {
+      display: block;
+    }
+
+    /* Form Action Footer Card (non-overlapping flow) */
+    .sticky-save-bar {
+      background: var(--bg-surface);
+      border: 1.5px solid var(--brand-primary);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      margin-top: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    /* Mobile Bottom Navigation (< 768px) */
+    .mobile-bottom-nav {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom));
+      padding-bottom: env(safe-area-inset-bottom);
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border-hairline);
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      z-index: 30;
+    }
+
+    @media (min-width: 768px) {
+      .mobile-bottom-nav {
+        display: none;
+      }
+    }
+
+    .bottom-nav-btn {
+      border: 0;
+      background: transparent;
+      color: var(--text-secondary);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      font-size: 12px;
+      font-weight: 600;
+      min-height: 44px;
+      padding: 6px 4px;
+    }
+
+    .bottom-nav-btn[aria-current="page"] {
+      color: var(--brand-primary);
+      font-weight: 700;
+      background: var(--bg-active-nav);
+    }
+
+    /* Modal / Drawer */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(28, 25, 23, 0.56);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 50;
+    }
+    .modal-backdrop.is-open {
+      display: flex;
+    }
+    .modal-card {
+      width: 100%;
+      max-width: 480px;
+      max-height: 90vh;
+      overflow-y: auto;
+      background: var(--bg-surface);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-hairline);
+      padding: 20px;
+    }
+
+    .voided-amount {
+      text-decoration: line-through;
+      color: var(--text-subtle);
+    }
+
+    .toast {
+      position: fixed;
+      right: 16px;
+      bottom: calc(var(--bottom-nav-h) + 16px);
+      background: var(--brand-primary);
+      color: #FFFFFF;
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 600;
+      display: none;
+      z-index: 60;
+      max-width: calc(100vw - 32px);
+    }
+    .toast.is-visible {
+      display: block;
+    }
+    @media (min-width: 768px) {
+      .toast {
+        bottom: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Langsung ke konten utama</a>
+
+  <div class="preview-strip">
+    <div><strong>Arah 1: Warm Atelier Workspace</strong> | Data sintetis toko Mutiara Florist (Phase 8.2)</div>
+    <div>Pilih layar dari menu samping atau bilah bawah di HP</div>
+  </div>
+
+  <div class="app-shell">
+    <!-- Desktop Sidebar -->
+    <aside class="sidebar" aria-label="Navigasi utama desktop">
+      <div>
+        <div class="brand-lockup">
+          <div class="brand-mark" aria-hidden="true">M</div>
+          <div class="brand-text">
+            <strong>Mutiara Florist</strong>
+            <span>Buku Kerja &amp; Kasir</span>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <p class="nav-group-label">Operasional Harian</p>
+          <ul class="nav-list">
+            <li>
+              <button type="button" class="nav-btn" data-nav="dashboard" aria-current="page">
+                <span class="nav-btn-left">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  Hari Ini
+                </span>
+                <span class="nav-count">4</span>
+              </button>
+            </li>
+            <li>
+              <button type="button" class="nav-btn" data-nav="orders">
+                <span class="nav-btn-left">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+                  Pesanan
+                </span>
+              </button>
+            </li>
+            <li>
+              <button type="button" class="nav-btn" data-nav="order-form">
+                <span class="nav-btn-left">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                  Buat Pesanan
+                </span>
+              </button>
+            </li>
+            <li>
+              <button type="button" class="nav-btn" data-nav="payments">
+                <span class="nav-btn-left">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                  Pembayaran
+                </span>
+                <span class="nav-count">2</span>
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <div class="nav-group">
+          <p class="nav-group-label">Administrasi Toko</p>
+          <ul class="nav-list">
+            <li>
+              <button type="button" class="nav-btn" data-nav="order-detail">
+                <span class="nav-btn-left">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  Contoh Detail Order
+                </span>
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="operator-pill">
+          <strong>Sari Wijaya</strong>
+          Admin Meja Kasir
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <div class="main-column">
+      <header class="topbar">
+        <div class="topbar-left">
+          <div class="mobile-brand">
+            <div class="brand-mark" style="width: 30px; height: 30px; font-size: 15px;" aria-hidden="true">M</div>
+            <span>Mutiara Florist</span>
+          </div>
+          <div class="topbar-search">
+            <label for="d1-global-search" class="skip-link">Cari pesanan</label>
+            <input id="d1-global-search" type="search" class="input" placeholder="Cari nomor nota, nama pemesan, WA..." aria-label="Cari pesanan atau pelanggan">
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <button type="button" class="btn btn-secondary tablet-menu-btn" data-open-menu>Menu</button>
+          <button type="button" class="btn btn-primary" data-nav="order-form">+ Pesanan Baru</button>
+        </div>
+      </header>
+
+      <main id="main-content" class="workspace">
+        <!-- SCREEN 1: DASHBOARD -->
+        <section id="screen-dashboard" class="screen is-active" aria-labelledby="h1-dash">
+          <div class="page-head">
+            <div>
+              <h1 id="h1-dash" class="page-title">Jadwal Pengiriman &amp; Kas Hari Ini</h1>
+              <p class="page-subtitle">Selasa, 17 November 2026 | Fokus kiriman jatuh tempo dan tagihan belum lunas</p>
+            </div>
+            <button type="button" class="btn btn-secondary" data-nav="orders">Lihat Semua Pesanan</button>
+          </div>
+
+          <div class="kpi-grid">
+            <div class="kpi-card">
+              <p class="kpi-label">Harus Dikirim Hari Ini</p>
+              <p class="kpi-value num">4 Pesanan</p>
+              <p class="kpi-note">1 terlambat, 3 jadwal siang-sore</p>
+            </div>
+            <div class="kpi-card">
+              <p class="kpi-label">Siap Diambil / Kirim</p>
+              <p class="kpi-value num">2 Item</p>
+              <p class="kpi-note">Menunggu kurir berangkat</p>
+            </div>
+            <div class="kpi-card">
+              <p class="kpi-label">Sisa Piutang Berjalan</p>
+              <p class="kpi-value num">Rp4.250.000</p>
+              <p class="kpi-note">Dari 2 pesanan jatuh tempo</p>
+            </div>
+            <div class="kpi-card">
+              <p class="kpi-label">Masuk Kas Hari Ini</p>
+              <p class="kpi-value num">Rp3.150.000</p>
+              <p class="kpi-note">2 transfer, 1 tunai tercatat</p>
+            </div>
+          </div>
+
+          <div class="split-layout">
+            <section class="card" aria-labelledby="sec-agenda">
+              <div class="card-header">
+                <h2 id="sec-agenda" class="card-title">Agenda Kiriman Prioritas</h2>
+                <span class="badge badge-warn">1 Terlambat</span>
+              </div>
+              <div class="agenda-list">
+                <article class="agenda-row agenda-row-urgent">
+                  <div>
+                    <div class="agenda-meta">
+                      <span class="badge badge-danger">Terlambat 30 mnt</span>
+                      <span class="badge badge-ready">Siap Kirim</span>
+                      <span class="mono" style="font-size: 13px;">MF-261117-01</span>
+                    </div>
+                    <h3 class="agenda-title">Papan Bunga Grand Opening (2x1.2m)</h3>
+                    <p class="agenda-sub">Kirim 13:00 WIB ke Ruko Puri Indah Blok B2 | Pemesan: PT Sinar Harapan</p>
+                  </div>
+                  <div class="agenda-actions">
+                    <button type="button" class="btn btn-urgent btn-sm" data-toast="Item MF-261117-01 ditandai Terkirim.">Tandai Terkirim</button>
+                    <button type="button" class="btn btn-secondary btn-sm" data-nav="order-detail">Detail</button>
+                  </div>
+                </article>
+
+                <article class="agenda-row">
+                  <div>
+                    <div class="agenda-meta">
+                      <span class="badge badge-warn">Jadwal 15:30 WIB</span>
+                      <span class="badge badge-neutral">Diproses</span>
+                      <span class="mono" style="font-size: 13px;">MF-261117-02</span>
+                    </div>
+                    <h3 class="agenda-title">Standing Flower Anggrek Putih (2 buah)</h3>
+                    <p class="agenda-sub">Gedung Menara Imperium Lt. 12 | Pemesan: Ibu Ratna Dewi</p>
+                  </div>
+                  <div class="agenda-actions">
+                    <button type="button" class="btn btn-primary btn-sm" data-toast="Item MF-261117-02 diperbarui ke Siap Kirim.">Tandai Siap</button>
+                    <button type="button" class="btn btn-secondary btn-sm" data-nav="order-detail">Detail</button>
+                  </div>
+                </article>
+
+                <article class="agenda-row">
+                  <div>
+                    <div class="agenda-meta">
+                      <span class="badge badge-ready">Jadwal 17:00 WIB</span>
+                      <span class="badge badge-paid">Lunas</span>
+                      <span class="mono" style="font-size: 13px;">MF-261117-03</span>
+                    </div>
+                    <h3 class="agenda-title">Buket Mawar Peach &amp; Kartu Ucapan</h3>
+                    <p class="agenda-sub">Ambil di toko oleh Klinik Gigi Sentosa</p>
+                  </div>
+                  <div class="agenda-actions">
+                    <button type="button" class="btn btn-secondary btn-sm" data-nav="order-detail">Detail</button>
+                  </div>
+                </article>
+              </div>
+            </section>
+
+            <section class="card" aria-labelledby="sec-piutang-dash">
+              <div class="card-header">
+                <h2 id="sec-piutang-dash" class="card-title">Tagihan Perlu Tindak Lanjut</h2>
+                <button type="button" class="btn btn-ghost btn-sm" data-nav="payments">Semua</button>
+              </div>
+              <div class="agenda-list">
+                <div class="agenda-row">
+                  <div>
+                    <div class="agenda-meta">
+                      <span class="badge badge-warn">DP Sebagian</span>
+                      <span class="mono" style="font-size: 13px;">MF-261117-01</span>
+                    </div>
+                    <p class="agenda-title">PT Sinar Harapan</p>
+                    <p class="agenda-sub num">Sisa tagihan: <strong>Rp1.175.000</strong></p>
+                  </div>
+                  <button type="button" class="btn btn-primary btn-sm" data-nav="payments">Catat Bayar</button>
+                </div>
+                <div class="agenda-row">
+                  <div>
+                    <div class="agenda-meta">
+                      <span class="badge badge-danger">Belum Bayar</span>
+                      <span class="mono" style="font-size: 13px;">MF-261116-09</span>
+                    </div>
+                    <p class="agenda-title">Hotel Puri Anggrek</p>
+                    <p class="agenda-sub num">Sisa tagihan: <strong>Rp3.075.000</strong></p>
+                  </div>
+                  <button type="button" class="btn btn-primary btn-sm" data-nav="payments">Catat Bayar</button>
+                </div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <!-- SCREEN 2: ORDERS LIST -->
+        <section id="screen-orders" class="screen" aria-labelledby="h1-orders">
+          <div class="page-head">
+            <div>
+              <h1 id="h1-orders" class="page-title">Daftar Pesanan</h1>
+              <p class="page-subtitle">Pantau status kerja karangan bunga dan pelunasan di satu daftar</p>
+            </div>
+            <button type="button" class="btn btn-primary" data-nav="order-form">+ Buat Pesanan</button>
+          </div>
+
+          <div class="card">
+            <div class="chip-row" role="group" aria-label="Filter status pesanan">
+              <button type="button" class="chip-btn" aria-pressed="true">Semua (12)</button>
+              <button type="button" class="chip-btn" aria-pressed="false">Perlu Diproses (4)</button>
+              <button type="button" class="chip-btn" aria-pressed="false">Siap Kirim (3)</button>
+              <button type="button" class="chip-btn" aria-pressed="false">Belum Lunas (2)</button>
+            </div>
+
+            <div class="table-desktop">
+              <table class="ledger-table">
+                <thead>
+                  <tr>
+                    <th>No. Pesanan</th>
+                    <th>Pelanggan</th>
+                    <th>Jadwal Kirim</th>
+                    <th>Status Kerja</th>
+                    <th>Pembayaran</th>
+                    <th class="num-cell">Total</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="mono">MF-261117-01</td>
+                    <td><strong>PT Sinar Harapan Tbk</strong><br><span style="color: var(--text-secondary);">2 karangan bunga</span></td>
+                    <td class="num">17/11/2026 13:00</td>
+                    <td><span class="badge badge-ready">Siap Kirim</span></td>
+                    <td><span class="badge badge-warn">DP Sebagian</span></td>
+                    <td class="num-cell num"><strong>Rp2.675.000</strong></td>
+                    <td><button type="button" class="btn btn-secondary btn-sm" data-nav="order-detail">Buka</button></td>
+                  </tr>
+                  <tr>
+                    <td class="mono">MF-261117-02</td>
+                    <td><strong>Ibu Ratna Dewi</strong><br><span style="color: var(--text-secondary);">2 standing flower</span></td>
+                    <td class="num">17/11/2026 15:30</td>
+                    <td><span class="badge badge-neutral">Diproses</span></td>
+                    <td><span class="badge badge-paid">Lunas</span></td>
+                    <td class="num-cell num"><strong>Rp1.850.000</strong></td>
+                    <td><button type="button" class="btn btn-secondary btn-sm" data-nav="order-detail">Buka</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="cards-mobile">
+              <article class="agenda-row">
+                <div>
+                  <div class="agenda-meta">
+                    <span class="mono" style="font-size: 13px;">MF-261117-01</span>
+                    <span class="badge badge-ready">Siap Kirim</span>
+                    <span class="badge badge-warn">DP Sebagian</span>
+                  </div>
+                  <h3 class="agenda-title">PT Sinar Harapan Tbk</h3>
+                  <p class="agenda-sub num">17/11/2026 13:00 | Total Rp2.675.000</p>
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm" data-nav="order-detail">Buka Detail</button>
+              </article>
+              <article class="agenda-row">
+                <div>
+                  <div class="agenda-meta">
+                    <span class="mono" style="font-size: 13px;">MF-261117-02</span>
+                    <span class="badge badge-neutral">Diproses</span>
+                    <span class="badge badge-paid">Lunas</span>
+                  </div>
+                  <h3 class="agenda-title">Ibu Ratna Dewi</h3>
+                  <p class="agenda-sub num">17/11/2026 15:30 | Total Rp1.850.000</p>
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm" data-nav="order-detail">Buka Detail</button>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <!-- SCREEN 3: ORDER FORM -->
+        <section id="screen-order-form" class="screen" aria-labelledby="h1-form">
+          <div class="page-head">
+            <div>
+              <h1 id="h1-form" class="page-title">Buat Pesanan Baru</h1>
+              <p class="page-subtitle">Total dan ongkir dihitung otomatis oleh server sesuai ketentuan harga Mutiara Florist</p>
+            </div>
+            <button type="button" class="btn btn-secondary" data-nav="orders">Batal</button>
+          </div>
+
+          <form id="d1-order-form" novalidate>
+            <div class="card" style="margin-bottom: 16px;">
+              <h2 class="card-title" style="margin-bottom: 12px;">1. Pelanggan &amp; Tanggal Pesan</h2>
+              <div class="form-grid-2">
+                <div>
+                  <label for="d1-cust" class="field-label">Nama / Nomor HP Pelanggan *</label>
+                  <select id="d1-cust" class="select">
+                    <option value="c1">PT Sinar Harapan Nusantara Tbk (0812-8800-1122)</option>
+                    <option value="c2">Ibu Ratna Dewi (0811-9220-4411)</option>
+                    <option value="c3">Hotel Puri Anggrek (021-555-0192)</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="d1-odate" class="field-label">Tanggal Nota / Pesan *</label>
+                  <input id="d1-odate" type="date" class="input" value="2026-11-17">
+                </div>
+              </div>
+            </div>
+
+            <div class="card" style="margin-bottom: 16px;">
+              <div class="card-header">
+                <h2 class="card-title">2. Item Karangan Bunga</h2>
+                <button type="button" class="btn btn-secondary btn-sm" data-toast="Baris item berhasil disalin untuk penerima berikutnya.">Duplikat Item</button>
+              </div>
+              <div class="form-grid-2">
+                <div>
+                  <label for="d1-item-name" class="field-label">Jenis &amp; Ukuran Bunga *</label>
+                  <input id="d1-item-name" type="text" class="input" value="Papan Bunga Grand Opening 2x1.2m">
+                </div>
+                <div>
+                  <label for="d1-item-price" class="field-label">Harga Satuan (Rupiah bulat) *</label>
+                  <div class="input-currency-wrap">
+                    <span class="input-currency-prefix">Rp</span>
+                    <input id="d1-item-price" type="text" inputmode="numeric" value="1.250.000">
+                  </div>
+                </div>
+                <div>
+                  <label for="d1-ship-mode" class="field-label">Pengaturan Ongkos Kirim</label>
+                  <select id="d1-ship-mode" class="select">
+                    <option value="SEPARATE">Ditagihkan Terpisah (SEPARATE)</option>
+                    <option value="INCLUDED">Sudah Termasuk Harga (INCLUDED)</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="d1-ship-fee" class="field-label">Biaya Kirim</label>
+                  <div class="input-currency-wrap">
+                    <span class="input-currency-prefix">Rp</span>
+                    <input id="d1-ship-fee" type="text" inputmode="numeric" value="150.000">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="sticky-save-bar">
+              <div>
+                <span style="font-size: 13px; color: var(--text-secondary);">Estimasi Total Tagihan</span>
+                <div class="num" style="font-size: 20px; font-weight: 700;">Rp1.400.000</div>
+              </div>
+              <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button type="button" class="btn btn-secondary" data-nav="orders">Kembali</button>
+                <button type="submit" class="btn btn-primary">Simpan Pesanan</button>
+              </div>
+            </div>
+          </form>
+        </section>
+
+        <!-- SCREEN 4: ORDER DETAIL -->
+        <section id="screen-order-detail" class="screen" aria-labelledby="h1-detail">
+          <div class="page-head">
+            <div>
+              <h1 id="h1-detail" class="page-title">Nota <span class="mono">MF-261117-01</span></h1>
+              <p class="page-subtitle">PT Sinar Harapan Nusantara Tbk (0812-8800-1122) | Dicatat 17/11/2026</p>
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button type="button" class="btn btn-secondary" data-nav="order-form">Edit Pesanan</button>
+              <button type="button" class="btn btn-primary" data-nav="payments">+ Catat Pembayaran</button>
+            </div>
+          </div>
+
+          <div class="kpi-grid">
+            <div class="kpi-card">
+              <p class="kpi-label">Total Tagihan</p>
+              <p class="kpi-value num">Rp2.675.000</p>
+            </div>
+            <div class="kpi-card">
+              <p class="kpi-label">Sudah Diterima (POSTED)</p>
+              <p class="kpi-value num" style="color: var(--status-paid-fg);">Rp1.500.000</p>
+            </div>
+            <div class="kpi-card">
+              <p class="kpi-label">Sisa Tagihan</p>
+              <p class="kpi-value num" style="color: var(--brand-urgent);">Rp1.175.000</p>
+            </div>
+            <div class="kpi-card">
+              <p class="kpi-label">Status Pembayaran</p>
+              <p style="margin: 4px 0 0;"><span class="badge badge-warn">DP Sebagian</span></p>
+            </div>
+          </div>
+
+          <div class="split-layout">
+            <section class="card" aria-labelledby="sec-items-detail">
+              <div class="card-header">
+                <h2 id="sec-items-detail" class="card-title">Daftar Rangkaian &amp; Status Kerja (2)</h2>
+              </div>
+              <div class="agenda-list">
+                <article class="agenda-row">
+                  <div>
+                    <div class="agenda-meta">
+                      <span class="badge badge-paid">Terkirim</span>
+                      <span class="num" style="font-size: 13px; color: var(--text-secondary);">Kirim 17/11/2026 10:00</span>
+                    </div>
+                    <h3 class="agenda-title">1. Standing Flower Anggrek Putih (1 buah)</h3>
+                    <p class="agenda-sub">Ucapan: Selamat &amp; Sukses Pembukaan Cabang | Subtotal Rp1.375.000</p>
+                  </div>
+                </article>
+                <article class="agenda-row agenda-row-urgent">
+                  <div>
+                    <div class="agenda-meta">
+                      <span class="badge badge-ready">Siap Kirim</span>
+                      <span class="num" style="font-size: 13px; color: var(--text-secondary);">Kirim 17/11/2026 13:00</span>
+                    </div>
+                    <h3 class="agenda-title">2. Papan Bunga Grand Opening 2x1.2m (1 buah)</h3>
+                    <p class="agenda-sub">Ruko Puri Indah Blok B2 | Subtotal Rp1.300.000</p>
+                  </div>
+                  <button type="button" class="btn btn-primary btn-sm" data-toast="Item #2 ditandai Terkirim.">Tandai Terkirim</button>
+                </article>
+              </div>
+            </section>
+
+            <section class="card" aria-labelledby="sec-pay-audit">
+              <div class="card-header">
+                <h2 id="sec-pay-audit" class="card-title">Riwayat Pembayaran</h2>
+              </div>
+              <div class="agenda-list">
+                <div class="agenda-row">
+                  <div>
+                    <div class="agenda-meta">
+                      <span class="badge badge-paid">POSTED</span>
+                      <span class="num" style="font-size: 13px;">17/11/2026</span>
+                    </div>
+                    <p class="agenda-title num">Rp1.500.000</p>
+                    <p class="agenda-sub">Transfer BCA | Ref: TRX-4411-BCA</p>
+                  </div>
+                </div>
+                <div class="agenda-row">
+                  <div>
+                    <div class="agenda-meta">
+                      <span class="badge badge-neutral">VOIDED</span>
+                      <span class="num" style="font-size: 13px;">17/11/2026</span>
+                    </div>
+                    <p class="agenda-title num voided-amount">Rp1.000.000</p>
+                    <p class="agenda-sub">Alasan Void: Salah input nominal DP awal</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <!-- SCREEN 5: PAYMENTS & RECEIVABLES -->
+        <section id="screen-payments" class="screen" aria-labelledby="h1-pay">
+          <div class="page-head">
+            <div>
+              <h1 id="h1-pay" class="page-title">Pembayaran &amp; Buku Piutang</h1>
+              <p class="page-subtitle">Catatan transaksi keuangan tetap tercatat permanen (POSTED / VOIDED dengan alasan)</p>
+            </div>
+            <button type="button" class="btn btn-primary" data-toast="Form catat pembayaran dibuka.">+ Catat Pembayaran</button>
+          </div>
+
+          <div class="card">
+            <div class="table-desktop">
+              <table class="ledger-table">
+                <thead>
+                  <tr>
+                    <th>Tanggal</th>
+                    <th>Pesanan &amp; Pelanggan</th>
+                    <th>Metode / Referensi</th>
+                    <th>Status</th>
+                    <th class="num-cell">Nominal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="num">17/11/2026</td>
+                    <td><strong class="mono">MF-261117-01</strong><br>PT Sinar Harapan Tbk</td>
+                    <td>Transfer BCA <span class="mono">TRX-4411</span></td>
+                    <td><span class="badge badge-paid">POSTED</span></td>
+                    <td class="num-cell num"><strong>Rp1.500.000</strong></td>
+                  </tr>
+                  <tr>
+                    <td class="num">17/11/2026</td>
+                    <td><strong class="mono">MF-261117-01</strong><br>PT Sinar Harapan Tbk</td>
+                    <td>Koreksi: Salah input nominal DP</td>
+                    <td><span class="badge badge-neutral">VOIDED</span></td>
+                    <td class="num-cell num voided-amount">Rp1.000.000</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="cards-mobile">
+              <article class="agenda-row">
+                <div>
+                  <div class="agenda-meta">
+                    <span class="badge badge-paid">POSTED</span>
+                    <span class="mono" style="font-size: 13px;">MF-261117-01</span>
+                  </div>
+                  <h3 class="agenda-title num">Rp1.500.000 - PT Sinar Harapan</h3>
+                  <p class="agenda-sub">17/11/2026 | Transfer BCA TRX-4411</p>
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- Mobile 4-Destination Bottom Navigation (< 768px) -->
+  <nav class="mobile-bottom-nav" aria-label="Navigasi utama mobile">
+    <button type="button" class="bottom-nav-btn" data-nav="dashboard" aria-current="page">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span>Hari Ini</span>
+    </button>
+    <button type="button" class="bottom-nav-btn" data-nav="orders">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/></svg>
+      <span>Pesanan</span>
+    </button>
+    <button type="button" class="bottom-nav-btn" data-nav="order-form">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      <span>Buat</span>
+    </button>
+    <button type="button" class="bottom-nav-btn" data-open-menu>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      <span>Menu</span>
+    </button>
+  </nav>
+
+  <!-- Mobile / Tablet Navigation Drawer Modal -->
+  <div id="d1-menu-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="d1-menu-title">
+    <div class="modal-card">
+      <div class="card-header">
+        <h2 id="d1-menu-title" class="card-title">Menu Toko Mutiara Florist</h2>
+        <button type="button" class="btn btn-secondary btn-sm" id="d1-menu-close">Tutup</button>
+      </div>
+      <div class="agenda-list">
+        <button type="button" class="btn btn-secondary" data-nav="payments">Pembayaran &amp; Piutang</button>
+        <button type="button" class="btn btn-secondary" data-nav="order-detail">Contoh Detail Pesanan</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="d1-toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (function () {
+      const screens = document.querySelectorAll('.screen');
+      const navButtons = document.querySelectorAll('[data-nav]');
+      const menuModal = document.getElementById('d1-menu-modal');
+      const menuClose = document.getElementById('d1-menu-close');
+      const toast = document.getElementById('d1-toast');
+
+      function showToast(msg) {
+        toast.textContent = msg;
+        toast.classList.add('is-visible');
+        setTimeout(() => toast.classList.remove('is-visible'), 2800);
+      }
+
+      function switchScreen(target) {
+        screens.forEach((s) => s.classList.toggle('is-active', s.id === 'screen-' + target));
+        navButtons.forEach((b) => {
+          if (b.dataset.nav === target) {
+            b.setAttribute('aria-current', 'page');
+          } else {
+            b.removeAttribute('aria-current');
+          }
+        });
+        menuModal.classList.remove('is-open');
+        window.scrollTo({ top: 0, behavior: 'auto' });
+      }
+
+      navButtons.forEach((btn) => {
+        btn.addEventListener('click', () => switchScreen(btn.dataset.nav));
+      });
+
+      document.querySelectorAll('[data-open-menu]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          menuModal.classList.add('is-open');
+          menuClose.focus();
+        });
+      });
+
+      menuClose.addEventListener('click', () => menuModal.classList.remove('is-open'));
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') menuModal.classList.remove('is-open');
+      });
+
+      document.querySelectorAll('[data-toast]').forEach((btn) => {
+        btn.addEventListener('click', () => showToast(btn.dataset.toast));
+      });
+
+      document.getElementById('d1-order-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        showToast('Simulasi berhasil: Pesanan baru tercatat.');
+        switchScreen('order-detail');
+      });
+    })();
+  </script>
+</body>
+</html>
