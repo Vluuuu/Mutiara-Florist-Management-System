@@ -4,21 +4,26 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
-    'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 disabled:pointer-events-none disabled:opacity-50',
+    'inline-flex min-h-[44px] items-center justify-center gap-2 whitespace-nowrap rounded-md border border-transparent px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[#143326] disabled:pointer-events-none disabled:opacity-55',
     {
         variants: {
             variant: {
-                default: 'bg-emerald-950 text-white hover:bg-emerald-900 focus-visible:outline-emerald-700',
-                outline: 'border border-stone-300 bg-white text-stone-900 hover:bg-stone-50 focus-visible:outline-emerald-700',
+                default: 'bg-[#143326] text-white hover:bg-[#0E251B]',
+                primary: 'bg-[#143326] text-white hover:bg-[#0E251B]',
+                urgent: 'bg-[#8C3B4A] text-white hover:bg-[#712D3A]',
+                danger: 'bg-[#991B1B] text-white hover:bg-[#7F1D1D]',
+                secondary: 'border-[#858E87] bg-white text-[#1E2420] hover:bg-[#F1EDE6]',
+                outline: 'border-[#858E87] bg-white text-[#1E2420] hover:bg-[#F1EDE6]',
+                ghost: 'bg-transparent text-[#525B54] hover:bg-[#F1EDE6] hover:text-[#1E2420]',
             },
             size: {
-                default: 'h-10 px-4 py-2',
-                sm: 'h-9 px-3',
-                lg: 'h-11 px-6',
+                default: 'min-h-[44px] px-4 py-2',
+                sm: 'min-h-[44px] px-3 py-1.5 text-[13px]',
+                lg: 'min-h-[48px] px-6 py-2.5',
             },
         },
         defaultVariants: {
-            variant: 'default',
+            variant: 'primary',
             size: 'default',
         },
     },
@@ -29,12 +34,13 @@ type ButtonProps = React.ComponentProps<'button'> &
         asChild?: boolean;
     };
 
-function Button({ asChild = false, className, variant, size, ...props }: ButtonProps) {
+function Button({ asChild = false, className, variant, size, type = 'button', ...props }: ButtonProps) {
     const Component = asChild ? Slot : 'button';
 
     return (
         <Component
             data-slot="button"
+            type={asChild ? undefined : type}
             className={cn(buttonVariants({ className, variant, size }))}
             {...props}
         />
@@ -42,3 +48,4 @@ function Button({ asChild = false, className, variant, size, ...props }: ButtonP
 }
 
 export { Button, buttonVariants };
+export type { ButtonProps };

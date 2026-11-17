@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import {
     CircleDollarSign,
     Clock3,
@@ -10,7 +10,8 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { StatCard } from '@/components/stat-card';
-import { formatAmount } from '@/lib/format';
+import { Button } from '@/components/ui/button';
+import { formatAmount, formatRupiah } from '@/lib/format';
 import type { DashboardNav, DashboardStats } from '@/types';
 
 type DashboardProps = {
@@ -21,70 +22,107 @@ type DashboardProps = {
 type MetricDef = {
     key: keyof DashboardStats;
     label: string;
-    prefix: string;
+    isCurrency: boolean;
     hint: string;
     icon: LucideIcon;
     emphasis?: boolean;
+    tone?: 'default' | 'paid' | 'urgent';
 };
 
 const metrics: MetricDef[] = [
-    { key: 'orders', label: 'Total pesanan', prefix: '', hint: 'Jumlah order tercatat', icon: ShoppingBag },
-    { key: 'billed', label: 'Nilai pesanan', prefix: 'Rp', hint: 'Termasuk ongkir terpisah', icon: ReceiptText },
-    { key: 'received', label: 'Uang diterima', prefix: 'Rp', hint: 'Pembayaran POSTED yang telah dicatat', icon: Wallet },
-    { key: 'outstanding', label: 'Piutang saat ini', prefix: 'Rp', hint: 'Sisa tagihan semua pesanan', icon: Clock3 },
-    { key: 'expenses', label: 'Pengeluaran kas', prefix: 'Rp', hint: 'Pengeluaran POSTED yang tercatat', icon: Receipt },
-    { key: 'cash_flow', label: 'Selisih kas sederhana', prefix: 'Rp', hint: 'Bukan laba bersih akuntansi', icon: CircleDollarSign, emphasis: true },
+    {
+        key: 'orders',
+        label: 'Total Pesanan',
+        isCurrency: false,
+        hint: 'Jumlah nota pesanan tercatat',
+        icon: ShoppingBag,
+    },
+    {
+        key: 'billed',
+        label: 'Total Nilai Pesanan',
+        isCurrency: true,
+        hint: 'Termasuk ongkos kirim terpisah',
+        icon: ReceiptText,
+    },
+    {
+        key: 'received',
+        label: 'Uang Masuk (Sah)',
+        isCurrency: true,
+        hint: 'Pembayaran tercatat yang sah',
+        icon: Wallet,
+        tone: 'paid',
+    },
+    {
+        key: 'outstanding',
+        label: 'Sisa Piutang Berjalan',
+        isCurrency: true,
+        hint: 'Tagihan yang belum dilunasi',
+        icon: Clock3,
+        tone: 'urgent',
+    },
+    {
+        key: 'expenses',
+        label: 'Pengeluaran Kas (Sah)',
+        isCurrency: true,
+        hint: 'Biaya operasional tercatat',
+        icon: Receipt,
+    },
+    {
+        key: 'cash_flow',
+        label: 'Selisih Kas Sederhana',
+        isCurrency: true,
+        hint: 'Kas masuk dikurangi biaya sah',
+        icon: CircleDollarSign,
+        emphasis: true,
+    },
 ];
 
 export default function Dashboard({ stats, nav }: DashboardProps) {
-    return (
-        <AppLayout title="Dashboard">
-            <Head title="Dashboard" />
+    const ordersHref = nav?.uiOrders ?? '/ui-orders';
+    const paymentsHref = nav?.uiPayments ?? '/ui-payments';
 
-            <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+    return (
+        <AppLayout title="Hari Ini">
+            <Head title="Hari Ini" />
+
+            <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
                 <div>
-                    <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-800">
-                        Ringkasan usaha
-                    </p>
-                    <h1 className="text-3xl font-semibold tracking-tight text-emerald-950">
-                        Dashboard
+                    <h1 className="font-[var(--font-display)] text-[clamp(20px,2.2vw,25px)] font-semibold leading-tight tracking-[-0.015em] text-[#1E2420]">
+                        Ringkasan Operasional Toko
                     </h1>
-                    <p className="mt-2 max-w-2xl text-sm leading-6 text-stone-500">
-                        Data kumulatif sejak awal pencatatan. Nilai pesanan dan uang yang sudah
-                        diterima ditampilkan terpisah.
+                    <p className="mt-1 text-sm text-[#525B54]">
+                        Angka kumulatif sejak awal pencatatan. Nilai tagihan pesanan dan uang masuk dipisahkan.
                     </p>
                 </div>
-                <span className="rounded-full border border-stone-200 bg-white px-3 py-1.5 text-xs text-stone-600">
-                    Phase 3.3 · React
-                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                    <Button asChild variant="secondary">
+                        <Link href={ordersHref}>Semua Pesanan</Link>
+                    </Button>
+                    <Button asChild variant="primary">
+                        <Link href={paymentsHref}>Piutang &amp; Bayar</Link>
+                    </Button>
+                </div>
             </div>
 
             <section
-                aria-label="Statistik ringkasan"
-                className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
+                aria-label="Statistik ringkasan toko"
+                className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3"
             >
                 {metrics.map((metric) => (
                     <StatCard
                         key={metric.key}
                         label={metric.label}
-                        prefix={metric.prefix}
-                        value={formatAmount(stats[metric.key])}
+                        value={
+                            metric.isCurrency
+                                ? formatRupiah(stats[metric.key])
+                                : `${formatAmount(stats[metric.key])} Pesanan`
+                        }
                         hint={metric.hint}
                         icon={metric.icon}
                         emphasis={metric.emphasis}
+                        tone={metric.tone}
                     />
                 ))}
-            </section>
-
-            <section className="mt-8 rounded-xl border border-stone-200 bg-white p-6">
-                <h2 className="text-base font-semibold text-emerald-950">
-                    Pengembangan berikutnya
-                </h2>
-                <p className="mt-2 text-sm leading-6 text-stone-600">
-                    Modul Pelanggan, Pesanan, Pembayaran, dan Pengeluaran masih memakai halaman
-                    Blade lama dan dapat dibuka dari menu samping. Migrasi antarmuka modul-modul
-                    tersebut akan mengikuti setelah dashboard ini terverifikasi.
-                </p>
             </section>
         </AppLayout>
     );

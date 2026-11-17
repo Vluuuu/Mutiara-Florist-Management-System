@@ -53,7 +53,16 @@ class UiExpenseController extends Controller
         $expenses = $query->orderByDesc('expense_date')
             ->orderByDesc('id')
             ->paginate(10)
-            ->withQueryString();
+            ->withQueryString()
+            ->through(function (Expense $expense): array {
+                return array_merge($expense->toArray(), [
+                    'expense_date' => $expense->expense_date?->format('d/m/Y') ?? '',
+                    'expense_date_raw' => $expense->expense_date?->format('Y-m-d'),
+                    'voided_at' => $expense->voided_at
+                        ? $expense->voided_at->timezone('Asia/Jakarta')->format('d/m/Y H:i').' WIB'
+                        : null,
+                ]);
+            });
 
         $categories = ExpenseCategory::query()
             ->orderBy('name')

@@ -70,12 +70,6 @@ export default function PaymentsIndex({ orders, outstanding, filters }: Payments
                     </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                    <a
-                        href="/payments"
-                        className="rounded-lg border border-stone-200 bg-white px-3.5 py-2 text-xs font-semibold text-stone-600 hover:bg-stone-50"
-                    >
-                        Tampilan Blade lama
-                    </a>
                 </div>
             </div>
 

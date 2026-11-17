@@ -4,5 +4,85 @@
 @source '../../storage/framework/views/*.php';
 
 @theme {
-    --font-sans: 'Segoe UI', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --font-display: Fraunces, Georgia, 'Times New Roman', serif;
+    --font-sans: 'Plus Jakarta Sans', 'Segoe UI', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+:root {
+    /* Botanical Studio Locked Tokens (Phase 8.2 -> Phase 9) */
+    --bg-canvas: #FBF9F6;
+    --bg-surface: #FFFFFF;
+    --bg-sunken: #F1EDE6;
+    --bg-rail: #143326;
+    --bg-rail-hover: #1D4534;
+    --bg-rail-active: #E6EFEA;
+
+    --text-primary: #1E2420;
+    --text-secondary: #525B54;
+    --text-on-rail: #F6F4EF;
+    --text-on-rail-muted: #C6D7CE;
+
+    --brand-primary: #143326;
+    --brand-primary-hover: #0E251B;
+    --brand-urgent: #8C3B4A;
+    --brand-urgent-hover: #712D3A;
+    --brand-urgent-soft: #FDF2F4;
+
+    --border-hairline: #E3DED4;
+    --border-input: #858E87;
+
+    --status-paid-bg: #DCFCE7;
+    --status-paid-fg: #166534;
+    --status-warn-bg: #FEF3C7;
+    --status-warn-fg: #92400E;
+    --status-ready-bg: #DBEAFE;
+    --status-ready-fg: #1E40AF;
+    --status-danger-bg: #FEE2E2;
+    --status-danger-fg: #991B1B;
+    --status-neutral-bg: #E5E7EB;
+    --status-neutral-fg: #374151;
+}
+
+@layer base {
+    html, body {
+        background-color: var(--bg-canvas);
+        color: var(--text-primary);
+        font-family: var(--font-sans);
+        -webkit-font-smoothing: antialiased;
+    }
+
+    button:not(:disabled),
+    a[href],
+    select:not(:disabled),
+    summary,
+    [role='button']:not([aria-disabled='true']) {
+        cursor: pointer;
+    }
+
+    button:disabled,
+    select:disabled,
+    input:disabled,
+    textarea:disabled {
+        cursor: not-allowed;
+    }
+
+    :focus-visible {
+        outline: 3px solid var(--brand-primary);
+        outline-offset: 2px;
+    }
+}
+
+.tabular-nums {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
 }

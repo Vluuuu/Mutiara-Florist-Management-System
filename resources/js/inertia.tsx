@@ -18,7 +18,7 @@ const pages = import.meta.glob<{ default: ComponentType<Record<string, unknown>>
 );
 
 void createInertiaApp({
-    title: (title) => `${title} — MFMS`,
+    title: (title) => `${title} - MFMS`,
     resolve: (name) => {
         const page = pages[`./pages/${name}.tsx`];
 

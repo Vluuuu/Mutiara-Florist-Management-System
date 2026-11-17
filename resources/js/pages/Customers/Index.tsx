@@ -61,15 +61,9 @@ export default function CustomersIndex({ customers, filters }: CustomersIndexPro
                     </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                    <a
-                        href="/customers"
-                        className="rounded-lg border border-stone-200 bg-white px-3.5 py-2 text-xs font-semibold text-stone-600 hover:bg-stone-50"
-                    >
-                        Tampilan Blade lama
-                    </a>
                     <Link
                         href="/ui-customers/create"
-                        className="inline-flex items-center gap-2 rounded-lg bg-emerald-950 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-900"
+                        className="inline-flex min-h-[44px] items-center gap-2 rounded-md bg-[#143326] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0E251B]"
                     >
                         <Plus className="size-4" aria-hidden="true" />
                         Tambah pelanggan

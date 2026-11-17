@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 
 type PreviewProps = {
@@ -6,52 +6,50 @@ type PreviewProps = {
     dashboardUrl: string;
 };
 
-const nextModules = [
-    { name: 'Pelanggan', detail: 'Daftar, pencarian, dan pengelolaan data pelanggan.' },
-    { name: 'Pesanan', detail: 'Form multi-item dengan pengiriman per item.' },
-    { name: 'Keuangan', detail: 'Pembayaran, piutang, pengeluaran, dan audit.' },
+const modules = [
+    { name: 'Pelanggan', detail: 'Daftar, pencarian, dan pengelolaan data pemesan bunga.' },
+    { name: 'Pesanan', detail: 'Pencatatan pesanan multi-item dengan jadwal kirim per item.' },
+    { name: 'Keuangan', detail: 'Pembayaran, piutang terbuka, pengeluaran, dan laporan kas.' },
 ];
 
 export default function Preview({ user, dashboardUrl }: PreviewProps) {
     return (
         <>
-            <Head title="Pratinjau UI React" />
-            <main className="mx-auto min-h-screen max-w-5xl px-5 py-12 sm:px-8">
+            <Head title="Ringkasan Sistem" />
+            <main className="mx-auto min-h-screen max-w-5xl bg-[#FBF9F6] px-5 py-12 text-[#1E2420] sm:px-8">
                 <header className="flex flex-wrap items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                        <span className="flex size-10 items-center justify-center rounded-xl bg-emerald-950 text-lg font-semibold text-white">
+                        <span
+                            aria-hidden="true"
+                            className="grid size-10 place-items-center rounded-xl bg-[#143326] font-[var(--font-display)] text-lg font-semibold text-[#E6EFEA]"
+                        >
                             M
                         </span>
                         <div>
-                            <p className="font-semibold text-emerald-950">Mutiara Florist</p>
-                            <p className="text-xs text-stone-500">Management System</p>
+                            <p className="font-bold text-[#1E2420]">Mutiara Florist</p>
+                            <p className="text-xs text-[#525B54]">Manajemen Pesanan &amp; Kas</p>
                         </div>
                     </div>
-                    <Button asChild variant="outline">
-                        <a href={dashboardUrl}>Kembali ke dashboard lama</a>
+                    <Button asChild variant="secondary">
+                        <Link href={dashboardUrl}>Buka Dashboard</Link>
                     </Button>
                 </header>
 
-                <section className="mt-16 max-w-2xl">
-                    <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-800">
-                        Phase 3.3 · React + TypeScript
-                    </p>
-                    <h1 className="text-3xl font-semibold tracking-tight text-stone-900 sm:text-4xl">
+                <section className="mt-14 max-w-2xl">
+                    <h1 className="font-[var(--font-display)] text-3xl font-semibold tracking-tight text-[#1E2420]">
                         Halo, {user.name}.
                     </h1>
-                    <p className="mt-4 text-base leading-7 text-stone-600">
-                        Ini pratinjau terpisah untuk migrasi antarmuka MFMS. Halaman login,
-                        pesanan, pembayaran, dan pengeluaran lama masih menggunakan Blade
-                        sampai pengujian migrasi selesai.
+                    <p className="mt-3 text-base leading-7 text-[#525B54]">
+                        Selamat datang di ruang kerja Mutiara Florist Management System. Gunakan dashboard untuk
+                        memantau pesanan, pembayaran, pelanggan, dan laporan keuangan toko.
                     </p>
                 </section>
 
-                <section className="mt-10 grid gap-4 md:grid-cols-3" aria-label="Rencana modul antarmuka">
-                    {nextModules.map((module) => (
-                        <article key={module.name} className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
-                            <h2 className="font-semibold text-emerald-950">{module.name}</h2>
-                            <p className="mt-3 text-sm leading-6 text-stone-600">{module.detail}</p>
-                            <p className="mt-6 text-xs font-medium text-stone-400">Belum dimigrasikan</p>
+                <section className="mt-10 grid gap-4 md:grid-cols-3" aria-label="Modul sistem">
+                    {modules.map((module) => (
+                        <article key={module.name} className="rounded-xl border border-[#E3DED4] bg-white p-6">
+                            <h2 className="font-bold text-[#1E2420]">{module.name}</h2>
+                            <p className="mt-2.5 text-sm leading-6 text-[#525B54]">{module.detail}</p>
                         </article>
                     ))}
                 </section>
