@@ -68,7 +68,7 @@ export const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputPro
                     required={required}
                     aria-invalid={invalid ? true : undefined}
                     aria-describedby={describedBy}
-                    className="tabular-nums min-h-[42px] w-full min-w-0 border-0 bg-transparent px-3 py-2 text-[15px] font-semibold text-[#1E2420] placeholder:font-normal placeholder:text-[#525B54]/75 focus:outline-none"
+                    className="tabular-nums min-h-[44px] w-full min-w-0 border-0 bg-transparent px-3 py-2 text-[15px] font-semibold text-[#1E2420] placeholder:font-normal placeholder:text-[#525B54]/75 focus:outline-none"
                 />
             </div>
         );

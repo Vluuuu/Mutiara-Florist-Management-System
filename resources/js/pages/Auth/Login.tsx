@@ -109,7 +109,7 @@ export default function Login(_props: LoginProps) {
                                     type="button"
                                     aria-label={showPassword ? 'Sembunyikan password' : 'Lihat password'}
                                     onClick={() => setShowPassword((prev) => !prev)}
-                                    className="absolute right-1.5 inline-flex size-9 items-center justify-center rounded text-[#525B54] hover:bg-[#F1EDE6] hover:text-[#1E2420]"
+                                    className="absolute right-0 inline-flex size-11 items-center justify-center rounded text-[#525B54] hover:bg-[#F1EDE6] hover:text-[#1E2420]"
                                 >
                                     {showPassword ? (
                                         <EyeOff className="size-4" aria-hidden="true" />

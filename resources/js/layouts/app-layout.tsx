@@ -174,7 +174,7 @@ export default function AppLayout({ title: _title, children }: AppLayoutProps) {
                                     type="button"
                                     aria-label="Tutup pemberitahuan"
                                     onClick={() => setDismissedKey(flashKey)}
-                                    className="inline-flex min-h-[36px] min-w-[36px] items-center justify-center rounded text-[#166534] hover:bg-[#166534]/10"
+                                    className="inline-flex size-11 shrink-0 items-center justify-center rounded text-[#166534] hover:bg-[#166534]/10"
                                 >
                                     <X className="size-4" aria-hidden="true" />
                                 </button>
@@ -194,7 +194,7 @@ export default function AppLayout({ title: _title, children }: AppLayoutProps) {
                                     type="button"
                                     aria-label="Tutup peringatan"
                                     onClick={() => setDismissedKey(flashKey)}
-                                    className="inline-flex min-h-[36px] min-w-[36px] items-center justify-center rounded text-[#991B1B] hover:bg-[#991B1B]/10"
+                                    className="inline-flex size-11 shrink-0 items-center justify-center rounded text-[#991B1B] hover:bg-[#991B1B]/10"
                                 >
                                     <X className="size-4" aria-hidden="true" />
                                 </button>

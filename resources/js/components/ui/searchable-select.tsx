@@ -35,6 +35,8 @@ export function SearchableSelect({
 }: SearchableSelectProps) {
     const listboxId = useId();
     const wrapperRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
+    const suppressFocusOpenRef = useRef(false);
 
     const selectedOption = useMemo(
         () => options.find((opt) => String(opt.value) === String(value ?? '')),
@@ -98,21 +100,32 @@ export function SearchableSelect({
                 e.preventDefault();
                 selectOption(target);
             }
-        } else if (e.key === 'Escape' && open) {
+        }
+    };
+
+    const handleWrapperKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+        if (e.key === 'Escape' && open) {
             e.preventDefault();
+            e.stopPropagation();
+            e.nativeEvent.stopPropagation();
             setOpen(false);
             setQuery(selectedOption ? selectedOption.label : '');
+            if (document.activeElement !== inputRef.current) {
+                suppressFocusOpenRef.current = true;
+                inputRef.current?.focus();
+            }
         }
     };
 
     return (
-        <div ref={wrapperRef} className="relative">
+        <div ref={wrapperRef} onKeyDown={handleWrapperKeyDown} className="relative">
             <div className="relative flex items-center">
                 <Search
                     className="pointer-events-none absolute left-3 size-4 text-[#525B54]"
                     aria-hidden="true"
                 />
                 <input
+                    ref={inputRef}
                     id={id}
                     type="text"
                     role="combobox"
@@ -129,6 +142,10 @@ export function SearchableSelect({
                     placeholder={placeholder}
                     autoComplete="off"
                     onFocus={() => {
+                        if (suppressFocusOpenRef.current) {
+                            suppressFocusOpenRef.current = false;
+                            return;
+                        }
                         setOpen(true);
                         setActiveIndex(0);
                     }}
@@ -140,11 +157,12 @@ export function SearchableSelect({
                     }}
                     onKeyDown={handleKeyDown}
                     className={cn(
-                        'min-h-[44px] w-full rounded-md border-[1.5px] py-2 pl-9 pr-16 text-[15px] text-[#1E2420] placeholder:text-[#525B54]/75 focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[#143326] disabled:bg-[#F1EDE6]',
+                        'min-h-[44px] w-full rounded-md border-[1.5px] py-2 pl-9 text-[15px] text-[#1E2420] placeholder:text-[#525B54]/75 focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[#143326] disabled:bg-[#F1EDE6]',
+                        query && !disabled ? 'pr-[92px]' : 'pr-12',
                         invalid ? 'border-[#991B1B] bg-[#FFF9F9]' : 'border-[#858E87] bg-white',
                     )}
                 />
-                <div className="absolute right-1.5 flex items-center gap-0.5">
+                <div className="absolute inset-y-0 right-0 flex items-center">
                     {query && !disabled && (
                         <button
                             type="button"
@@ -153,8 +171,9 @@ export function SearchableSelect({
                                 setQuery('');
                                 onChange(null);
                                 setOpen(true);
+                                inputRef.current?.focus();
                             }}
-                            className="inline-flex size-8 items-center justify-center rounded text-[#525B54] hover:bg-[#F1EDE6] hover:text-[#1E2420]"
+                            className="inline-flex size-11 items-center justify-center rounded text-[#525B54] hover:bg-[#F1EDE6] hover:text-[#1E2420]"
                         >
                             <X className="size-4" aria-hidden="true" />
                         </button>
@@ -164,7 +183,7 @@ export function SearchableSelect({
                         aria-label={open ? 'Tutup daftar' : 'Buka daftar'}
                         disabled={disabled}
                         onClick={() => setOpen((prev) => !prev)}
-                        className="inline-flex size-8 items-center justify-center rounded text-[#525B54] hover:bg-[#F1EDE6] hover:text-[#1E2420]"
+                        className="inline-flex size-11 items-center justify-center rounded text-[#525B54] hover:bg-[#F1EDE6] hover:text-[#1E2420]"
                     >
                         <ChevronDown className="size-4" aria-hidden="true" />
                     </button>

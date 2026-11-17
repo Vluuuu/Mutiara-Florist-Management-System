@@ -199,4 +199,19 @@ class Phase9Sprint1LocalizationTest extends TestCase
                 ->where('nav.uiReports', route('ui-reports.index'))
                 ->etc());
     }
+
+    public function test_flash_success_shared_with_inertia_after_expense_category_store(): void
+    {
+        $response = $this->actingAs($this->admin)
+            ->post('/ui-expense-categories', ['name' => 'Perlengkapan Pita Patch01']);
+
+        $response->assertRedirect('/ui-expense-categories');
+
+        $this->actingAs($this->admin)
+            ->get('/ui-expense-categories')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('flash.success', fn ($msg) => is_string($msg) && $msg !== '')
+                ->etc());
+    }
 }

@@ -28,6 +28,16 @@ export function Modal({
     const descId = useId();
     const dialogRef = useRef<HTMLDivElement>(null);
     const previousFocusRef = useRef<HTMLElement | null>(null);
+    const onCloseRef = useRef(onClose);
+    const isSubmittingRef = useRef(isSubmitting);
+
+    useEffect(() => {
+        onCloseRef.current = onClose;
+    }, [onClose]);
+
+    useEffect(() => {
+        isSubmittingRef.current = isSubmitting;
+    }, [isSubmitting]);
 
     useEffect(() => {
         if (!open) return;
@@ -38,16 +48,21 @@ export function Modal({
         const container = dialogRef.current;
         const focusTimer = window.setTimeout(() => {
             if (!container) return;
-            const firstFocusable = container.querySelector<HTMLElement>(
-                'input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+            const preferredField = container.querySelector<HTMLElement>(
+                '[data-modal-initial], input:not([disabled]), select:not([disabled]), textarea:not([disabled])',
             );
-            (firstFocusable ?? container).focus();
+            const fallbackFocusable = container.querySelector<HTMLElement>(
+                'button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
+            );
+            (preferredField ?? fallbackFocusable ?? container).focus();
         }, 0);
 
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && !isSubmitting) {
-                e.preventDefault();
-                onClose();
+            if (e.key === 'Escape') {
+                if (!isSubmittingRef.current) {
+                    e.preventDefault();
+                    onCloseRef.current();
+                }
                 return;
             }
 
@@ -58,7 +73,11 @@ export function Modal({
                     ),
                 ).filter((el) => el.offsetParent !== null);
 
-                if (focusables.length === 0) return;
+                if (focusables.length === 0) {
+                    e.preventDefault();
+                    container.focus();
+                    return;
+                }
 
                 const first = focusables[0];
                 const last = focusables[focusables.length - 1];
@@ -81,7 +100,7 @@ export function Modal({
                 prev.focus();
             }
         };
-    }, [open, onClose, isSubmitting]);
+    }, [open]);
 
     if (!open) return null;
 
