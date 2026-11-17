@@ -1,21 +1,31 @@
-import { useState, type FormEvent } from 'react';
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import {
+    AlertCircle,
     AlertTriangle,
-    Calendar,
-    CheckCircle2,
-    Filter,
+    FolderCog,
     Plus,
     ReceiptText,
     Search,
-    Tags,
     X,
 } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
-import { Card } from '@/components/ui/card';
 import { Pagination } from '@/components/pagination';
-import { formatAmount } from '@/lib/format';
-import type { ExpenseCategoryItem, ExpenseFilters, ExpenseItem, PaginatedData } from '@/types';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { FormField, Input, Select, Textarea } from '@/components/ui/input';
+import { Modal } from '@/components/ui/modal';
+import { ResponsiveDataList, type DataColumn } from '@/components/ui/responsive-data-list';
+import { formatRupiah } from '@/lib/format';
+import { cn } from '@/lib/utils';
+import type {
+    AppPageProps,
+    ExpenseCategoryItem,
+    ExpenseFilters,
+    ExpenseItem,
+    PaginatedData,
+} from '@/types';
 
 type ExpensesIndexProps = {
     expenses: PaginatedData<ExpenseItem>;
@@ -30,53 +40,18 @@ export default function ExpensesIndex({
     categories,
     filters,
 }: ExpensesIndexProps) {
-    const [search, setSearch] = useState(filters.q ?? '');
-    const [categoryId, setCategoryId] = useState<string>(
+    const { errors } = usePage<AppPageProps>().props;
+    const [q, setQ] = useState(filters.q ?? '');
+    const [categoryId, setCategoryId] = useState(
         filters.category_id ? String(filters.category_id) : '',
     );
-    const [status, setStatus] = useState<string>(filters.status ?? '');
-    const [from, setFrom] = useState<string>(filters.from ?? '');
-    const [to, setTo] = useState<string>(filters.to ?? '');
+    const [status, setStatus] = useState(filters.status ?? '');
+    const [from, setFrom] = useState(filters.from ?? '');
+    const [to, setTo] = useState(filters.to ?? '');
+    const [isLoading, setIsLoading] = useState(false);
 
     const [voidTarget, setVoidTarget] = useState<ExpenseItem | null>(null);
-
-    const isFiltered =
-        (filters.q ?? '').trim() !== '' ||
-        Boolean(filters.category_id) ||
-        Boolean(filters.status) ||
-        Boolean(filters.from) ||
-        Boolean(filters.to);
-
-    const handleFilterSubmit = (e: FormEvent) => {
-        e.preventDefault();
-        const params: Record<string, string> = {};
-        if (search.trim()) params.q = search.trim();
-        if (categoryId) params.category_id = categoryId;
-        if (status) params.status = status;
-        if (from) params.from = from;
-        if (to) params.to = to;
-
-        router.get('/ui-expenses', params, {
-            preserveState: true,
-            preserveScroll: true,
-            replace: true,
-        });
-    };
-
-    const handleReset = () => {
-        setSearch('');
-        setCategoryId('');
-        setStatus('');
-        setFrom('');
-        setTo('');
-        router.get('/ui-expenses', {}, {
-            preserveState: false,
-            preserveScroll: true,
-            replace: true,
-        });
-    };
-
-    // Void form
+    const voidLockRef = useRef(false);
     const {
         data: voidData,
         setData: setVoidData,
@@ -84,378 +59,565 @@ export default function ExpensesIndex({
         processing: voidProcessing,
         errors: voidErrors,
         reset: resetVoid,
+        clearErrors: clearVoidErrors,
     } = useForm({
         void_reason: '',
     });
 
+    useEffect(() => {
+        setQ(filters.q ?? '');
+        setCategoryId(filters.category_id ? String(filters.category_id) : '');
+        setStatus(filters.status ?? '');
+        setFrom(filters.from ?? '');
+        setTo(filters.to ?? '');
+    }, [filters.q, filters.category_id, filters.status, filters.from, filters.to]);
+
+    useEffect(() => {
+        const stopStart = router.on('start', () => setIsLoading(true));
+        const stopFinish = router.on('finish', () => setIsLoading(false));
+        return () => {
+            stopStart();
+            stopFinish();
+        };
+    }, []);
+
+    const isFiltered = Boolean(
+        filters.q || filters.category_id || filters.status || filters.from || filters.to,
+    );
+
+    const handleFilter = (e: FormEvent) => {
+        e.preventDefault();
+        const query: Record<string, string> = {};
+        if (q.trim()) query.q = q.trim();
+        if (categoryId) query.category_id = categoryId;
+        if (status) query.status = status;
+        if (from) query.from = from;
+        if (to) query.to = to;
+
+        router.get('/ui-expenses', query, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        });
+    };
+
+    const handleReset = () => {
+        setQ('');
+        setCategoryId('');
+        setStatus('');
+        setFrom('');
+        setTo('');
+        router.get('/ui-expenses', {}, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        });
+    };
+
     const openVoidModal = (expense: ExpenseItem) => {
-        setVoidTarget(expense);
         resetVoid();
+        clearVoidErrors();
+        voidLockRef.current = false;
+        setVoidTarget(expense);
     };
 
     const closeVoidModal = () => {
+        if (voidProcessing) return;
         setVoidTarget(null);
         resetVoid();
+        clearVoidErrors();
+        voidLockRef.current = false;
     };
+
+    const trimmedVoidReasonLength = voidData.void_reason.trim().length;
 
     const submitVoid = (e: FormEvent) => {
         e.preventDefault();
-        if (!voidTarget) return;
-
+        if (!voidTarget || voidLockRef.current || voidProcessing || trimmedVoidReasonLength < 10) {
+            return;
+        }
+        voidLockRef.current = true;
         postVoid(`/ui-expenses/${voidTarget.id}/void`, {
             preserveScroll: true,
             onSuccess: () => {
-                closeVoidModal();
+                setVoidTarget(null);
+                resetVoid();
+            },
+            onFinish: () => {
+                voidLockRef.current = false;
             },
         });
     };
+
+    const filterError =
+        errors?.to ?? errors?.from ?? errors?.q ?? errors?.category_id ?? errors?.status;
+
+    const columns: DataColumn<ExpenseItem>[] = [
+        {
+            key: 'expense_date',
+            header: 'Tanggal',
+            cellClassName: 'whitespace-nowrap text-[#1E2420] tabular-nums',
+            render: (exp) => exp.expense_date,
+        },
+        {
+            key: 'category',
+            header: 'Kategori',
+            cellClassName: 'font-semibold text-[#1E2420]',
+            render: (exp) => exp.category?.name ?? 'Kategori tidak tersedia',
+        },
+        {
+            key: 'description',
+            header: 'Keterangan',
+            render: (exp) => (
+                <div className="max-w-sm">
+                    <p className="whitespace-pre-wrap break-words font-medium text-[#1E2420]">
+                        {exp.description}
+                    </p>
+                    <p className="mt-1 text-xs text-[#525B54]">
+                        Dicatat oleh {exp.recorded_by_user?.name ?? 'Operator'}
+                    </p>
+                    {exp.status === 'VOIDED' && exp.void_reason && (
+                        <div className="mt-2 rounded-md border border-[#E3DED4] bg-[#F1EDE6] p-2 text-xs text-[#1E2420]">
+                            <span className="font-bold">Alasan pembatalan:</span> {exp.void_reason}
+                        </div>
+                    )}
+                </div>
+            ),
+        },
+        {
+            key: 'amount',
+            header: 'Nominal',
+            align: 'right',
+            cellClassName: 'whitespace-nowrap tabular-nums',
+            render: (exp) => (
+                <span
+                    className={cn(
+                        'font-bold',
+                        exp.status === 'VOIDED'
+                            ? 'text-[#525B54] line-through'
+                            : 'text-[#1E2420]',
+                    )}
+                >
+                    {formatRupiah(exp.amount)}
+                </span>
+            ),
+        },
+        {
+            key: 'status',
+            header: 'Status',
+            cellClassName: 'whitespace-nowrap',
+            render: (exp) => {
+                const isPosted = exp.status === 'POSTED';
+                return (
+                    <Badge tone={isPosted ? 'paid' : 'neutral'}>
+                        {isPosted ? 'Tercatat' : 'Dibatalkan'}
+                    </Badge>
+                );
+            },
+        },
+        {
+            key: 'actions',
+            header: 'Aksi',
+            align: 'right',
+            cellClassName: 'whitespace-nowrap',
+            render: (exp) =>
+                exp.status === 'POSTED' ? (
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="border-[#991B1B]/40 text-[#991B1B] hover:bg-[#FEE2E2]"
+                        onClick={() => openVoidModal(exp)}
+                    >
+                        Batalkan
+                    </Button>
+                ) : (
+                    <span className="text-xs text-[#525B54] tabular-nums">
+                        {exp.voided_at ?? 'Dibatalkan'}
+                    </span>
+                ),
+        },
+    ];
 
     return (
         <AppLayout title="Pengeluaran">
             <Head title="Pengeluaran" />
 
-            <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+            {/* Header */}
+            <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
                 <div>
-                    <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-800">
-                        Keuangan usaha
-                    </p>
-                    <h1 className="text-3xl font-semibold tracking-tight text-emerald-950">
-                        Pengeluaran
+                    <h1 className="font-[var(--font-display)] text-[clamp(20px,2.2vw,25px)] font-semibold leading-tight tracking-[-0.015em] text-[#1E2420]">
+                        Pengeluaran Toko
                     </h1>
-                    <p className="mt-2 text-sm text-stone-500">
-                        Catat uang yang benar-benar keluar untuk operasional florist. Nilai pesanan tidak berubah.
+                    <p className="mt-1 text-sm text-[#525B54]">
+                        Catatan belanja bahan bunga, pita, dan ongkos kurir toko dengan jejak pembatalan beralasan.
                     </p>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                    <Link
-                        href="/ui-expense-categories"
-                        className="inline-flex items-center gap-2 rounded-lg border border-stone-200 bg-white px-4 py-2.5 text-sm font-semibold text-stone-700 shadow-xs hover:bg-stone-50"
-                    >
-                        <Tags className="size-4 text-stone-500" />
-                        Kategori biaya
-                    </Link>
-                    <Link
-                        href="/ui-expenses/create"
-                        className="inline-flex items-center gap-2 rounded-lg bg-emerald-950 px-4 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-emerald-900"
-                    >
-                        <Plus className="size-4" />
-                        Catat pengeluaran
-                    </Link>
+
+                <div className="flex flex-wrap items-center gap-2">
+                    <Button asChild variant="secondary">
+                        <Link href="/ui-expense-categories">
+                            <FolderCog className="size-4" aria-hidden="true" />
+                            Kategori Biaya
+                        </Link>
+                    </Button>
+                    <Button asChild variant="primary">
+                        <Link href="/ui-expenses/create">
+                            <Plus className="size-4" aria-hidden="true" />
+                            Catat Pengeluaran
+                        </Link>
+                    </Button>
                 </div>
             </div>
 
-            {/* Total Metric Card */}
-            <Card className="mb-6 p-6">
-                <div className="flex items-center justify-between">
+            {/* Sunken Financial Summary */}
+            <div className="mb-5 rounded-[10px] border border-[#E3DED4] bg-[#F1EDE6] p-4 sm:p-5">
+                <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
                     <div>
-                        <p className="text-sm font-medium text-stone-500">
-                            Total pengeluaran POSTED{isFiltered ? ' sesuai filter' : ''}
+                        <p className="text-xs font-bold uppercase tracking-wider text-[#525B54]">
+                            Total Pengeluaran Sah {isFiltered ? '(Filter Aktif)' : ''}
                         </p>
-                        <p className="mt-2 text-3xl font-bold tracking-tight text-emerald-950">
-                            {formatAmount(postedTotal)}
-                        </p>
-                        <p className="mt-1 text-xs text-stone-500">
-                            VOIDED tidak dihitung. Jumlah ini adalah kas keluar tercatat, bukan perhitungan laba bersih.
+                        <p className="mt-1 text-2xl font-bold text-[#143326] tabular-nums">
+                            {formatRupiah(postedTotal)}
                         </p>
                     </div>
-                    <div className="flex size-12 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
-                        <ReceiptText className="size-6" />
-                    </div>
+                    <p className="text-xs text-[#525B54]">
+                        Hanya menghitung catatan berstatus Tercatat. Pengeluaran yang dibatalkan dikecualikan otomatis.
+                    </p>
                 </div>
-            </Card>
+            </div>
 
-            {/* Filters & Table */}
-            <Card className="overflow-hidden">
+            {filterError && (
+                <div
+                    role="alert"
+                    className="mb-4 flex items-start gap-2.5 rounded-md border border-[#991B1B]/40 bg-[#FEE2E2] p-3.5 text-sm font-medium text-[#991B1B]"
+                >
+                    <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                    <span>{filterError}</span>
+                </div>
+            )}
+
+            <Card className="overflow-hidden border-[#E3DED4]">
+                {/* Filters */}
                 <form
-                    onSubmit={handleFilterSubmit}
-                    className="grid gap-3 border-b border-stone-200 bg-stone-50/50 p-4 sm:grid-cols-2 xl:grid-cols-6"
+                    onSubmit={handleFilter}
+                    className="grid grid-cols-1 gap-3 border-b border-[#E3DED4] bg-[#FAF8F4]/70 p-4 sm:grid-cols-2 lg:grid-cols-6 sm:p-5"
                 >
                     <div className="sm:col-span-2">
-                        <label htmlFor="q" className="mb-1 block text-xs font-semibold text-stone-600">
-                            Cari keterangan
+                        <label
+                            htmlFor="filter-q"
+                            className="mb-1 block text-xs font-bold text-[#525B54]"
+                        >
+                            Cari Keterangan
                         </label>
                         <div className="relative">
-                            <input
-                                id="q"
-                                type="search"
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Contoh: ongkir kurir"
-                                className="w-full rounded-lg border border-stone-300 bg-white py-2 pl-9 pr-3 text-sm focus:border-emerald-800 focus:outline-none focus:ring-1 focus:ring-emerald-800"
+                            <Search
+                                className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[#525B54]"
+                                aria-hidden="true"
                             />
-                            <Search className="pointer-events-none absolute left-3 top-2.5 size-4 text-stone-400" />
+                            <Input
+                                id="filter-q"
+                                type="search"
+                                value={q}
+                                onChange={(e) => setQ(e.target.value)}
+                                placeholder="Misal: bensin kurir, pita..."
+                                className="pl-9"
+                            />
                         </div>
                     </div>
 
                     <div>
-                        <label htmlFor="category_id" className="mb-1 block text-xs font-semibold text-stone-600">
+                        <label
+                            htmlFor="filter-category"
+                            className="mb-1 block text-xs font-bold text-[#525B54]"
+                        >
                             Kategori
                         </label>
-                        <select
-                            id="category_id"
+                        <Select
+                            id="filter-category"
                             value={categoryId}
                             onChange={(e) => setCategoryId(e.target.value)}
-                            className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm focus:border-emerald-800 focus:outline-none focus:ring-1 focus:ring-emerald-800"
                         >
                             <option value="">Semua kategori</option>
-                            {categories.map((c) => (
-                                <option key={c.id} value={c.id}>
-                                    {c.name}
+                            {categories.map((cat) => (
+                                <option key={cat.id} value={cat.id}>
+                                    {cat.name}
                                 </option>
                             ))}
-                        </select>
+                        </Select>
                     </div>
 
                     <div>
-                        <label htmlFor="status" className="mb-1 block text-xs font-semibold text-stone-600">
+                        <label
+                            htmlFor="filter-status"
+                            className="mb-1 block text-xs font-bold text-[#525B54]"
+                        >
                             Status
                         </label>
-                        <select
-                            id="status"
+                        <Select
+                            id="filter-status"
                             value={status}
                             onChange={(e) => setStatus(e.target.value)}
-                            className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm focus:border-emerald-800 focus:outline-none focus:ring-1 focus:ring-emerald-800"
                         >
                             <option value="">Semua status</option>
                             <option value="POSTED">Tercatat</option>
-                            <option value="VOIDED">VOIDED</option>
-                        </select>
+                            <option value="VOIDED">Dibatalkan</option>
+                        </Select>
                     </div>
 
                     <div>
-                        <label htmlFor="from" className="mb-1 block text-xs font-semibold text-stone-600">
-                            Tanggal dari
+                        <label
+                            htmlFor="filter-from"
+                            className="mb-1 block text-xs font-bold text-[#525B54]"
+                        >
+                            Dari Tanggal
                         </label>
-                        <input
-                            id="from"
+                        <Input
+                            id="filter-from"
                             type="date"
                             value={from}
                             onChange={(e) => setFrom(e.target.value)}
-                            className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm focus:border-emerald-800 focus:outline-none focus:ring-1 focus:ring-emerald-800"
+                            invalid={Boolean(errors?.from)}
                         />
                     </div>
 
                     <div>
-                        <label htmlFor="to" className="mb-1 block text-xs font-semibold text-stone-600">
-                            Sampai
+                        <label
+                            htmlFor="filter-to"
+                            className="mb-1 block text-xs font-bold text-[#525B54]"
+                        >
+                            Sampai Tanggal
                         </label>
-                        <input
-                            id="to"
+                        <Input
+                            id="filter-to"
                             type="date"
                             value={to}
                             onChange={(e) => setTo(e.target.value)}
-                            className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm focus:border-emerald-800 focus:outline-none focus:ring-1 focus:ring-emerald-800"
+                            invalid={Boolean(errors?.to)}
                         />
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2 sm:col-span-2 xl:col-span-6">
-                        <button
-                            type="submit"
-                            className="inline-flex items-center gap-2 rounded-lg bg-emerald-950 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-900"
-                        >
-                            <Filter className="size-4" />
-                            Terapkan filter
-                        </button>
+                    <div className="flex flex-wrap items-center gap-2 sm:col-span-2 lg:col-span-6">
+                        <Button type="submit" variant="primary" disabled={isLoading}>
+                            Terapkan Filter
+                        </Button>
                         {isFiltered && (
-                            <button
+                            <Button
                                 type="button"
+                                variant="secondary"
+                                disabled={isLoading}
                                 onClick={handleReset}
-                                className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-4 py-2 text-sm font-medium text-stone-600 hover:bg-stone-50"
                             >
-                                <X className="size-4" />
-                                Reset filter
-                            </button>
+                                <X className="size-4" aria-hidden="true" />
+                                Reset Filter
+                            </Button>
                         )}
                     </div>
                 </form>
 
-                {expenses.data.length === 0 ? (
-                    <div className="px-6 py-14 text-center">
-                        <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-stone-100 text-stone-400">
-                            <ReceiptText className="size-6" />
-                        </div>
-                        <h2 className="font-semibold text-stone-800">
-                            Tidak ada pengeluaran yang ditemukan
-                        </h2>
-                        <p className="mt-1 text-sm text-stone-500">
-                            {isFiltered
-                                ? 'Ubah kriteria pencarian atau klik reset filter.'
-                                : 'Mulai catat pengeluaran operasional florist.'}
-                        </p>
-                    </div>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full min-w-[850px] text-left text-sm">
-                            <thead className="bg-stone-50 text-xs font-semibold uppercase tracking-wider text-stone-500">
-                                <tr>
-                                    <th className="px-5 py-3">Tanggal</th>
-                                    <th className="px-5 py-3">Kategori</th>
-                                    <th className="px-5 py-3">Keterangan</th>
-                                    <th className="px-5 py-3 text-right">Nominal</th>
-                                    <th className="px-5 py-3">Status</th>
-                                    <th className="px-5 py-3 text-right">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-stone-100">
-                                {expenses.data.map((expense) => {
-                                    const isPosted = expense.status === 'POSTED';
-                                    return (
-                                        <tr key={expense.id} className="align-top hover:bg-stone-50">
-                                            <td className="whitespace-nowrap px-5 py-4 text-stone-600">
-                                                <div className="flex items-center gap-1.5">
-                                                    <Calendar className="size-3.5 text-stone-400" />
-                                                    {expense.expense_date}
-                                                </div>
-                                            </td>
-                                            <td className="px-5 py-4 font-medium text-stone-800">
-                                                {expense.category?.name ?? 'Kategori tidak tersedia'}
-                                            </td>
-                                            <td className="max-w-xs px-5 py-4">
-                                                <p className="whitespace-pre-wrap break-words text-stone-800">
-                                                    {expense.description}
-                                                </p>
-                                                <p className="mt-1 text-xs text-stone-400">
-                                                    Dicatat oleh {expense.recorded_by_user?.name ?? 'Operator'}
-                                                </p>
-                                                {expense.status === 'VOIDED' && expense.void_reason && (
-                                                    <div className="mt-2 rounded-lg bg-stone-100 p-2 text-xs text-stone-600">
-                                                        <span className="font-semibold">Alasan void:</span> {expense.void_reason}
-                                                    </div>
-                                                )}
-                                            </td>
-                                            <td className="whitespace-nowrap px-5 py-4 text-right font-semibold text-emerald-950">
-                                                {formatAmount(expense.amount)}
-                                            </td>
-                                            <td className="px-5 py-4">
-                                                <span
-                                                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                                                        isPosted
-                                                            ? 'bg-emerald-50 text-emerald-900'
-                                                            : 'bg-stone-100 text-stone-600'
-                                                    }`}
-                                                >
-                                                    {isPosted ? (
-                                                        <>
-                                                            <CheckCircle2 className="size-3 text-emerald-600" />
-                                                            Tercatat
-                                                        </>
-                                                    ) : (
-                                                        'VOIDED'
-                                                    )}
-                                                </span>
-                                            </td>
-                                            <td className="whitespace-nowrap px-5 py-4 text-right">
-                                                {isPosted ? (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => openVoidModal(expense)}
-                                                        className="text-xs font-semibold text-red-700 hover:text-red-900 hover:underline"
-                                                    >
-                                                        Koreksi catatan
-                                                    </button>
-                                                ) : (
-                                                    <span className="text-xs text-stone-400">
-                                                        {expense.voided_at ?? 'Dibatalkan'}
-                                                    </span>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
+                {isLoading && (
+                    <div
+                        role="status"
+                        aria-live="polite"
+                        className="border-b border-[#E3DED4] bg-[#F1EDE6] px-4 py-2 text-xs font-semibold text-[#143326]"
+                    >
+                        Memuat data pengeluaran...
                     </div>
                 )}
 
-                <div className="border-t border-stone-200 px-5 py-4">
-                    <Pagination
-                        links={expenses.links}
-                        from={expenses.from}
-                        to={expenses.to}
-                        total={expenses.total}
-                        itemLabel="pengeluaran"
+                <div className="p-4 sm:p-0">
+                    <ResponsiveDataList
+                        items={expenses.data}
+                        columns={columns}
+                        keyExtractor={(exp) => exp.id}
+                        tableAriaLabel="Daftar pengeluaran toko"
+                        rowClassName={(exp) =>
+                            exp.status === 'VOIDED' ? 'bg-[#FBF9F6]/70' : undefined
+                        }
+                        emptyState={
+                            <div className="px-6 py-12 text-center">
+                                <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-[#F1EDE6] text-[#143326]">
+                                    <ReceiptText className="size-6" aria-hidden="true" />
+                                </div>
+                                <h2 className="text-base font-bold text-[#1E2420]">
+                                    {isFiltered
+                                        ? 'Tidak ada pengeluaran yang cocok'
+                                        : 'Belum ada pengeluaran tercatat'}
+                                </h2>
+                                <p className="mx-auto mt-1 max-w-md text-sm text-[#525B54]">
+                                    {isFiltered
+                                        ? 'Ubah rentang tanggal, kategori, atau kata kunci untuk melihat catatan lainnya.'
+                                        : 'Catat pengeluaran operasional pertama Anda melalui tombol di bawah ini.'}
+                                </p>
+                                <div className="mt-4 flex flex-wrap justify-center gap-2">
+                                    {isFiltered ? (
+                                        <Button
+                                            type="button"
+                                            variant="secondary"
+                                            onClick={handleReset}
+                                        >
+                                            Tampilkan Semua Pengeluaran
+                                        </Button>
+                                    ) : (
+                                        <Button asChild variant="primary">
+                                            <Link href="/ui-expenses/create">
+                                                + Catat Pengeluaran
+                                            </Link>
+                                        </Button>
+                                    )}
+                                </div>
+                            </div>
+                        }
+                        renderMobileCard={(exp) => {
+                            const isPosted = exp.status === 'POSTED';
+                            return (
+                                <div className="rounded-[10px] border border-[#E3DED4] bg-white p-4">
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                        <span className="text-xs font-bold text-[#525B54] tabular-nums">
+                                            {exp.expense_date}
+                                        </span>
+                                        <Badge tone={isPosted ? 'paid' : 'neutral'}>
+                                            {isPosted ? 'Tercatat' : 'Dibatalkan'}
+                                        </Badge>
+                                    </div>
+
+                                    <div className="mt-2 flex items-start justify-between gap-3">
+                                        <div className="min-w-0">
+                                            <p className="text-xs font-bold text-[#143326]">
+                                                {exp.category?.name ?? 'Kategori tidak tersedia'}
+                                            </p>
+                                            <p className="mt-0.5 text-sm font-semibold text-[#1E2420] break-words">
+                                                {exp.description}
+                                            </p>
+                                            <p className="mt-1 text-xs text-[#525B54]">
+                                                Oleh {exp.recorded_by_user?.name ?? 'Operator'}
+                                            </p>
+                                        </div>
+                                        <span
+                                            className={cn(
+                                                'shrink-0 text-base font-bold tabular-nums',
+                                                isPosted
+                                                    ? 'text-[#1E2420]'
+                                                    : 'text-[#525B54] line-through',
+                                            )}
+                                        >
+                                            {formatRupiah(exp.amount)}
+                                        </span>
+                                    </div>
+
+                                    {!isPosted && exp.void_reason && (
+                                        <div className="mt-2.5 rounded-md border border-[#E3DED4] bg-[#F1EDE6] p-2.5 text-xs text-[#1E2420]">
+                                            <span className="font-bold">Alasan pembatalan:</span>{' '}
+                                            {exp.void_reason}
+                                            {exp.voided_at ? ` (${exp.voided_at})` : ''}
+                                        </div>
+                                    )}
+
+                                    {isPosted && (
+                                        <div className="mt-3 border-t border-[#E3DED4] pt-3">
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                className="w-full border-[#991B1B]/40 text-[#991B1B] hover:bg-[#FEE2E2]"
+                                                onClick={() => openVoidModal(exp)}
+                                            >
+                                                Batalkan Catatan
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        }}
                     />
                 </div>
+
+                <Pagination
+                    links={expenses.links}
+                    from={expenses.from}
+                    to={expenses.to}
+                    total={expenses.total}
+                    itemLabel="pengeluaran"
+                />
             </Card>
 
-            {/* Void Modal */}
-            {voidTarget && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-                    <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-                        <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-                            <div className="flex items-center gap-2">
-                                <AlertTriangle className="size-5 text-red-600" />
-                                <h3 className="font-semibold text-stone-900">Koreksi Pengeluaran (Void)</h3>
+            {/* Shared Accessible Void Modal */}
+            <Modal
+                open={Boolean(voidTarget)}
+                onClose={closeVoidModal}
+                isSubmitting={voidProcessing}
+                title="Batalkan Catatan Pengeluaran"
+                description={
+                    voidTarget
+                        ? `${voidTarget.category?.name ?? 'Kategori tidak tersedia'} · ${voidTarget.expense_date}`
+                        : undefined
+                }
+            >
+                {voidTarget && (
+                    <form onSubmit={submitVoid} noValidate className="space-y-4">
+                        <div className="rounded-md border border-[#E3DED4] bg-[#F1EDE6] p-3 text-sm">
+                            <div className="flex items-baseline justify-between gap-2">
+                                <span className="text-xs font-bold uppercase tracking-wider text-[#525B54]">
+                                    Nominal dicatat
+                                </span>
+                                <span className="text-base font-bold text-[#1E2420] tabular-nums">
+                                    {formatRupiah(voidTarget.amount)}
+                                </span>
                             </div>
-                            <button
-                                type="button"
-                                onClick={closeVoidModal}
-                                className="rounded-lg p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-600"
-                            >
-                                <X className="size-5" />
-                            </button>
+                            <p className="mt-1.5 text-xs text-[#1E2420] break-words">
+                                {voidTarget.description}
+                            </p>
                         </div>
 
-                        <form onSubmit={submitVoid} className="mt-4 space-y-4">
-                            <div className="rounded-lg bg-stone-50 p-3 text-xs text-stone-600">
-                                <p>
-                                    <span className="font-semibold">Kategori:</span> {voidTarget.category?.name}
-                                </p>
-                                <p>
-                                    <span className="font-semibold">Nominal:</span> {formatAmount(voidTarget.amount)}
-                                </p>
-                                <p>
-                                    <span className="font-semibold">Keterangan:</span> {voidTarget.description}
-                                </p>
-                            </div>
+                        <div className="flex items-start gap-2.5 rounded-md border border-[#92400E]/30 bg-[#FEF3C7] p-3 text-xs font-medium text-[#92400E]">
+                            <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                            <span>
+                                Pembatalan hanya mencatat koreksi administratif. Riwayat pencatatan tetap tersimpan dan tidak otomatis mengubah mutasi kas fisik atau pengembalian uang.
+                            </span>
+                        </div>
 
-                            <p className="text-xs text-stone-500">
-                                Void hanya mencatat koreksi administratif. Riwayat pencatatan tetap disimpan dan tidak ada uang yang otomatis dikembalikan.
-                            </p>
+                        <FormField
+                            id="void_reason"
+                            label="Alasan pembatalan"
+                            required
+                            hint={`Minimal 10 karakter (${trimmedVoidReasonLength}/10).`}
+                            error={voidErrors.void_reason}
+                        >
+                            <Textarea
+                                id="void_reason"
+                                data-modal-initial="true"
+                                rows={3}
+                                minLength={10}
+                                maxLength={1000}
+                                required
+                                value={voidData.void_reason}
+                                onChange={(e) => setVoidData('void_reason', e.target.value)}
+                                placeholder="Misal: Salah input nominal pembelian pita, seharusnya Rp50.000"
+                                invalid={Boolean(voidErrors.void_reason)}
+                                aria-describedby={voidErrors.void_reason ? 'void_reason-error' : 'void_reason-hint'}
+                            />
+                        </FormField>
 
-                            <div>
-                                <label
-                                    htmlFor="void_reason"
-                                    className="mb-1 block text-xs font-semibold text-stone-700"
-                                >
-                                    Alasan koreksi * (minimal 10 karakter)
-                                </label>
-                                <textarea
-                                    id="void_reason"
-                                    rows={3}
-                                    minLength={10}
-                                    maxLength={1000}
-                                    required
-                                    value={voidData.void_reason}
-                                    onChange={(e) => setVoidData('void_reason', e.target.value)}
-                                    placeholder="Contoh: Salah input nominal pengeluaran, harusnya Rp50.000"
-                                    className="w-full rounded-lg border border-stone-300 p-2.5 text-sm focus:border-emerald-800 focus:outline-none focus:ring-1 focus:ring-emerald-800"
-                                />
-                                {voidErrors.void_reason && (
-                                    <p className="mt-1 text-xs text-red-600">{voidErrors.void_reason}</p>
-                                )}
-                            </div>
-
-                            <div className="flex items-center justify-end gap-2 border-t border-stone-100 pt-4">
-                                <button
-                                    type="button"
-                                    onClick={closeVoidModal}
-                                    className="rounded-lg border border-stone-200 px-4 py-2 text-xs font-medium text-stone-600 hover:bg-stone-50"
-                                >
-                                    Batal
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={voidProcessing || voidData.void_reason.trim().length < 10}
-                                    className="rounded-lg bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50"
-                                >
-                                    {voidProcessing ? 'Memproses...' : 'Void pencatatan'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
+                        <div className="flex flex-col-reverse gap-2 border-t border-[#E3DED4] pt-4 sm:flex-row sm:justify-end">
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                disabled={voidProcessing}
+                                onClick={closeVoidModal}
+                            >
+                                Tutup
+                            </Button>
+                            <Button
+                                type="submit"
+                                variant="danger"
+                                disabled={voidProcessing || trimmedVoidReasonLength < 10}
+                            >
+                                {voidProcessing ? 'Membatalkan...' : 'Konfirmasi Pembatalan'}
+                            </Button>
+                        </div>
+                    </form>
+                )}
+            </Modal>
         </AppLayout>
     );
 }

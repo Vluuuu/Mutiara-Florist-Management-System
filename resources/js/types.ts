@@ -178,6 +178,22 @@ export type ReceivableOrder = {
     customer_name: string;
 };
 
+export type PaymentHistoryItem = {
+    id: number;
+    order_id: number;
+    order_number: string;
+    customer_name: string;
+    payment_date: string;
+    amount: number;
+    method: PaymentMethod;
+    method_label: string;
+    reference: string | null;
+    status: PaymentRecordStatus;
+    void_reason: string | null;
+    voided_at: string | null;
+    recorded_by: string;
+};
+
 export type OrderListItem = {
     id: number;
     order_number: string;

@@ -92,6 +92,7 @@ class UiExpenseController extends Controller
         return Inertia::render('Expenses/Create', [
             'categories' => $categories,
             'newExpenseKey' => (string) Str::uuid(),
+            'todayIso' => now('Asia/Jakarta')->toDateString(),
         ]);
     }
 
