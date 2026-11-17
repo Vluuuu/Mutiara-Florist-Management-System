@@ -305,6 +305,52 @@ class OrderService
         }, 3);
     }
 
+    /**
+     * Advances fulfillment status of a single order item monotonically by one step.
+     */
+    public function updateItemFulfillment(Order $order, int $itemId, string $targetStatus, int $actorId): Order
+    {
+        return DB::transaction(function () use ($order, $itemId, $targetStatus, $actorId): Order {
+            $lockedOrder = Order::query()->whereKey($order->getKey())->lockForUpdate()->firstOrFail();
+            $item = $lockedOrder->items()->whereKey($itemId)->lockForUpdate()->first();
+
+            if ($item === null) {
+                throw ValidationException::withMessages(['item' => 'Item pesanan tidak ditemukan pada pesanan ini.']);
+            }
+
+            $currentStatus = $item->fulfillment_status;
+            $step = array_search($targetStatus, self::PROGRESS, true);
+            $currentStep = array_search($currentStatus, self::PROGRESS, true);
+
+            if ($step === false || $currentStep === false || $step !== $currentStep + 1) {
+                throw ValidationException::withMessages(['target_status' => 'Status item hanya bisa maju satu tahap: Baru, Diproses, Siap, Terkirim.']);
+            }
+
+            $item->forceFill([
+                'fulfillment_status' => $targetStatus,
+            ])->save();
+
+            $statuses = $lockedOrder->items()->pluck('fulfillment_status')->all();
+            $newOrderStatus = $this->summaryStatus($statuses);
+            $orderStatusBefore = $lockedOrder->status;
+
+            $lockedOrder->forceFill([
+                'status' => $newOrderStatus,
+            ])->save();
+
+            $this->audit($actorId, 'order.item_fulfillment_updated', $lockedOrder->id, [
+                'order_item_id' => $itemId,
+                'flower_type' => $item->flower_type,
+                'status_before' => $currentStatus,
+                'status_after' => $targetStatus,
+                'order_status_before' => $orderStatusBefore,
+                'order_status_after' => $newOrderStatus,
+            ]);
+
+            return $lockedOrder;
+        }, 3);
+    }
+
     private function saveItem(Order $order, ?OrderItem $existing, array $data, string $status): void
     {
         $item = $existing ?? new OrderItem();

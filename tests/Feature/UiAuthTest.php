@@ -82,4 +82,16 @@ class UiAuthTest extends TestCase
 
         $this->assertGuest();
     }
+
+    public function test_inertia_logout_logs_out_user_and_redirects_to_login(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)
+            ->withHeader('X-Inertia', 'true')
+            ->post(route('logout'));
+
+        $this->assertGuest();
+        $response->assertRedirect(route('login'));
+    }
 }

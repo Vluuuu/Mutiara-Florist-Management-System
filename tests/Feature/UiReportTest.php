@@ -257,6 +257,21 @@ class UiReportTest extends TestCase
         $this->assertTrue($openResult === true, 'Downloaded file must be a valid zip archive');
 
         $this->assertNotFalse($zip->locateName('[Content_Types].xml'));
+        $contentTypes = $zip->getFromName('[Content_Types].xml');
+        $this->assertStringContainsString('xmlns="http://schemas.openxmlformats.org/package/2006/content-types"', $contentTypes);
+        $this->assertStringContainsString('PartName="/xl/workbook.xml"', $contentTypes);
+        $this->assertStringContainsString('PartName="/xl/styles.xml"', $contentTypes);
+        $this->assertStringContainsString('PartName="/docProps/core.xml"', $contentTypes);
+        $this->assertStringContainsString('PartName="/docProps/app.xml"', $contentTypes);
+
+        $this->assertNotFalse($zip->locateName('_rels/.rels'));
+        $rels = $zip->getFromName('_rels/.rels');
+        $this->assertStringContainsString('Target="xl/workbook.xml"', $rels);
+
+        $this->assertNotFalse($zip->locateName('docProps/core.xml'));
+        $this->assertNotFalse($zip->locateName('docProps/app.xml'));
+        $this->assertNotFalse($zip->locateName('xl/_rels/workbook.xml.rels'));
+
         $this->assertNotFalse($zip->locateName('xl/workbook.xml'));
         $this->assertNotFalse($zip->locateName('xl/styles.xml'));
         $this->assertNotFalse($zip->locateName('xl/worksheets/sheet1.xml')); // Ringkasan

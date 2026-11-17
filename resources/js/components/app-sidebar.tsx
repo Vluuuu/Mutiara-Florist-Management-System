@@ -1,4 +1,4 @@
-import { Link, usePage } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import {
     BarChart3,
     Flower2,
@@ -50,11 +50,6 @@ export function SidebarContent({ onNavigate }: SidebarNavProps) {
 
     const currentPath = url.split('?')[0];
     const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost';
-
-    const csrfToken =
-        typeof document !== 'undefined'
-            ? document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? ''
-            : '';
 
     return (
         <div className="flex h-full flex-col">
@@ -114,16 +109,14 @@ export function SidebarContent({ onNavigate }: SidebarNavProps) {
                 </div>
 
                 <div className="pt-2">
-                    <form method="POST" action={nav?.logout ?? '/logout'}>
-                        <button
-                            type="submit"
-                            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-xs font-semibold text-stone-600 hover:bg-stone-100 hover:text-stone-900"
-                        >
-                            <LogOut className="size-4" aria-hidden="true" />
-                            Keluar
-                        </button>
-                        <input type="hidden" name="_token" value={csrfToken} />
-                    </form>
+                    <button
+                        type="button"
+                        onClick={() => router.post(nav?.logout ?? '/logout')}
+                        className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-xs font-semibold text-stone-600 hover:bg-stone-100 hover:text-stone-900"
+                    >
+                        <LogOut className="size-4" aria-hidden="true" />
+                        Keluar
+                    </button>
                 </div>
             </div>
         </div>

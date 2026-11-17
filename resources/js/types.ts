@@ -37,6 +37,7 @@ export type AppPageProps = PageProps & {
     flash?: FlashMessages;
     nav: DashboardNav;
     errors?: Record<string, string>;
+    csrf_token?: string;
 };
 
 export type CustomerItem = {

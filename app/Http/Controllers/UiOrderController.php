@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\OrderRequest;
 use App\Models\Customer;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Services\OrderService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -133,6 +134,37 @@ class UiOrderController extends Controller
 
         return redirect()->route('ui-orders.show', $updated)
             ->with('success', 'Perubahan pesanan berhasil disimpan.');
+    }
+
+    /**
+     * Advance fulfillment status of a single item directly from order detail.
+     */
+    public function updateItemStatus(Request $request, Order $order, OrderItem $item): RedirectResponse
+    {
+        if ($item->order_id !== $order->id) {
+            abort(404, 'Item bunga tidak terhubung dengan pesanan ini.');
+        }
+
+        $validated = $request->validate([
+            'target_status' => ['required', 'string', 'in:PROCESSING,READY,DELIVERED'],
+        ]);
+
+        $this->orders->updateItemFulfillment(
+            $order,
+            (int) $item->id,
+            $validated['target_status'],
+            (int) $request->user()->getAuthIdentifier()
+        );
+
+        $statusLabels = [
+            'PROCESSING' => 'Diproses',
+            'READY' => 'Siap Kirim',
+            'DELIVERED' => 'Terkirim',
+        ];
+        $label = $statusLabels[$validated['target_status']] ?? $validated['target_status'];
+
+        return redirect()->route('ui-orders.show', $order)
+            ->with('success', "Status pengerjaan '{$item->flower_type}' berhasil dimajukan ke '{$label}'.");
     }
 
     private function activeCustomers(): array

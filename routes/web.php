@@ -85,6 +85,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/{order}', [UiOrderController::class, 'show'])->name('show');
         Route::get('/{order}/edit', [UiOrderController::class, 'edit'])->name('edit');
         Route::put('/{order}', [UiOrderController::class, 'update'])->name('update');
+        Route::post('/{order}/items/{item}/status', [UiOrderController::class, 'updateItemStatus'])->name('items.status');
     });
 
     // Phase 3.3.4: React Payments & Receivables on isolated routes
