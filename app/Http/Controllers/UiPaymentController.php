@@ -63,7 +63,11 @@ class UiPaymentController extends Controller
             (int) $request->user()->getAuthIdentifier()
         );
 
-        return redirect()->route('ui-orders.show', $order)
+        $targetRoute = $request->input('return_to') === 'dashboard'
+            ? route('dashboard')
+            : route('ui-orders.show', $order);
+
+        return redirect($targetRoute)
             ->with('success', 'Pembayaran Rp'.number_format($payment->amount, 0, ',', '.').' berhasil dicatat.');
     }
 
