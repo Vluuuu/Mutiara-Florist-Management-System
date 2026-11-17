@@ -80,3 +80,30 @@ Diuji di Chromium across `360x780`, `390x844`, `768x1024`, `1024x768`, dan `1440
 
 ## 3. Batasan Status Rilis
 Penyelesaian Phase 9 Sprint 3 ini **tidak** otomatis menyatakan sistem siap rilis produksi penuh (v1.0.0) secara keseluruhan tanpa verifikasi kesiapan produksi menyeluruh di tingkat rilis (backup operasional, deployment hardening, dan review PR).
+
+---
+
+## 4. PATCH-01 Verification Addendum
+
+### 4.1 Perbaikan & Root Cause
+1. **P1 — `PaymentModal` Reactive Validation (`resources/js/components/payment-modal.tsx`):**
+   - *Root Cause:* Error server sebelumnya dibaca langsung dari Inertia `usePage().props.errors`, sehingga error tidak terhapus per field saat input diubah dan berisiko bocor sebagai stale error saat modal ditutup lalu dibuka ke nota lain.
+   - *Perbaikan:* Memakai state `activeErrors` terisolasi per sesi modal (`extractPaymentErrors` diisi melalui `onError` dari `router.post`), membersihkan error secara granular via `clearFieldErrors(...)` hanya pada field yang diubah, menjaga modal tetap terbuka saat server menolak (termasuk konflik perubahan saldo tagihan bersamaan), memutar `idempotency_key` hanya saat server menolak kunci lama (mempertahankan kunci yang sama untuk retry aman tanpa duplikasi), serta mereset bersih saat dialog dibuka/ditutup.
+2. **P2 — Payment History Literal Search (`app/Http/Controllers/UiPaymentController.php`):**
+   - *Root Cause:* Pencarian `paymentHistory` menggunakan `addcslashes($search, '%_\\')` tanpa klausa `ESCAPE` eksplisit, tidak konsisten dengan `OrderService`/`PaymentService` dan gagal di SQLite yang tidak menjadikan backslash sebagai escape default pada `LIKE`.
+   - *Perbaikan:* Menyamakan escaping literal memakai `str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $search)` dan `LIKE ? ESCAPE '!'` pada `payments.reference`, `orders.order_number`, dan `customers.name` tanpa mengubah `PaymentService`.
+3. **P2 UX — Mobile Financial Reports (`resources/js/pages/Reports/Index.tsx`):**
+   - *Root Cause:* `onlyActiveDays` sebelumnya default `false`, sehingga viewport mobile/kartu menampilkan seluruh 30 hari kosong sebagai kartu panjang.
+   - *Perbaikan:* Memprioritaskan `Hanya Hari Bertransaksi` sebagai default di viewport kompak (`< 1024px`, sesuai breakpoint `ResponsiveDataList`) dan mempertahankan tabel lengkap `Semua Hari` sebagai default di desktop (`>= 1024px`), tetap menyimpan pilihan manual operator, ringkasan total penuh periode, sinkronisasi preset/kustom (teruji hingga rentang kustom >30 hari / 45 hari), serta ekspor `.xlsx`.
+
+### 4.2 Hasil Re-Verifikasi Pasca PATCH-01
+- `npm run typecheck`: **PASS**
+- `npm run build`: **PASS** (`2.29s`)
+- `php artisan test`: **168 passed (2040 assertions)** dalam `12.79s` (menambahkan test literal wildcard/escape/backslash pada `UiPaymentController::index` dan rentang kustom >30 hari pada `Reports/Index`).
+- `contrast-check.py --selftest`: **PASS** (`9 reference pairs OK`).
+- Browser QA 5 viewport (`360x780`, `390x844`, `768x1024`, `1024x768`, `1440x900`) pada 6 rute/skenario (30 kombinasi):
+  - `scrollWidth > innerWidth`: **0 overflow**.
+  - Audit target sentuh **minimum `44×44px`** (`width < 43.99 || height < 43.99` di `main`): **0 pelanggaran**.
+  - Alur `PaymentModal` server validation (konflik saldo Rp850.000 -> sisa Rp450.000 -> edit method tidak menghapus error amount -> edit amount menghapus error -> resubmit lunas tanpa duplikasi `850000|2`), `payment_date` validation & isolasi antar nota, pencarian literal `100%`, `_Bunga`, `!A\B`, `TRF_BCA%99!1\X`, serta laporan 30d & 45d kustom mobile/desktop terverifikasi.
+  - Bukti screenshot revisi: `payments-modal-error-1440.png`, `reports-360.png`, `reports-1440.png`, `reports-custom45-360.png`, `reports-custom45-1440.png`.
+

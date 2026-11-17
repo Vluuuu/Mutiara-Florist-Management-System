@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { router, usePage } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { CurrencyInput } from '@/components/ui/currency-input';
 import { FormField, Input, Select, Textarea } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { formatRupiah } from '@/lib/format';
-import type { AppPageProps, PaymentMethod } from '@/types';
+import type { PaymentMethod } from '@/types';
 
 export type PaymentModalTarget = {
     id: number;
@@ -37,6 +37,30 @@ function generateUuidV4(): string {
     return '00000000-0000-4000-8000-000000000000';
 }
 
+const PAYMENT_ERROR_KEYS = [
+    'amount',
+    'payment_date',
+    'method',
+    'reference',
+    'notes',
+    'idempotency_key',
+    'payment',
+] as const;
+
+function extractPaymentErrors(
+    source?: Record<string, string> | null,
+): Record<string, string> {
+    if (!source) return {};
+    const next: Record<string, string> = {};
+    for (const key of PAYMENT_ERROR_KEYS) {
+        const message = source[key];
+        if (typeof message === 'string' && message.trim() !== '') {
+            next[key] = message;
+        }
+    }
+    return next;
+}
+
 /**
  * Modal pencatatan pembayaran (DP, cicilan, atau pelunasan) dengan kunci idempotensi stabil
  * per sesi pembukaan dialog agar klik ulang atau retry jaringan tidak membuat catatan ganda.
@@ -48,7 +72,6 @@ export function PaymentModal({
     returnTo = 'order',
     onClose,
 }: PaymentModalProps) {
-    const { errors } = usePage<AppPageProps>().props;
     const [amount, setAmount] = useState<number | null>(null);
     const [paymentDate, setPaymentDate] = useState(todayIso);
     const [method, setMethod] = useState<PaymentMethod>('TRANSFER');
@@ -56,6 +79,7 @@ export function PaymentModal({
     const [notes, setNotes] = useState('');
     const [idempotencyKey, setIdempotencyKey] = useState('');
     const [localError, setLocalError] = useState<string | null>(null);
+    const [activeErrors, setActiveErrors] = useState<Record<string, string>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     const submitLockRef = useRef(false);
 
@@ -67,12 +91,27 @@ export function PaymentModal({
         setReference('');
         setNotes('');
         setLocalError(null);
+        setActiveErrors({});
         setIdempotencyKey(generateUuidV4());
         submitLockRef.current = false;
         setIsSubmitting(false);
     }, [open, order?.id, todayIso]);
 
     if (!order) return null;
+
+    const clearFieldErrors = (...keys: string[]) => {
+        setActiveErrors((prev) => {
+            let changed = false;
+            const next = { ...prev };
+            for (const key of keys) {
+                if (key in next) {
+                    delete next[key];
+                    changed = true;
+                }
+            }
+            return changed ? next : prev;
+        });
+    };
 
     const amountInvalid = amount === null || amount <= 0 || amount > order.outstanding;
 
@@ -109,7 +148,19 @@ export function PaymentModal({
             {
                 preserveScroll: true,
                 onSuccess: () => {
+                    setActiveErrors({});
+                    setLocalError(null);
                     onClose();
+                },
+                onError: (serverErrors) => {
+                    const nextErrors = extractPaymentErrors(
+                        serverErrors as Record<string, string>,
+                    );
+                    setActiveErrors(nextErrors);
+                    // Putar ulang kunci hanya jika server menolak kunci lama akibat perubahan payload setelah sukses parsial
+                    if (nextErrors.idempotency_key) {
+                        setIdempotencyKey(generateUuidV4());
+                    }
                 },
                 onFinish: () => {
                     submitLockRef.current = false;
@@ -119,9 +170,7 @@ export function PaymentModal({
         );
     };
 
-    const serverErrorEntries = Object.entries(errors ?? {}).filter(([key]) =>
-        ['amount', 'payment_date', 'method', 'reference', 'notes', 'idempotency_key', 'payment'].includes(key),
-    );
+    const serverErrorEntries = Object.entries(activeErrors);
 
     return (
         <Modal
@@ -152,7 +201,7 @@ export function PaymentModal({
                     label="Nominal diterima (Rp)"
                     required
                     hint="Diisi otomatis untuk pelunasan penuh. Ubah angka jika mencatat DP atau cicilan."
-                    error={errors?.amount}
+                    error={activeErrors.amount}
                 >
                     <CurrencyInput
                         id="payment-modal-amount"
@@ -161,10 +210,11 @@ export function PaymentModal({
                         onChange={(val) => {
                             setAmount(val);
                             setLocalError(null);
+                            clearFieldErrors('amount', 'payment');
                         }}
                         placeholder="Contoh: 500.000"
-                        invalid={Boolean(errors?.amount || localError)}
-                        describedBy={errors?.amount ? 'payment-modal-amount-error' : 'payment-modal-amount-hint'}
+                        invalid={Boolean(activeErrors.amount || localError)}
+                        describedBy={activeErrors.amount ? 'payment-modal-amount-error' : 'payment-modal-amount-hint'}
                         required
                     />
                 </FormField>
@@ -174,14 +224,18 @@ export function PaymentModal({
                         id="payment-modal-date"
                         label="Tanggal pembayaran"
                         required
-                        error={errors?.payment_date}
+                        error={activeErrors.payment_date}
                     >
                         <Input
                             id="payment-modal-date"
                             type="date"
                             value={paymentDate}
-                            onChange={(e) => setPaymentDate(e.target.value)}
-                            invalid={Boolean(errors?.payment_date)}
+                            onChange={(e) => {
+                                setPaymentDate(e.target.value);
+                                clearFieldErrors('payment_date', 'payment');
+                            }}
+                            invalid={Boolean(activeErrors.payment_date)}
+                            aria-describedby={activeErrors.payment_date ? 'payment-modal-date-error' : undefined}
                             required
                         />
                     </FormField>
@@ -190,13 +244,17 @@ export function PaymentModal({
                         id="payment-modal-method"
                         label="Metode pembayaran"
                         required
-                        error={errors?.method}
+                        error={activeErrors.method}
                     >
                         <Select
                             id="payment-modal-method"
                             value={method}
-                            onChange={(e) => setMethod(e.target.value as PaymentMethod)}
-                            invalid={Boolean(errors?.method)}
+                            onChange={(e) => {
+                                setMethod(e.target.value as PaymentMethod);
+                                clearFieldErrors('method', 'payment');
+                            }}
+                            invalid={Boolean(activeErrors.method)}
+                            aria-describedby={activeErrors.method ? 'payment-modal-method-error' : undefined}
                         >
                             <option value="TRANSFER">Transfer bank</option>
                             <option value="CASH">Tunai</option>
@@ -209,32 +267,40 @@ export function PaymentModal({
                 <FormField
                     id="payment-modal-reference"
                     label="Nomor referensi / bukti (opsional)"
-                    error={errors?.reference}
+                    error={activeErrors.reference}
                 >
                     <Input
                         id="payment-modal-reference"
                         type="text"
                         maxLength={255}
                         value={reference}
-                        onChange={(e) => setReference(e.target.value)}
+                        onChange={(e) => {
+                            setReference(e.target.value);
+                            clearFieldErrors('reference', 'payment');
+                        }}
                         placeholder="Misal: TRF-BCA-10293 atau nama rekening pengirim"
-                        invalid={Boolean(errors?.reference)}
+                        invalid={Boolean(activeErrors.reference)}
+                        aria-describedby={activeErrors.reference ? 'payment-modal-reference-error' : undefined}
                     />
                 </FormField>
 
                 <FormField
                     id="payment-modal-notes"
                     label="Catatan pembayaran (opsional)"
-                    error={errors?.notes}
+                    error={activeErrors.notes}
                 >
                     <Textarea
                         id="payment-modal-notes"
                         rows={2}
                         maxLength={2000}
                         value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
+                        onChange={(e) => {
+                            setNotes(e.target.value);
+                            clearFieldErrors('notes', 'payment');
+                        }}
                         placeholder="Misal: DP 50% sebelum dirangkai"
-                        invalid={Boolean(errors?.notes)}
+                        invalid={Boolean(activeErrors.notes)}
+                        aria-describedby={activeErrors.notes ? 'payment-modal-notes-error' : undefined}
                     />
                 </FormField>
 

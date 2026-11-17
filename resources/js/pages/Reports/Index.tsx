@@ -43,8 +43,23 @@ export default function ReportsIndex({ report }: ReportsIndexProps) {
     const [customFrom, setCustomFrom] = useState<string>(period.from);
     const [customTo, setCustomTo] = useState<string>(period.to);
     const [dateRangeError, setDateRangeError] = useState<string | null>(null);
-    const [onlyActiveDays, setOnlyActiveDays] = useState(false);
+    const [dayViewOverride, setDayViewOverride] = useState<'active' | 'all' | null>(null);
+    const [isCompactViewport, setIsCompactViewport] = useState<boolean>(() =>
+        typeof window !== 'undefined' ? window.innerWidth < 1024 : false,
+    );
     const [isLoading, setIsLoading] = useState(false);
+
+    const onlyActiveDays =
+        dayViewOverride !== null ? dayViewOverride === 'active' : isCompactViewport;
+
+    useEffect(() => {
+        if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+        const mql = window.matchMedia('(max-width: 1023px)');
+        const update = () => setIsCompactViewport(mql.matches);
+        update();
+        mql.addEventListener('change', update);
+        return () => mql.removeEventListener('change', update);
+    }, []);
 
     useEffect(() => {
         setSelectedPreset(period.preset);
@@ -576,28 +591,15 @@ export default function ReportsIndex({ report }: ReportsIndexProps) {
                             Rincian Arus Transaksi Harian
                         </h2>
                         <p className="mt-0.5 text-xs text-[#525B54]">
-                            Nilai pesanan baru, kas masuk sah, dan kas keluar sah per hari dalam periode terpilih.
+                            Nilai pesanan baru, kas masuk sah, dan kas keluar sah per hari ({formatAmount(activeDaysCount)} hari bertransaksi dari {formatAmount(daily_trends.length)} hari ditampilkan).
                         </p>
                     </div>
 
-                    <div className="flex flex-wrap gap-2" role="group" aria-label="Tampilan hari laporan">
-                        <button
-                            type="button"
-                            aria-pressed={!onlyActiveDays}
-                            onClick={() => setOnlyActiveDays(false)}
-                            className={cn(
-                                'inline-flex min-h-[44px] items-center rounded-full border px-3.5 py-1.5 text-xs font-bold transition-colors',
-                                !onlyActiveDays
-                                    ? 'border-[#143326] bg-[#143326] text-white'
-                                    : 'border-[#858E87] bg-white text-[#1E2420] hover:bg-[#F1EDE6]',
-                            )}
-                        >
-                            Semua Hari ({formatAmount(daily_trends.length)})
-                        </button>
+                    <div className="flex flex-wrap gap-2 lg:shrink-0" role="group" aria-label="Tampilan hari laporan">
                         <button
                             type="button"
                             aria-pressed={onlyActiveDays}
-                            onClick={() => setOnlyActiveDays(true)}
+                            onClick={() => setDayViewOverride('active')}
                             className={cn(
                                 'inline-flex min-h-[44px] items-center rounded-full border px-3.5 py-1.5 text-xs font-bold transition-colors',
                                 onlyActiveDays
@@ -606,6 +608,19 @@ export default function ReportsIndex({ report }: ReportsIndexProps) {
                             )}
                         >
                             Hanya Hari Bertransaksi ({formatAmount(activeDaysCount)})
+                        </button>
+                        <button
+                            type="button"
+                            aria-pressed={!onlyActiveDays}
+                            onClick={() => setDayViewOverride('all')}
+                            className={cn(
+                                'inline-flex min-h-[44px] items-center rounded-full border px-3.5 py-1.5 text-xs font-bold transition-colors',
+                                !onlyActiveDays
+                                    ? 'border-[#143326] bg-[#143326] text-white'
+                                    : 'border-[#858E87] bg-white text-[#1E2420] hover:bg-[#F1EDE6]',
+                            )}
+                        >
+                            Semua Hari ({formatAmount(daily_trends.length)})
                         </button>
                     </div>
                 </div>
@@ -651,9 +666,23 @@ export default function ReportsIndex({ report }: ReportsIndexProps) {
                         tableAriaLabel="Rincian arus transaksi harian"
                         emptyState={
                             <div className="px-6 py-10 text-center text-sm text-[#525B54]">
-                                {onlyActiveDays
-                                    ? 'Tidak ada hari dengan transaksi pesanan atau kas pada periode ini.'
-                                    : 'Tidak ada data tanggal pada periode yang dipilih.'}
+                                <p>
+                                    {onlyActiveDays
+                                        ? 'Tidak ada hari dengan transaksi pesanan atau kas pada periode ini.'
+                                        : 'Tidak ada data tanggal pada periode yang dipilih.'}
+                                </p>
+                                {onlyActiveDays && daily_trends.length > 0 && (
+                                    <div className="mt-3">
+                                        <Button
+                                            type="button"
+                                            variant="secondary"
+                                            size="sm"
+                                            onClick={() => setDayViewOverride('all')}
+                                        >
+                                            Tampilkan Semua {formatAmount(daily_trends.length)} Hari
+                                        </Button>
+                                    </div>
+                                )}
                             </div>
                         }
                         renderMobileCard={(day) => {

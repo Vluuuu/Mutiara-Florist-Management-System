@@ -516,4 +516,128 @@ class Phase9Sprint3FinancialTest extends TestCase
             @unlink($tempFile);
         }
     }
+
+    public function test_payment_history_literal_search_handles_wildcards_escape_char_and_backslash(): void
+    {
+        $today = now('Asia/Jakarta')->toDateString();
+
+        $custSpecial = Customer::query()->create(['name' => 'Toko 100%_Bunga!Cabang\\A']);
+        $custNormal = Customer::query()->create(['name' => 'Toko Bunga Biasa']);
+
+        $orderSpecial = $this->orderService->create([
+            'customer_id' => $custSpecial->id,
+            'order_date' => $today,
+            'items' => [[
+                'flower_type' => 'Buket Spesial',
+                'recipient' => 'Budi',
+                'sender_name' => 'Sari',
+                'delivery_date' => $today,
+                'delivery_location' => 'Jakarta',
+                'quantity' => 1,
+                'unit_price' => 500000,
+                'shipping_mode' => 'INCLUDED',
+                'shipping_fee' => 0,
+            ]],
+        ], $this->admin->id);
+
+        $orderNormal = $this->orderService->create([
+            'customer_id' => $custNormal->id,
+            'order_date' => $today,
+            'items' => [[
+                'flower_type' => 'Buket Biasa',
+                'recipient' => 'Andi',
+                'sender_name' => 'Rina',
+                'delivery_date' => $today,
+                'delivery_location' => 'Depok',
+                'quantity' => 1,
+                'unit_price' => 300000,
+                'shipping_mode' => 'INCLUDED',
+                'shipping_fee' => 0,
+            ]],
+        ], $this->admin->id);
+
+        $specialPay = $this->paymentService->record($orderSpecial, [
+            'payment_date' => $today,
+            'amount' => 200000,
+            'method' => 'TRANSFER',
+            'reference' => 'REF_99%!A\\1',
+            'idempotency_key' => (string) Str::uuid(),
+        ], $this->admin->id);
+
+        $this->paymentService->record($orderNormal, [
+            'payment_date' => $today,
+            'amount' => 100000,
+            'method' => 'CASH',
+            'reference' => 'REF-NORMAL-001',
+            'idempotency_key' => (string) Str::uuid(),
+        ], $this->admin->id);
+
+        // Literal %, _, !, \ search in both customer name & reference must return ONLY $specialPay
+        foreach (['100%', '_Bunga', '!Cabang', 'Cabang\\A', 'REF_99%', '%!A\\1'] as $needle) {
+            $this->actingAs($this->admin)
+                ->get(route('ui-payments.index', ['q' => $needle]))
+                ->assertOk()
+                ->assertInertia(fn (Assert $page) => $page
+                    ->has('paymentHistory.data', 1)
+                    ->where('paymentHistory.data.0.id', $specialPay->id)
+                );
+        }
+    }
+
+    public function test_reports_index_supports_custom_range_longer_than_thirty_days_with_complete_summary_and_capped_trends(): void
+    {
+        $cust = Customer::query()->create(['name' => 'PT Panjang Periode']);
+        $cat = new ExpenseCategory();
+        $cat->forceFill(['name' => 'Operasional', 'is_active' => true])->save();
+
+        // Day inside first month of 123-day range (beyond 92-day trend window, but MUST be in summary!)
+        $orderEarly = $this->orderService->create([
+            'customer_id' => $cust->id,
+            'order_date' => '2026-07-05',
+            'items' => [[
+                'flower_type' => 'Papan Bunga',
+                'recipient' => 'Rektor',
+                'sender_name' => 'PT Panjang',
+                'delivery_date' => '2026-07-05',
+                'delivery_location' => 'Jakarta',
+                'quantity' => 1,
+                'unit_price' => 1000000,
+                'shipping_mode' => 'INCLUDED',
+                'shipping_fee' => 0,
+            ]],
+        ], $this->admin->id);
+
+        $this->paymentService->record($orderEarly, [
+            'payment_date' => '2026-07-05',
+            'amount' => 400000,
+            'method' => 'TRANSFER',
+            'idempotency_key' => (string) Str::uuid(),
+        ], $this->admin->id);
+
+        $this->expenseService->record([
+            'expense_category_id' => $cat->id,
+            'expense_date' => '2026-10-15',
+            'amount' => 120000,
+            'description' => 'Pembelian bahan di bulan Oktober',
+            'idempotency_key' => (string) Str::uuid(),
+        ], $this->admin->id);
+
+        $resp = $this->actingAs($this->admin)
+            ->get(route('ui-reports.index', [
+                'preset' => 'custom',
+                'from' => '2026-07-01',
+                'to' => '2026-10-31',
+            ]))
+            ->assertOk();
+
+        $report = $resp->viewData('page')['props']['report'];
+        $this->assertSame('2026-07-01', $report['period']['from']);
+        $this->assertSame('2026-10-31', $report['period']['to']);
+        $this->assertSame(1000000, $report['summary']['total_billed']);
+        $this->assertSame(400000, $report['summary']['cash_in']);
+        $this->assertSame(120000, $report['summary']['cash_out']);
+        $this->assertSame(280000, $report['summary']['cash_diff']);
+        $this->assertSame(600000, $report['summary']['current_outstanding']);
+        $this->assertCount(92, $report['daily_trends']);
+    }
 }
