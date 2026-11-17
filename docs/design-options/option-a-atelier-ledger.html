@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Opsi A: Atelier Ledger (Mutiara Florist)</title>
+  <style>
+    :root {
+      --bg-canvas: #FAF7F2;
+      --bg-rail: #F3EFE6;
+      --bg-surface: #FFFFFF;
+      --bg-subtle: #F7F4EC;
+      --ink-main: #1C1917;
+      --ink-muted: #57534E;
+      --primary: #163829;
+      --primary-hover: #0F291E;
+      --accent: #B44D2B;
+      --accent-soft: #FFF7ED;
+      --accent-ink: #9A3412;
+      --border-soft: #D6D0C4;
+      --border-input: #78716C;
+      --status-paid-bg: #DCFCE7;
+      --status-paid-ink: #166534;
+      --status-warn-bg: #FEF3C7;
+      --status-warn-ink: #92400E;
+      --status-ready-bg: #DBEAFE;
+      --status-ready-ink: #1E40AF;
+      --font-serif: Georgia, 'Times New Roman', serif;
+      --font-sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg-canvas);
+      color: var(--ink-main);
+      font-family: var(--font-sans);
+      font-size: 15px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Base pointer affordance & focus visibility (antislop R-32, R-39) */
+    a[href], button, select, summary, label[for], [role="button"] {
+      cursor: pointer;
+    }
+    :disabled, [aria-disabled="true"] {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+    :focus-visible {
+      outline: 3px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .tabular { font-variant-numeric: tabular-nums; }
+
+    /* Skip link */
+    .skip-link {
+      position: absolute;
+      left: -9999px;
+      top: 0;
+      background: var(--primary);
+      color: #fff;
+      padding: 10px 16px;
+      z-index: 100;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .skip-link:focus { left: 12px; top: 12px; border-radius: var(--radius-sm); }
+
+    /* App Shell */
+    .shell {
+      display: flex;
+      min-height: 100dvh;
+    }
+
+    /* Left Rail */
+    .sidebar {
+      width: 236px;
+      flex-shrink: 0;
+      background: var(--bg-rail);
+      border-right: 1px solid var(--border-soft);
+      display: flex;
+      flex-direction: column;
+      position: sticky;
+      top: 0;
+      height: 100dvh;
+    }
+
+    .brand {
+      padding: 24px 20px 18px;
+      border-bottom: 1px solid var(--border-soft);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-mark {
+      width: 38px;
+      height: 38px;
+      border-radius: var(--radius-md);
+      background: var(--primary);
+      color: #FAF7F2;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+    .brand-title {
+      font-family: var(--font-serif);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--primary);
+      margin: 0;
+      line-height: 1.2;
+    }
+    .brand-sub {
+      font-size: 12px;
+      color: var(--ink-muted);
+      margin: 2px 0 0;
+    }
+
+    .nav-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 12px;
+    }
+    .nav-group-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ink-muted);
+      padding: 8px 10px 4px;
+      margin: 0;
+    }
+    .nav-list {
+      list-style: none;
+      margin: 0 0 14px;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .nav-btn {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      min-height: 42px;
+      border: 0;
+      background: transparent;
+      border-radius: var(--radius-sm);
+      color: var(--ink-main);
+      font-size: 14px;
+      font-weight: 500;
+      text-align: left;
+      transition: background-color 120ms ease;
+    }
+    .nav-btn:hover { background: rgba(22, 56, 41, 0.08); }
+    .nav-btn[aria-current="page"] {
+      background: var(--primary);
+      color: #FFFFFF;
+      font-weight: 600;
+    }
+    .nav-count {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 1px 7px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent-ink);
+    }
+    .nav-btn[aria-current="page"] .nav-count {
+      background: #FFFFFF;
+      color: var(--primary);
+    }
+
+    .rail-footer {
+      border-top: 1px solid var(--border-soft);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .operator-name { font-size: 13px; font-weight: 600; color: var(--ink-main); margin: 0; }
+    .operator-role { font-size: 12px; color: var(--ink-muted); margin: 0; }
+    .btn-logout {
+      border: 1px solid var(--border-input);
+      background: var(--bg-surface);
+      color: var(--ink-main);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      min-height: 38px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .btn-logout:hover { background: var(--bg-subtle); }
+
+    /* Mobile Header & Bottom Bar */
+    .mobile-topbar {
+      display: none;
+      position: sticky;
+      top: 0;
+      z-index: 25;
+      background: var(--bg-rail);
+      border-bottom: 1px solid var(--border-soft);
+      padding: 10px 16px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .mobile-menu-trigger {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 44px;
+      padding: 0 12px;
+      border: 1px solid var(--border-input);
+      border-radius: var(--radius-sm);
+      background: var(--bg-surface);
+      color: var(--ink-main);
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .mobile-bottom-bar {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 25;
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border-soft);
+      padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+    }
+    .mobile-tab {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      border: 0;
+      background: transparent;
+      border-radius: var(--radius-sm);
+      color: var(--ink-muted);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px;
+    }
+    .mobile-tab[aria-current="page"] {
+      background: var(--bg-rail);
+      color: var(--primary);
+    }
+
+    /* Main Canvas */
+    .main-wrap {
+      flex: 1;
+      min-width: 0;
+      padding: 28px 36px 48px;
+      max-width: 1220px;
+    }
+
+    /* Prototype Switcher Strip (clearly marked preview switcher) */
+    .preview-strip {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 12px;
+      margin-bottom: 20px;
+      border: 1px dashed var(--border-input);
+      border-radius: var(--radius-sm);
+      background: var(--bg-subtle);
+      font-size: 12px;
+      color: var(--ink-muted);
+    }
+    .preview-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+    .preview-tab {
+      min-height: 36px;
+      padding: 6px 12px;
+      border: 1px solid var(--border-input);
+      background: var(--bg-surface);
+      color: var(--ink-main);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .preview-tab.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+
+    /* Page Header */
+    .page-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--border-soft);
+      margin-bottom: 24px;
+    }
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(24px, 2.6vw, 32px);
+      line-height: 1.18;
+      margin: 0;
+      color: var(--primary);
+      font-weight: 700;
+    }
+    .page-sub {
+      margin: 6px 0 0;
+      color: var(--ink-muted);
+      font-size: 14px;
+    }
+    .head-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 44px;
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 600;
+      border: 1px solid transparent;
+      text-decoration: none;
+      transition: background-color 120ms ease;
+    }
+    .btn-primary { background: var(--primary); color: #FFFFFF; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-accent { background: var(--accent); color: #FFFFFF; }
+    .btn-accent:hover { background: #963E21; }
+    .btn-secondary {
+      background: var(--bg-surface);
+      color: var(--ink-main);
+      border-color: var(--border-input);
+    }
+    .btn-secondary:hover { background: var(--bg-subtle); }
+    .btn-sm { min-height: 38px; padding: 7px 12px; font-size: 13px; }
+
+    /* Cards & Ledger Surfaces */
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-md);
+      padding: 20px;
+    }
+    .card-parchment {
+      background: var(--bg-rail);
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-md);
+      padding: 20px;
+    }
+    .section-title {
+      font-family: var(--font-serif);
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--ink-main);
+      margin: 0 0 4px;
+    }
+    .section-desc { font-size: 13px; color: var(--ink-muted); margin: 0 0 16px; }
+
+    /* Dashboard Asymmetric Grid */
+    .dash-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.45fr) minmax(300px, 1fr);
+      gap: 24px;
+      align-items: start;
+    }
+
+    .agenda-list { display: flex; flex-direction: column; gap: 12px; }
+    .agenda-item {
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      background: var(--bg-surface);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+    }
+    .agenda-item.urgent {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+    .agenda-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--ink-muted);
+      margin-bottom: 4px;
+    }
+    .agenda-flower { font-size: 16px; font-weight: 700; color: var(--ink-main); margin: 0 0 4px; }
+    .agenda-addr { font-size: 13px; color: var(--ink-muted); margin: 0; }
+
+    /* Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 10px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.4;
+    }
+    .badge-paid { background: var(--status-paid-bg); color: var(--status-paid-ink); }
+    .badge-warn { background: var(--status-warn-bg); color: var(--status-warn-ink); }
+    .badge-ready { background: var(--status-ready-bg); color: var(--status-ready-ink); }
+    .badge-terracotta { background: var(--accent-soft); color: var(--accent-ink); border: 1px solid #FDBA74; }
+    .badge-neutral { background: #E7E5E4; color: #1C1917; }
+
+    /* Ledger Metrics */
+    .ledger-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border-soft);
+    }
+    .ledger-row:last-child { border-bottom: 0; }
+    .ledger-label { font-size: 14px; color: var(--ink-muted); }
+    .ledger-val { font-size: 20px; font-weight: 700; color: var(--primary); }
+    .ledger-val.accent { color: var(--accent-ink); }
+    .ledger-substats {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border-soft);
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .substat-k { font-size: 12px; color: var(--ink-muted); margin: 0; }
+    .substat-v { font-size: 15px; font-weight: 700; color: var(--ink-main); margin: 2px 0 0; }
+
+    /* Form Two-Column Workspace */
+    .workspace-2col {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 340px;
+      gap: 24px;
+      align-items: start;
+    }
+    .sticky-panel {
+      position: sticky;
+      top: 24px;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .col-span-2 { grid-column: span 2; }
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ink-main);
+      margin-bottom: 6px;
+    }
+    .req { color: var(--accent-ink); }
+    input[type="text"], input[type="date"], input[type="number"], select, textarea {
+      width: 100%;
+      min-height: 44px;
+      padding: 10px 12px;
+      border: 1px solid var(--border-input);
+      border-radius: var(--radius-sm);
+      background: var(--bg-surface);
+      color: var(--ink-main);
+      font-family: inherit;
+      font-size: 14px;
+    }
+    textarea { min-height: 76px; resize: vertical; }
+    .field-hint { font-size: 12px; color: var(--ink-muted); margin: 5px 0 0; }
+    .field-error {
+      font-size: 12px;
+      color: #991B1B;
+      font-weight: 600;
+      margin: 5px 0 0;
+    }
+    .alert-error {
+      background: #FEF2F2;
+      border: 1px solid #FCA5A5;
+      color: #991B1B;
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      margin-bottom: 16px;
+      font-size: 13px;
+    }
+    .alert-success {
+      background: #ECFDF5;
+      border: 1px solid #6EE7B7;
+      color: #166534;
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      margin-bottom: 16px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .shipping-toggle {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .toggle-opt {
+      min-height: 44px;
+      border: 1px solid var(--border-input);
+      background: var(--bg-surface);
+      color: var(--ink-main);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 10px;
+    }
+    .toggle-opt[aria-pressed="true"] {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #FFFFFF;
+    }
+
+    /* Order Detail Steps */
+    .step-track {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin: 14px 0;
+    }
+    .step-cell {
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-soft);
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+      color: var(--ink-muted);
+      background: var(--bg-subtle);
+    }
+    .step-cell.done {
+      background: var(--status-paid-bg);
+      border-color: #86EFAC;
+      color: var(--status-paid-ink);
+    }
+    .step-cell.current {
+      background: var(--status-ready-bg);
+      border-color: #93C5FD;
+      color: var(--status-ready-ink);
+    }
+
+    /* Accessible Modal */
+    dialog.ledger-modal {
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      max-width: 460px;
+      width: calc(100% - 32px);
+      background: var(--bg-surface);
+      color: var(--ink-main);
+      box-shadow: 0 20px 45px rgba(28, 25, 23, 0.22);
+    }
+    dialog.ledger-modal::backdrop {
+      background: rgba(28, 25, 23, 0.55);
+    }
+
+    /* Mobile Drawer */
+    .drawer-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      background: rgba(28, 25, 23, 0.5);
+      display: none;
+    }
+    .drawer-backdrop.open { display: block; }
+    .drawer-panel {
+      position: fixed;
+      inset: 0 auto 0 0;
+      width: min(300px, 86vw);
+      height: 100dvh;
+      background: var(--bg-rail);
+      border-right: 1px solid var(--border-soft);
+      display: flex;
+      flex-direction: column;
+      z-index: 41;
+    }
+
+    .view-panel { display: none; }
+    .view-panel.active { display: block; }
+    .hidden { display: none !important; }
+
+    /* Responsive Breakpoints (content-driven: 1040px & 720px) */
+    @media (max-width: 1040px) {
+      .dash-grid, .workspace-2col {
+        grid-template-columns: 1fr;
+      }
+      .sticky-panel { position: static; }
+    }
+
+    @media (max-width: 820px) {
+      .sidebar { display: none; }
+      .mobile-topbar { display: flex; }
+      .mobile-bottom-bar { display: grid; }
+      .main-wrap { padding: 18px 16px 88px; }
+      .form-grid { grid-template-columns: 1fr; }
+      .col-span-2 { grid-column: span 1; }
+      .agenda-item { grid-template-columns: 1fr; }
+      .step-track { grid-template-columns: repeat(2, 1fr); }
+      .btn-sm { min-height: 44px; padding: 10px 14px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition: none !important; animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Langsung ke konten utama</a>
+
+  <!-- Mobile Topbar -->
+  <header class="mobile-topbar">
+    <button type="button" class="mobile-menu-trigger" id="openDrawerBtn" aria-expanded="false" aria-controls="mobileDrawer">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      <span>Menu</span>
+    </button>
+    <span style="font-family: var(--font-serif); font-weight: 700; color: var(--primary); font-size: 16px;">Mutiara Florist</span>
+    <button type="button" class="btn btn-primary btn-sm" data-switch="order-create">+ Pesanan</button>
+  </header>
+
+  <!-- Mobile Slide-Over Drawer -->
+  <div class="drawer-backdrop" id="drawerBackdrop" role="dialog" aria-modal="true" aria-labelledby="drawerTitle">
+    <div class="drawer-panel">
+      <div class="brand" style="justify-content: space-between;">
+        <div>
+          <p class="brand-title" id="drawerTitle">Mutiara Florist</p>
+          <p class="brand-sub">Buku Pesanan Toko</p>
+        </div>
+        <button type="button" id="closeDrawerBtn" aria-label="Tutup menu" class="btn btn-secondary btn-sm" style="min-width:44px;min-height:44px;">✕</button>
+      </div>
+      <nav class="nav-scroll" aria-label="Navigasi seluler">
+        <p class="nav-group-label">Operasional Harian</p>
+        <ul class="nav-list">
+          <li><button type="button" class="nav-btn" data-switch="dashboard" aria-current="page"><span>Hari Ini</span></button></li>
+          <li><button type="button" class="nav-btn" data-switch="order-create"><span>Buat Pesanan</span></button></li>
+          <li><button type="button" class="nav-btn" data-switch="order-detail"><span>Detail Pesanan</span><span class="nav-count">3</span></button></li>
+        </ul>
+        <p class="nav-group-label">Keuangan &amp; Laporan</p>
+        <ul class="nav-list">
+          <li><button type="button" class="nav-btn" onclick="alert('Menuju halaman Piutang & Pembayaran')"><span>Piutang Terbuka</span><span class="nav-count">10</span></button></li>
+          <li><button type="button" class="nav-btn" onclick="alert('Menuju halaman Pengeluaran')"><span>Pengeluaran Kas</span></button></li>
+          <li><button type="button" class="nav-btn" onclick="alert('Menuju halaman Laporan Bulanan')"><span>Laporan Bulanan</span></button></li>
+        </ul>
+      </nav>
+      <div class="rail-footer">
+        <div>
+          <p class="operator-name">Rina Operator</p>
+          <p class="operator-role">Admin Toko</p>
+        </div>
+        <button type="button" class="btn-logout" onclick="alert('Keluar dari sesi (simulasi pratinjau)')">Keluar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="shell">
+    <!-- Desktop Sidebar -->
+    <aside class="sidebar" aria-label="Navigasi utama">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21v-8m0 0c-3.5 0-6-2.5-6-6 2.5 0 4.8 1.2 6 3.5C13.2 8.2 15.5 7 18 7c0 3.5-2.5 6-6 6Z"/><path d="M12 13c0-3 2-5.5 5-6.5M12 13c0-3-2-5.5-5-6.5"/></svg>
+        </div>
+        <div>
+          <p class="brand-title">Mutiara Florist</p>
+          <p class="brand-sub">Buku Pesanan &amp; Kas</p>
+        </div>
+      </div>
+
+      <nav class="nav-scroll">
+        <p class="nav-group-label">Operasional Harian</p>
+        <ul class="nav-list">
+          <li><button type="button" class="nav-btn" data-switch="dashboard" aria-current="page"><span>Ringkasan Hari Ini</span></button></li>
+          <li><button type="button" class="nav-btn" data-switch="order-create"><span>Buat Pesanan Baru</span></button></li>
+          <li><button type="button" class="nav-btn" data-switch="order-detail"><span>Detail Pesanan Contoh</span><span class="nav-count">2</span></button></li>
+        </ul>
+
+        <p class="nav-group-label">Pembukuan Toko</p>
+        <ul class="nav-list">
+          <li><button type="button" class="nav-btn" onclick="alert('Menuju halaman Piutang & Pembayaran')"><span>Piutang Pelanggan</span><span class="nav-count">10</span></button></li>
+          <li><button type="button" class="nav-btn" onclick="alert('Menuju halaman Pengeluaran')"><span>Pengeluaran</span></button></li>
+          <li><button type="button" class="nav-btn" onclick="alert('Menuju halaman Laporan & Excel')"><span>Laporan &amp; Excel</span></button></li>
+        </ul>
+      </nav>
+
+      <div class="rail-footer">
+        <div>
+          <p class="operator-name">Rina Operator</p>
+          <p class="operator-role">Sesi Aktif</p>
+        </div>
+        <button type="button" class="btn-logout" onclick="alert('Keluar dari sesi (simulasi pratinjau)')">Keluar</button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-wrap" id="main-content" tabindex="-1">
+      <div class="preview-strip">
+        <span><strong>Opsi A (Atelier Ledger)</strong> | Data sintetis simulasi Phase 7</span>
+        <div class="preview-tabs" role="tablist" aria-label="Pilih layar pratinjau">
+          <button type="button" role="tab" aria-selected="true" class="preview-tab active" data-switch="dashboard">1. Dashboard</button>
+          <button type="button" role="tab" aria-selected="false" class="preview-tab" data-switch="order-create">2. Buat Pesanan</button>
+          <button type="button" role="tab" aria-selected="false" class="preview-tab" data-switch="order-detail">3. Detail Pesanan</button>
+        </div>
+      </div>
+
+      <!-- VIEW 1: DASHBOARD -->
+      <section id="view-dashboard" class="view-panel active" aria-labelledby="h1-dash">
+        <div class="page-head">
+          <div>
+            <h1 id="h1-dash">Ringkasan Operasional, 17 Nov 2026</h1>
+            <p class="page-sub">Jadwal pengiriman aktif dan posisi kas kumulatif sejak awal pencatatan.</p>
+          </div>
+          <div class="head-actions">
+            <button type="button" class="btn btn-secondary" onclick="alert('Membuka form Catat Pengeluaran')">+ Catat Pengeluaran</button>
+            <button type="button" class="btn btn-primary" data-switch="order-create">+ Buat Pesanan</button>
+          </div>
+        </div>
+
+        <div class="dash-grid">
+          <!-- Left: Agenda Kirim (Main Focal Point) -->
+          <div class="card">
+            <h2 class="section-title">Agenda Pengiriman Hari Ini &amp; Besok</h2>
+            <p class="section-desc">Urutan bunga yang harus segera dirangkai atau dikirim ke alamat tujuan.</p>
+
+            <div class="agenda-list">
+              <article class="agenda-item urgent">
+                <div>
+                  <div class="agenda-meta">
+                    <span class="badge badge-terracotta">Hari ini, 17/11</span>
+                    <span class="badge badge-warn">Diproses</span>
+                    <span class="tabular">Kode #0YTWMZ</span>
+                  </div>
+                  <h3 class="agenda-flower">Bloom Box Pink Pastel (1 buah)</h3>
+                  <p class="agenda-addr">Untuk: <strong>Ayu Wulandari</strong> · Apartemen Taman Rasuna Tower 8 Unit 12B</p>
+                </div>
+                <button type="button" class="btn btn-accent btn-sm" data-switch="order-detail">Buka Pesanan</button>
+              </article>
+
+              <article class="agenda-item">
+                <div>
+                  <div class="agenda-meta">
+                    <span class="badge badge-neutral">Hari ini, 17/11</span>
+                    <span class="badge badge-ready">Siap kirim</span>
+                    <span class="tabular">Kode #MBQVB8</span>
+                  </div>
+                  <h3 class="agenda-flower">Rangkaian Bunga Imlek / Hampers (2 buah)</h3>
+                  <p class="agenda-addr">Untuk: <strong>Keluarga Koh Budi</strong> · Pantai Indah Kapuk Elang Laut Blok D</p>
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm" data-switch="order-detail">Konfirmasi Kirim</button>
+              </article>
+
+              <article class="agenda-item">
+                <div>
+                  <div class="agenda-meta">
+                    <span class="badge badge-neutral">Besok, 18/11</span>
+                    <span class="badge badge-neutral">Baru</span>
+                    <span class="tabular">Kode #BC8Y8P</span>
+                  </div>
+                  <h3 class="agenda-flower">Papan Bunga Congratulation (2 buah)</h3>
+                  <p class="agenda-addr">Untuk: <strong>PT Anugerah Sejahtera</strong> · Kawasan Industri Jababeka Blok C-4</p>
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm" data-switch="order-detail">Lihat Detail</button>
+              </article>
+            </div>
+          </div>
+
+          <!-- Right: Financial Ledger Summary -->
+          <aside class="card-parchment" aria-label="Ringkasan kas dan tagihan">
+            <h2 class="section-title">Buku Kas &amp; Piutang</h2>
+            <p class="section-desc">Uang masuk dan nilai tagihan dihitung terpisah.</p>
+
+            <div class="ledger-row">
+              <span class="ledger-label">Uang diterima (lunas &amp; DP)</span>
+              <span class="ledger-val tabular">Rp8.150.000</span>
+            </div>
+            <div class="ledger-row">
+              <span class="ledger-label">Piutang berjalan (10 pesanan)</span>
+              <span class="ledger-val accent tabular">Rp7.270.000</span>
+            </div>
+            <div class="ledger-row">
+              <div>
+                <span class="ledger-label" style="display:block;">Selisih kas sederhana</span>
+                <span style="font-size:12px; color: var(--ink-muted);">Bukan laba bersih akuntansi</span>
+              </div>
+              <span class="ledger-val tabular">Rp5.310.000</span>
+            </div>
+
+            <div class="ledger-substats">
+              <div>
+                <p class="substat-k">Total pesanan</p>
+                <p class="substat-v tabular">13</p>
+              </div>
+              <div>
+                <p class="substat-k">Nilai pesanan</p>
+                <p class="substat-v tabular">Rp15.420.000</p>
+              </div>
+              <div>
+                <p class="substat-k">Pengeluaran</p>
+                <p class="substat-v tabular">Rp2.840.000</p>
+              </div>
+            </div>
+
+            <div style="margin-top: 16px;">
+              <button type="button" class="btn btn-secondary" style="width:100%;" data-switch="order-detail">Kelola Piutang Terbuka</button>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- VIEW 2: ORDER CREATE -->
+      <section id="view-order-create" class="view-panel" aria-labelledby="h1-create">
+        <div class="page-head">
+          <div>
+            <h1 id="h1-create">Buat Pesanan Bunga</h1>
+            <p class="page-sub">Catat pemesan, rincian karangan, jadwal kirim, dan ongkir per item.</p>
+          </div>
+          <div class="head-actions">
+            <button type="button" class="btn btn-secondary" data-switch="dashboard">Kembali ke Ringkasan</button>
+          </div>
+        </div>
+
+        <div id="createAlert" class="alert-error hidden" role="alert">
+          Periksa kembali isian berikut: <strong>Pelanggan</strong> dan <strong>Jenis bunga</strong> wajib diisi.
+        </div>
+
+        <form id="createOrderForm" novalidate class="workspace-2col">
+          <div style="display:flex; flex-direction:column; gap:20px;">
+            <div class="card">
+              <h2 class="section-title">1. Informasi Pemesan &amp; Tanggal</h2>
+              <div class="form-grid" style="margin-top:14px;">
+                <div>
+                  <label for="custSelect">Pelanggan <span class="req">*</span></label>
+                  <select id="custSelect" required>
+                    <option value="">Pilih atau cari pelanggan...</option>
+                    <option value="1">Ibu Sari Wijaya (081234567890)</option>
+                    <option value="2">PT Sinar Harapan Nusantara Tbk (0215550192)</option>
+                    <option value="3">Dewi Lestari (tanpa nomor telepon)</option>
+                  </select>
+                  <div style="margin-top:8px;">
+                    <button type="button" class="btn btn-secondary btn-sm" id="openQuickCustBtn">+ Pelanggan Baru (tanpa hapus form)</button>
+                  </div>
+                </div>
+                <div>
+                  <label for="orderDate">Tanggal pemesanan <span class="req">*</span></label>
+                  <input id="orderDate" type="date" value="2026-11-17" required />
+                </div>
+                <div class="col-span-2">
+                  <label for="orderNotes">Catatan umum pesanan (opsional)</label>
+                  <textarea id="orderNotes" placeholder="Contoh: minta foto hasil rangkaian sebelum dikirim"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px;">
+                <div>
+                  <h2 class="section-title">2. Bunga 1</h2>
+                  <p class="section-desc" style="margin:0;">Satu baris untuk satu jadwal dan lokasi pengiriman.</p>
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="alert('Item diduplikat untuk jadwal/alamat lain (simulasi)')">Duplikat Bunga</button>
+              </div>
+
+              <div class="form-grid">
+                <div>
+                  <label for="flowerType">Jenis bunga <span class="req">*</span></label>
+                  <input id="flowerType" type="text" placeholder="Contoh: Papan ucapan, Standing flower" value="Standing Flower Anggrek Putih" required />
+                </div>
+                <div>
+                  <label for="deliveryDate">Tanggal kirim <span class="req">*</span></label>
+                  <input id="deliveryDate" type="date" value="2026-11-18" required />
+                </div>
+                <div>
+                  <label for="recipient">Untuk / penerima <span class="req">*</span></label>
+                  <input id="recipient" type="text" value="Direktur PT Mitra Jaya" required />
+                </div>
+                <div>
+                  <label for="senderName">Dari / pengirim ucapan <span class="req">*</span></label>
+                  <input id="senderName" type="text" value="PT Sinar Harapan Nusantara Tbk" required />
+                </div>
+                <div class="col-span-2">
+                  <label for="deliveryLoc">Lokasi pengiriman <span class="req">*</span></label>
+                  <textarea id="deliveryLoc" required>Menara Imperium Lt. 12, Jl. HR Rasuna Said, Jakarta Selatan</textarea>
+                </div>
+                <div>
+                  <label for="qtyInput">Kuantitas (buah) <span class="req">*</span></label>
+                  <input id="qtyInput" type="number" min="1" value="2" required class="tabular" />
+                </div>
+                <div>
+                  <label for="priceInput">Harga satuan (Rp) <span class="req">*</span></label>
+                  <input id="priceInput" type="text" inputmode="numeric" value="650.000" required class="tabular" />
+                  <p class="field-hint">Otomatis diformat ribuan saat diketik.</p>
+                </div>
+
+                <div class="col-span-2">
+                  <label>Mode ongkos kirim <span class="req">*</span></label>
+                  <div class="shipping-toggle" role="group" aria-label="Pilih mode ongkos kirim">
+                    <button type="button" class="toggle-opt" id="shipIncludedBtn" aria-pressed="false">Sudah termasuk harga bunga</button>
+                    <button type="button" class="toggle-opt" id="shipSeparateBtn" aria-pressed="true">Ditagihkan terpisah</button>
+                  </div>
+                </div>
+
+                <div class="col-span-2" id="shipFeeWrap">
+                  <label for="shipFeeInput">Ongkir tambahan untuk pengiriman ini (Rp) <span class="req">*</span></label>
+                  <input id="shipFeeInput" type="text" inputmode="numeric" value="75.000" class="tabular" />
+                  <p class="field-hint">Dihitung satu kali per pengiriman, tidak dikali kuantitas.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sticky Summary -->
+          <aside class="card-parchment sticky-panel" aria-label="Ringkasan estimasi tagihan">
+            <h2 class="section-title">Ringkasan Tagihan</h2>
+            <p class="section-desc">Total diverifikasi ulang oleh server saat disimpan.</p>
+
+            <div class="ledger-row">
+              <span class="ledger-label">Nilai bunga (1 item)</span>
+              <span class="substat-v tabular" id="sumFlower">Rp1.300.000</span>
+            </div>
+            <div class="ledger-row">
+              <span class="ledger-label">Ongkir terpisah</span>
+              <span class="substat-v tabular" id="sumShip">Rp75.000</span>
+            </div>
+            <div class="ledger-row">
+              <span class="ledger-label" style="font-weight:700; color:var(--ink-main);">Total tagihan</span>
+              <span class="ledger-val tabular" id="sumTotal">Rp1.375.000</span>
+            </div>
+
+            <div style="margin-top:18px; display:flex; flex-direction:column; gap:10px;">
+              <button type="submit" class="btn btn-primary" style="width:100%;">Simpan Pesanan</button>
+              <button type="button" class="btn btn-secondary" style="width:100%;" data-switch="dashboard">Batal</button>
+            </div>
+          </aside>
+        </form>
+      </section>
+
+      <!-- VIEW 3: ORDER DETAIL -->
+      <section id="view-order-detail" class="view-panel" aria-labelledby="h1-detail">
+        <div id="detailSuccess" class="alert-success hidden" role="status">
+          Status item berhasil diperbarui.
+        </div>
+
+        <div class="page-head">
+          <div>
+            <h1 id="h1-detail" class="tabular">Pesanan MF-261117 · #XY7ETE</h1>
+            <p class="page-sub">
+              Pemesan: <a href="#pelanggan" style="color:var(--primary); font-weight:600;" onclick="event.preventDefault(); alert('Menuju profil PT Sinar Harapan Nusantara Tbk')">PT Sinar Harapan Nusantara Tbk</a> (0215550192) · Tanggal pesan 08/11/2026
+            </p>
+          </div>
+          <div class="head-actions">
+            <button type="button" class="btn btn-secondary" data-switch="order-create">Edit Pesanan</button>
+            <button type="button" class="btn btn-accent" id="openPayModalBtn">+ Catat Pembayaran</button>
+          </div>
+        </div>
+
+        <div class="workspace-2col">
+          <!-- Left: Items -->
+          <div style="display:flex; flex-direction:column; gap:16px;">
+            <article class="card">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px;">
+                <div>
+                  <h2 class="section-title">Bunga 1: Standing Flower Anggrek Putih</h2>
+                  <p class="section-desc" style="margin-bottom:8px;">2 buah · Dikirim 09/11/2026 · Ongkir terpisah Rp75.000</p>
+                </div>
+                <span class="badge badge-paid">Terkirim</span>
+              </div>
+              <p style="margin:6px 0; font-size:14px;"><strong>Untuk:</strong> Direktur PT Mitra Jaya · <strong>Dari:</strong> Direksi PT Sinar Harapan Nusantara</p>
+              <p style="margin:6px 0; font-size:14px; color:var(--ink-muted);">Menara Imperium Lt. 12, Jl. HR Rasuna Said, Jakarta Selatan</p>
+              <div class="step-track" aria-label="Tahap pengerjaan bunga 1">
+                <span class="step-cell done">1. Baru</span>
+                <span class="step-cell done">2. Diproses</span>
+                <span class="step-cell done">3. Siap kirim</span>
+                <span class="step-cell done">4. Terkirim</span>
+              </div>
+              <p style="margin:0; font-size:13px; font-weight:600; color:var(--status-paid-ink);">Selesai dikirim ke penerima.</p>
+            </article>
+
+            <article class="card">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px;">
+                <div>
+                  <h2 class="section-title">Bunga 2: Papan Bunga Grand Opening</h2>
+                  <p class="section-desc" style="margin-bottom:8px;">1 buah · Dikirim 10/11/2026 · Ongkir terpisah Rp100.000</p>
+                </div>
+                <span class="badge badge-ready" id="item2Badge">Siap kirim</span>
+              </div>
+              <p style="margin:6px 0; font-size:14px;"><strong>Untuk:</strong> Cabang Baru PT Mitra Jaya · <strong>Dari:</strong> PT Sinar Harapan Nusantara Tbk</p>
+              <p style="margin:6px 0; font-size:14px; color:var(--ink-muted);">Ruko Boulevard Barat Blok LC 6 No. 12, Kelapa Gading</p>
+              <div class="step-track" aria-label="Tahap pengerjaan bunga 2">
+                <span class="step-cell done">1. Baru</span>
+                <span class="step-cell done">2. Diproses</span>
+                <span class="step-cell current" id="step3Cell">3. Siap kirim</span>
+                <span class="step-cell" id="step4Cell">4. Terkirim</span>
+              </div>
+              <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:12px; margin-top:10px;">
+                <span style="font-size:13px; color:var(--ink-muted);" id="item2NextText">Tahap berikutnya: konfirmasi saat kurir menyerahkan bunga.</span>
+                <button type="button" class="btn btn-primary btn-sm" id="openFulfillModalBtn">Konfirmasi Terkirim di Lokasi</button>
+              </div>
+            </article>
+          </div>
+
+          <!-- Right: Financial Ledger & Payment Timeline -->
+          <aside class="card-parchment sticky-panel" aria-label="Tagihan dan riwayat pembayaran">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <h2 class="section-title" style="margin:0;">Tagihan &amp; Pembayaran</h2>
+              <span class="badge badge-warn">Sebagian</span>
+            </div>
+
+            <div class="ledger-row">
+              <span class="ledger-label">Total tagihan (bunga + ongkir)</span>
+              <span class="substat-v tabular">Rp2.675.000</span>
+            </div>
+            <div class="ledger-row">
+              <span class="ledger-label">Sudah diterima</span>
+              <span class="substat-v tabular" style="color:var(--status-paid-ink);">Rp1.500.000</span>
+            </div>
+            <div class="ledger-row">
+              <span class="ledger-label" style="font-weight:700; color:var(--ink-main);">Sisa tagihan</span>
+              <span class="ledger-val accent tabular">Rp1.175.000</span>
+            </div>
+
+            <h3 style="font-size:14px; font-weight:700; margin:18px 0 10px;">Riwayat Pencatatan</h3>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+              <div class="card" style="padding:12px;">
+                <div style="display:flex; justify-content:space-between; gap:8px;">
+                  <strong class="tabular">Rp1.500.000</strong>
+                  <span class="badge badge-paid">Tercatat</span>
+                </div>
+                <p style="margin:4px 0 0; font-size:12px; color:var(--ink-muted);">08/11/2026 · Transfer bank (MANDIRI-4411)</p>
+              </div>
+              <div class="card" style="padding:12px; background:var(--bg-subtle);">
+                <div style="display:flex; justify-content:space-between; gap:8px;">
+                  <strong class="tabular" style="text-decoration:line-through; color:var(--ink-muted);">Rp1.000.000</strong>
+                  <span class="badge badge-neutral">Dibatalkan (Void)</span>
+                </div>
+                <p style="margin:4px 0 0; font-size:12px; color:var(--ink-muted);">Koreksi: Salah catat nominal DP seharusnya 1.500.000</p>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Mobile Bottom Navigation -->
+  <nav class="mobile-bottom-bar" aria-label="Pintasan utama seluler">
+    <button type="button" class="mobile-tab" data-switch="dashboard" aria-current="page">Hari Ini</button>
+    <button type="button" class="mobile-tab" data-switch="order-create">Buat Order</button>
+    <button type="button" class="mobile-tab" data-switch="order-detail">Detail</button>
+    <button type="button" class="mobile-tab" id="bottomMenuBtn">Menu</button>
+  </nav>
+
+  <!-- Native <dialog> Modals -->
+  <dialog id="quickCustModal" class="ledger-modal" aria-labelledby="quickCustTitle">
+    <h2 id="quickCustTitle" class="section-title">Tambah Pelanggan Baru</h2>
+    <p class="section-desc">Pelanggan langsung dipilih ke pesanan tanpa menghapus isian bunga.</p>
+    <div style="display:flex; flex-direction:column; gap:12px;">
+      <div>
+        <label for="qcName">Nama pelanggan <span class="req">*</span></label>
+        <input id="qcName" type="text" placeholder="Contoh: Ibu Rina Melati" />
+      </div>
+      <div>
+        <label for="qcPhone">Nomor telepon (opsional)</label>
+        <input id="qcPhone" type="text" placeholder="0812..." />
+      </div>
+    </div>
+    <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:18px;">
+      <button type="button" class="btn btn-secondary" onclick="document.getElementById('quickCustModal').close()">Batal</button>
+      <button type="button" class="btn btn-primary" id="saveQuickCustBtn">Simpan &amp; Pilih</button>
+    </div>
+  </dialog>
+
+  <dialog id="fulfillModal" class="ledger-modal" aria-labelledby="fulfillTitle">
+    <h2 id="fulfillTitle" class="section-title">Konfirmasi Bunga Terkirim</h2>
+    <p class="section-desc">Pastikan bunga sudah diterima di Ruko Boulevard Barat Blok LC 6 No. 12.</p>
+    <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:18px;">
+      <button type="button" class="btn btn-secondary" onclick="document.getElementById('fulfillModal').close()">Batal</button>
+      <button type="button" class="btn btn-primary" id="confirmFulfillBtn">Ya, Tandai Terkirim</button>
+    </div>
+  </dialog>
+
+  <dialog id="payModal" class="ledger-modal" aria-labelledby="payTitle">
+    <h2 id="payTitle" class="section-title">Catat Pembayaran</h2>
+    <p class="section-desc">Sisa tagihan saat ini: <strong class="tabular">Rp1.175.000</strong></p>
+    <div style="display:flex; flex-direction:column; gap:12px;">
+      <div>
+        <label for="payModalAmt">Nominal diterima (Rp) <span class="req">*</span></label>
+        <input id="payModalAmt" type="text" inputmode="numeric" value="1.175.000" class="tabular" />
+      </div>
+      <div>
+        <label for="payModalMethod">Metode pembayaran <span class="req">*</span></label>
+        <select id="payModalMethod">
+          <option value="TRANSFER">Transfer bank</option>
+          <option value="CASH">Tunai</option>
+          <option value="QRIS">QRIS</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:18px;">
+      <button type="button" class="btn btn-secondary" onclick="document.getElementById('payModal').close()">Batal</button>
+      <button type="button" class="btn btn-accent" onclick="document.getElementById('payModal').close(); document.getElementById('detailSuccess').classList.remove('hidden');">Simpan Pembayaran</button>
+    </div>
+  </dialog>
+
+  <script>
+    const switchers = document.querySelectorAll('[data-switch]');
+    const panels = document.querySelectorAll('.view-panel');
+    const previewTabs = document.querySelectorAll('.preview-tab');
+
+    function showView(name) {
+      panels.forEach(p => p.classList.toggle('active', p.id === 'view-' + name));
+      document.querySelectorAll('.nav-btn, .mobile-tab').forEach(el => {
+        if (el.dataset.switch) {
+          el.setAttribute('aria-current', el.dataset.switch === name ? 'page' : 'false');
+        }
+      });
+      previewTabs.forEach(t => {
+        const isOn = t.dataset.switch === name;
+        t.classList.toggle('active', isOn);
+        t.setAttribute('aria-selected', isOn ? 'true' : 'false');
+      });
+      closeDrawer();
+      window.scrollTo(0, 0);
+    }
+
+    switchers.forEach(el => el.addEventListener('click', () => showView(el.dataset.switch)));
+
+    // Mobile drawer + Escape
+    const backdrop = document.getElementById('drawerBackdrop');
+    const openBtn = document.getElementById('openDrawerBtn');
+    const closeBtn = document.getElementById('closeDrawerBtn');
+    const bottomMenuBtn = document.getElementById('bottomMenuBtn');
+
+    function openDrawer() {
+      backdrop.classList.add('open');
+      openBtn.setAttribute('aria-expanded', 'true');
+      closeBtn.focus();
+    }
+    function closeDrawer() {
+      backdrop.classList.remove('open');
+      openBtn.setAttribute('aria-expanded', 'false');
+    }
+    openBtn.addEventListener('click', openDrawer);
+    bottomMenuBtn.addEventListener('click', openDrawer);
+    closeBtn.addEventListener('click', closeDrawer);
+    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) closeDrawer(); });
+    window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && backdrop.classList.contains('open')) closeDrawer(); });
+
+    // Currency formatter & Shipping Toggle
+    const parseDigits = (v) => Number(String(v).replace(/\D/g, '')) || 0;
+    const fmtRp = (n) => 'Rp' + new Intl.NumberFormat('id-ID').format(n);
+    const fmtInput = (n) => n > 0 ? new Intl.NumberFormat('id-ID').format(n) : '';
+
+    let shipMode = 'SEPARATE';
+    const shipInc = document.getElementById('shipIncludedBtn');
+    const shipSep = document.getElementById('shipSeparateBtn');
+    const shipWrap = document.getElementById('shipFeeWrap');
+    const qtyEl = document.getElementById('qtyInput');
+    const priceEl = document.getElementById('priceInput');
+    const shipEl = document.getElementById('shipFeeInput');
+
+    function recalc() {
+      const q = Math.max(1, Number(qtyEl.value) || 1);
+      const p = parseDigits(priceEl.value);
+      const s = shipMode === 'SEPARATE' ? parseDigits(shipEl.value) : 0;
+      const f = q * p;
+      document.getElementById('sumFlower').textContent = fmtRp(f);
+      document.getElementById('sumShip').textContent = fmtRp(s);
+      document.getElementById('sumTotal').textContent = fmtRp(f + s);
+    }
+
+    [priceEl, shipEl].forEach(el => {
+      el.addEventListener('input', () => {
+        el.value = fmtInput(parseDigits(el.value));
+        recalc();
+      });
+    });
+    qtyEl.addEventListener('input', recalc);
+
+    shipInc.addEventListener('click', () => {
+      shipMode = 'INCLUDED';
+      shipInc.setAttribute('aria-pressed', 'true');
+      shipSep.setAttribute('aria-pressed', 'false');
+      shipWrap.classList.add('hidden');
+      recalc();
+    });
+    shipSep.addEventListener('click', () => {
+      shipMode = 'SEPARATE';
+      shipInc.setAttribute('aria-pressed', 'false');
+      shipSep.setAttribute('aria-pressed', 'true');
+      shipWrap.classList.remove('hidden');
+      recalc();
+    });
+
+    // Validation demo
+    document.getElementById('createOrderForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const cust = document.getElementById('custSelect').value;
+      const ft = document.getElementById('flowerType').value.trim();
+      const alertBox = document.getElementById('createAlert');
+      if (!cust || !ft) {
+        alertBox.classList.remove('hidden');
+        alertBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } else {
+        alertBox.classList.add('hidden');
+        showView('order-detail');
+        document.getElementById('detailSuccess').textContent = 'Pesanan baru berhasil disimpan.';
+        document.getElementById('detailSuccess').classList.remove('hidden');
+      }
+    });
+
+    // Quick customer modal
+    document.getElementById('openQuickCustBtn').addEventListener('click', () => document.getElementById('quickCustModal').showModal());
+    document.getElementById('saveQuickCustBtn').addEventListener('click', () => {
+      const name = document.getElementById('qcName').value.trim();
+      if (!name) return;
+      const sel = document.getElementById('custSelect');
+      const opt = new Option(name + ' (Baru)', '99', true, true);
+      sel.add(opt);
+      document.getElementById('quickCustModal').close();
+    });
+
+    // Fulfillment & Pay modals
+    document.getElementById('openFulfillModalBtn').addEventListener('click', () => document.getElementById('fulfillModal').showModal());
+    document.getElementById('confirmFulfillBtn').addEventListener('click', () => {
+      document.getElementById('fulfillModal').close();
+      document.getElementById('item2Badge').textContent = 'Terkirim';
+      document.getElementById('item2Badge').className = 'badge badge-paid';
+      document.getElementById('step3Cell').className = 'step-cell done';
+      document.getElementById('step4Cell').className = 'step-cell done';
+      document.getElementById('item2NextText').textContent = 'Selesai dikirim ke penerima.';
+      document.getElementById('openFulfillModalBtn').classList.add('hidden');
+      document.getElementById('detailSuccess').classList.remove('hidden');
+    });
+    document.getElementById('openPayModalBtn').addEventListener('click', () => document.getElementById('payModal').showModal());
+  </script>
+</body>
+</html>

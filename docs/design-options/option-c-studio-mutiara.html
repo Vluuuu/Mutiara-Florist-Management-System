@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Opsi C: Studio Mutiara (Mutiara Florist)</title>
+  <style>
+    :root {
+      --bg-paper: #FBF9F6;
+      --bg-surface: #FFFFFF;
+      --bg-blush: #FDF2F4;
+      --bg-sage: #E6EFEA;
+      --rail-bg: #143326;
+      --rail-ink: #FFFFFF;
+      --rail-muted: #D1E2D8;
+      --ink-main: #1E2420;
+      --ink-muted: #525B54;
+      --primary: #143326;
+      --accent: #8C3B4A;
+      --accent-hover: #722D3A;
+      --border-soft: #D6D3CE;
+      --border-input: #6B7280;
+      --font-sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      --font-display: 'Segoe UI', system-ui, sans-serif;
+      --radius: 10px;
+      --radius-sm: 6px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg-paper);
+      color: var(--ink-main);
+      font-family: var(--font-sans);
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    a[href], button, select, label[for] { cursor: pointer; }
+    :disabled { cursor: not-allowed; opacity: 0.55; }
+    :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+    .tabular { font-variant-numeric: tabular-nums; }
+
+    .skip-link {
+      position: absolute;
+      left: -9999px;
+      top: 0;
+      background: var(--accent);
+      color: #fff;
+      padding: 10px 14px;
+      z-index: 100;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .skip-link:focus { left: 10px; top: 10px; border-radius: var(--radius-sm); }
+
+    .shell { display: flex; min-height: 100dvh; }
+
+    /* Dark Botanical Sidebar */
+    .dark-rail {
+      width: 244px;
+      flex-shrink: 0;
+      background: var(--rail-bg);
+      color: var(--rail-ink);
+      display: flex;
+      flex-direction: column;
+      position: sticky;
+      top: 0;
+      height: 100dvh;
+    }
+    .rail-brand {
+      padding: 24px 20px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+    }
+    .rail-brand-name { font-size: 19px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
+    .rail-brand-sub { font-size: 12px; color: var(--rail-muted); margin: 3px 0 0; }
+
+    .rail-nav { flex: 1; overflow-y: auto; padding: 16px 12px; }
+    .rail-link {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 44px;
+      padding: 10px 14px;
+      margin-bottom: 4px;
+      border: 0;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--rail-muted);
+      font-size: 14px;
+      font-weight: 600;
+      text-align: left;
+    }
+    .rail-link:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+    .rail-link[aria-current="page"] {
+      background: var(--bg-sage);
+      color: var(--primary);
+    }
+    .rail-pill {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 1px 8px;
+      border-radius: 999px;
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .rail-bottom {
+      padding: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.14);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .btn-rail-logout {
+      min-height: 38px;
+      padding: 8px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      background: transparent;
+      color: #fff;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .btn-rail-logout:hover { background: rgba(255, 255, 255, 0.12); }
+
+    /* Mobile Dark Header */
+    .mobile-bar {
+      display: none;
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: var(--rail-bg);
+      color: #fff;
+      padding: 10px 16px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .btn-mobile-menu {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 44px;
+      padding: 0 12px;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .drawer-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      background: rgba(20, 51, 38, 0.55);
+      display: none;
+    }
+    .drawer-overlay.open { display: block; }
+    .drawer-dark {
+      position: fixed;
+      inset: 0 auto 0 0;
+      width: min(300px, 86vw);
+      height: 100dvh;
+      background: var(--rail-bg);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Main Workspace */
+    .workspace {
+      flex: 1;
+      min-width: 0;
+      padding: 28px 36px 48px;
+      max-width: 1200px;
+    }
+
+    .preview-strip {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 12px;
+      margin-bottom: 20px;
+      border: 1px dashed var(--border-input);
+      border-radius: var(--radius-sm);
+      background: var(--bg-surface);
+      font-size: 12px;
+      color: var(--ink-muted);
+    }
+    .preview-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+    .preview-tab {
+      min-height: 36px;
+      padding: 6px 12px;
+      border: 1px solid var(--border-input);
+      border-radius: var(--radius-sm);
+      background: var(--bg-paper);
+      color: var(--ink-main);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .preview-tab.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+
+    .page-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+    h1 {
+      font-size: clamp(24px, 2.5vw, 31px);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--primary);
+      margin: 0;
+    }
+    .page-desc { margin: 4px 0 0; color: var(--ink-muted); font-size: 14px; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 44px;
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
+      border: 1px solid transparent;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: #0E261C; }
+    .btn-rose { background: var(--accent); color: #fff; }
+    .btn-rose:hover { background: var(--accent-hover); }
+    .btn-outline { background: var(--bg-surface); color: var(--ink-main); border-color: var(--border-input); }
+    .btn-outline:hover { background: var(--bg-sage); }
+    .btn-sm { min-height: 38px; padding: 7px 12px; font-size: 13px; }
+
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+    .card-blush {
+      background: var(--bg-blush);
+      border: 1px solid #F3CBD2;
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+    .card-sage {
+      background: var(--bg-sage);
+      border: 1px solid #BFD5C8;
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+
+    /* Studio Overview Band */
+    .overview-band {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+    .big-num { font-size: 28px; font-weight: 700; color: var(--primary); margin: 4px 0; }
+    .stat-pair-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+
+    /* Responsive Order List (Desktop Table / Mobile Cards) */
+    .desktop-table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+    th {
+      padding: 12px 14px;
+      border-bottom: 2px solid var(--border-soft);
+      color: var(--ink-muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    td { padding: 14px; border-bottom: 1px solid var(--border-soft); vertical-align: middle; }
+    .mobile-card-list { display: none; flex-direction: column; gap: 12px; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+      flex-shrink: 0;
+      align-self: flex-start;
+    }
+    .b-sage { background: var(--bg-sage); color: var(--primary); }
+    .b-blush { background: var(--bg-blush); color: var(--accent); }
+    .b-ready { background: #DBEAFE; color: #1E40AF; }
+    .b-amber { background: #FEF3C7; color: #92400E; }
+
+    /* Form & Detail 2 Col */
+    .studio-2col {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 340px;
+      gap: 24px;
+      align-items: start;
+    }
+    .form-2col {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .col-2 { grid-column: span 2; }
+    label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; }
+    input[type="text"], input[type="date"], input[type="number"], select, textarea {
+      width: 100%;
+      min-height: 44px;
+      padding: 10px 12px;
+      border: 1px solid var(--border-input);
+      border-radius: var(--radius-sm);
+      background: #fff;
+      font-family: inherit;
+      font-size: 14px;
+      color: var(--ink-main);
+    }
+    textarea { min-height: 70px; }
+
+    .view-panel { display: none; }
+    .view-panel.active { display: block; }
+    .hidden { display: none !important; }
+
+    dialog.studio-modal {
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius);
+      padding: 22px;
+      width: calc(100% - 28px);
+      max-width: 440px;
+    }
+    dialog.studio-modal::backdrop { background: rgba(20, 51, 38, 0.55); }
+
+    @media (max-width: 1040px) {
+      .overview-band, .studio-2col { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 820px) {
+      .dark-rail { display: none; }
+      .mobile-bar { display: flex; }
+      .workspace { padding: 18px 16px 40px; }
+      .stat-pair-grid, .form-2col { grid-template-columns: 1fr; }
+      .col-2 { grid-column: span 1; }
+      .desktop-table-wrap { display: none; }
+      .mobile-card-list { display: flex; }
+      .btn-sm { min-height: 44px; padding: 8px 14px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition: none !important; animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Langsung ke konten utama</a>
+
+  <header class="mobile-bar">
+    <button type="button" class="btn-mobile-menu" id="cOpenMenu" aria-expanded="false" aria-controls="cDrawer">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      <span>Menu</span>
+    </button>
+    <strong style="font-size:16px;">Mutiara Florist</strong>
+    <button type="button" class="btn btn-rose btn-sm" data-switch="order-create">+ Pesanan</button>
+  </header>
+
+  <div class="drawer-overlay" id="cDrawer" role="dialog" aria-modal="true" aria-labelledby="cDrawerTitle">
+    <div class="drawer-dark">
+      <div class="rail-brand" style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <p class="rail-brand-name" id="cDrawerTitle">Mutiara Florist</p>
+          <p class="rail-brand-sub">Studio &amp; Kas</p>
+        </div>
+        <button type="button" id="cCloseMenu" aria-label="Tutup menu" class="btn-rail-logout" style="min-width:44px; min-height:44px;">✕</button>
+      </div>
+      <nav class="rail-nav" aria-label="Navigasi seluler">
+        <button type="button" class="rail-link" data-switch="dashboard" aria-current="page">Dashboard</button>
+        <button type="button" class="rail-link" data-switch="order-create">Buat Pesanan</button>
+        <button type="button" class="rail-link" data-switch="order-detail">Detail Pesanan</button>
+        <button type="button" class="rail-link" onclick="alert('Menuju Pelanggan')">Pelanggan</button>
+        <button type="button" class="rail-link" onclick="alert('Menuju Piutang')"><span>Piutang</span><span class="rail-pill">10</span></button>
+        <button type="button" class="rail-link" onclick="alert('Menuju Pengeluaran')">Pengeluaran</button>
+        <button type="button" class="rail-link" onclick="alert('Menuju Laporan')">Laporan</button>
+      </nav>
+      <div class="rail-bottom">
+        <div>
+          <div style="font-size:13px; font-weight:600;">Rina Operator</div>
+          <div style="font-size:12px; color:var(--rail-muted);">Admin Toko</div>
+        </div>
+        <button type="button" class="btn-rail-logout" onclick="alert('Keluar (simulasi)')">Keluar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="shell">
+    <aside class="dark-rail" aria-label="Navigasi utama">
+      <div class="rail-brand">
+        <p class="rail-brand-name">Mutiara Florist</p>
+        <p class="rail-brand-sub">Studio Manajemen Pesanan</p>
+      </div>
+      <nav class="rail-nav">
+        <button type="button" class="rail-link" data-switch="dashboard" aria-current="page">Dashboard</button>
+        <button type="button" class="rail-link" data-switch="order-create">Buat Pesanan</button>
+        <button type="button" class="rail-link" data-switch="order-detail">Detail Pesanan</button>
+        <button type="button" class="rail-link" onclick="alert('Menuju Pelanggan')">Pelanggan</button>
+        <button type="button" class="rail-link" onclick="alert('Menuju Piutang & Bayar')"><span>Piutang &amp; Bayar</span><span class="rail-pill">10</span></button>
+        <button type="button" class="rail-link" onclick="alert('Menuju Pengeluaran')">Pengeluaran</button>
+        <button type="button" class="rail-link" onclick="alert('Menuju Laporan & Excel')">Laporan &amp; Excel</button>
+      </nav>
+      <div class="rail-bottom">
+        <div>
+          <div style="font-size:13px; font-weight:600;">Rina Operator</div>
+          <div style="font-size:12px; color:var(--rail-muted);">Sesi aktif</div>
+        </div>
+        <button type="button" class="btn-rail-logout" onclick="alert('Keluar (simulasi)')">Keluar</button>
+      </div>
+    </aside>
+
+    <main class="workspace" id="main-content" tabindex="-1">
+      <div class="preview-strip">
+        <span><strong>Opsi C (Studio Mutiara)</strong> | Data sintetis simulasi Phase 7</span>
+        <div class="preview-tabs" role="tablist">
+          <button type="button" role="tab" aria-selected="true" class="preview-tab active" data-switch="dashboard">1. Dashboard</button>
+          <button type="button" role="tab" aria-selected="false" class="preview-tab" data-switch="order-create">2. Buat Pesanan</button>
+          <button type="button" role="tab" aria-selected="false" class="preview-tab" data-switch="order-detail">3. Detail Pesanan</button>
+        </div>
+      </div>
+
+      <!-- VIEW 1: DASHBOARD -->
+      <section id="view-dashboard" class="view-panel active" aria-labelledby="h1-c-dash">
+        <div class="page-head">
+          <div>
+            <h1 id="h1-c-dash">Ringkasan Studio, 17 Nov 2026</h1>
+            <p class="page-desc">Posisi kas masuk, tagihan piutang, dan pengiriman aktif hari ini.</p>
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button type="button" class="btn btn-outline" onclick="alert('Catat Pengeluaran')">+ Catat Pengeluaran</button>
+            <button type="button" class="btn btn-rose" data-switch="order-create">+ Buat Pesanan</button>
+          </div>
+        </div>
+
+        <div class="overview-band">
+          <div class="card-sage">
+            <p style="margin:0; font-size:13px; font-weight:700; color:var(--primary);">Arus Kas Riil (Kumulatif)</p>
+            <p class="big-num tabular">Rp5.310.000</p>
+            <p style="margin:0 0 14px; font-size:13px; color:var(--ink-muted);">Selisih kas sederhana (bukan laba bersih akuntansi)</p>
+            <div style="display:flex; justify-content:space-between; border-top:1px solid #BFD5C8; padding-top:12px; font-size:13px;">
+              <span>Uang masuk: <strong class="tabular">Rp8.150.000</strong></span>
+              <span>Kas keluar: <strong class="tabular">Rp2.840.000</strong></span>
+            </div>
+          </div>
+
+          <div class="stat-pair-grid">
+            <div class="card-blush">
+              <p style="margin:0; font-size:13px; font-weight:700; color:var(--accent);">Piutang Saat Ini</p>
+              <p class="big-num tabular" style="color:var(--accent);">Rp7.270.000</p>
+              <p style="margin:0; font-size:13px; color:var(--ink-muted);">Dari 10 pesanan belum lunas</p>
+            </div>
+            <div class="card">
+              <p style="margin:0; font-size:13px; font-weight:700; color:var(--ink-muted);">Total Nilai Pesanan</p>
+              <p class="big-num tabular">Rp15.420.000</p>
+              <p style="margin:0; font-size:13px; color:var(--ink-muted);">13 pesanan tercatat (termasuk ongkir)</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:14px;">
+            <h2 style="margin:0; font-size:18px; color:var(--primary);">Jadwal Pengiriman Terdekat</h2>
+            <button type="button" class="btn btn-outline btn-sm" data-switch="order-detail">Lihat Semua Pesanan</button>
+          </div>
+
+          <!-- Desktop Table -->
+          <div class="desktop-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Jadwal Kirim</th>
+                  <th>Rangkaian &amp; Penerima</th>
+                  <th>Pemesan</th>
+                  <th>Pengerjaan</th>
+                  <th>Tagihan &amp; Bayar</th>
+                  <th style="text-align:right;">Tindakan</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="tabular"><strong>Hari ini, 17/11</strong></td>
+                  <td><strong>Bloom Box Pink Pastel</strong><br /><span style="font-size:12px; color:var(--ink-muted);">Untuk: Ayu Wulandari · Taman Rasuna</span></td>
+                  <td>Rizky Pratama</td>
+                  <td><span class="badge b-amber">Diproses</span></td>
+                  <td class="tabular"><strong>Rp665.000</strong><br /><span class="badge b-blush">Sebagian</span></td>
+                  <td style="text-align:right;"><button type="button" class="btn btn-outline btn-sm" data-switch="order-detail">Detail</button></td>
+                </tr>
+                <tr>
+                  <td class="tabular"><strong>Hari ini, 17/11</strong></td>
+                  <td><strong>Rangkaian Bunga Imlek (2)</strong><br /><span style="font-size:12px; color:var(--ink-muted);">Untuk: Keluarga Koh Budi · PIK</span></td>
+                  <td>Toko Emas Permata Indah</td>
+                  <td><span class="badge b-ready">Siap kirim</span></td>
+                  <td class="tabular"><strong>Rp1.000.000</strong><br /><span class="badge b-sage">Lunas</span></td>
+                  <td style="text-align:right;"><button type="button" class="btn btn-primary btn-sm" data-switch="order-detail">Konfirmasi</button></td>
+                </tr>
+                <tr>
+                  <td class="tabular">Besok, 18/11</td>
+                  <td><strong>Papan Bunga Congratulation (2)</strong><br /><span style="font-size:12px; color:var(--ink-muted);">Untuk: PT Anugerah Sejahtera · Jababeka</span></td>
+                  <td>CV Karya Maju Abadi</td>
+                  <td><span class="badge b-amber">Baru</span></td>
+                  <td class="tabular"><strong>Rp1.650.000</strong><br /><span class="badge b-blush">Belum bayar</span></td>
+                  <td style="text-align:right;"><button type="button" class="btn btn-outline btn-sm" data-switch="order-detail">Detail</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Mobile Card List (Zero Horizontal Scroll) -->
+          <div class="mobile-card-list">
+            <article class="card" style="padding:14px;">
+              <div style="display:flex; justify-content:space-between; gap:8px; margin-bottom:6px;">
+                <span class="badge b-amber">Hari ini 17/11 · Diproses</span>
+                <strong class="tabular">Rp665.000</strong>
+              </div>
+              <strong>Bloom Box Pink Pastel</strong>
+              <p style="margin:4px 0 10px; font-size:13px; color:var(--ink-muted);">Untuk: Ayu Wulandari · Taman Rasuna</p>
+              <button type="button" class="btn btn-outline" style="width:100%;" data-switch="order-detail">Buka Detail Pesanan</button>
+            </article>
+            <article class="card" style="padding:14px;">
+              <div style="display:flex; justify-content:space-between; gap:8px; margin-bottom:6px;">
+                <span class="badge b-ready">Hari ini 17/11 · Siap kirim</span>
+                <strong class="tabular">Rp1.000.000</strong>
+              </div>
+              <strong>Rangkaian Bunga Imlek (2 buah)</strong>
+              <p style="margin:4px 0 10px; font-size:13px; color:var(--ink-muted);">Untuk: Keluarga Koh Budi · PIK Elang Laut</p>
+              <button type="button" class="btn btn-primary" style="width:100%;" data-switch="order-detail">Konfirmasi Terkirim</button>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 2: ORDER CREATE -->
+      <section id="view-order-create" class="view-panel" aria-labelledby="h1-c-create">
+        <div class="page-head">
+          <div>
+            <h1 id="h1-c-create">Catat Pesanan Baru</h1>
+            <p class="page-desc">Setiap karangan bunga memiliki jadwal kirim, penerima, dan mode ongkir masing-masing.</p>
+          </div>
+          <button type="button" class="btn btn-outline" data-switch="dashboard">Kembali</button>
+        </div>
+
+        <form class="studio-2col" onsubmit="event.preventDefault(); showView('order-detail');">
+          <div style="display:flex; flex-direction:column; gap:18px;">
+            <div class="card">
+              <h2 style="margin:0 0 12px; font-size:17px;">1. Pelanggan &amp; Tanggal Order</h2>
+              <div class="form-2col">
+                <div>
+                  <label for="cCust">Pemesan *</label>
+                  <select id="cCust" required>
+                    <option value="">Pilih pelanggan...</option>
+                    <option selected value="2">PT Sinar Harapan Nusantara Tbk (0215550192)</option>
+                    <option value="1">Ibu Sari Wijaya (081234567890)</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="cDate">Tanggal Pemesanan *</label>
+                  <input id="cDate" type="date" value="2026-11-17" required />
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <h2 style="margin:0; font-size:17px;">2. Rincian Karangan Bunga #1</h2>
+                <button type="button" class="btn btn-outline btn-sm">Duplikat Item</button>
+              </div>
+              <div class="form-2col">
+                <div><label for="cFt">Jenis bunga *</label><input id="cFt" type="text" value="Standing Flower Anggrek Putih" required /></div>
+                <div><label for="cDd">Tanggal kirim *</label><input id="cDd" type="date" value="2026-11-18" required /></div>
+                <div><label for="cRec">Untuk / penerima *</label><input id="cRec" type="text" value="Direktur PT Mitra Jaya" required /></div>
+                <div><label for="cSen">Dari / pengirim *</label><input id="cSen" type="text" value="PT Sinar Harapan Nusantara Tbk" required /></div>
+                <div class="col-2"><label for="cLoc">Alamat tujuan *</label><textarea id="cLoc" required>Menara Imperium Lt. 12, Jl. HR Rasuna Said, Jakarta Selatan</textarea></div>
+                <div><label for="cQty">Kuantitas *</label><input id="cQty" type="number" min="1" value="2" class="tabular" /></div>
+                <div><label for="cPr">Harga satuan (Rp) *</label><input id="cPr" type="text" value="650.000" class="tabular" /></div>
+                <div>
+                  <label for="cShip">Mode ongkir *</label>
+                  <select id="cShip" onchange="document.getElementById('cFeeWrap').classList.toggle('hidden', this.value === 'INCLUDED')">
+                    <option value="INCLUDED">Termasuk harga bunga</option>
+                    <option value="SEPARATE" selected>Ditagihkan terpisah</option>
+                  </select>
+                </div>
+                <div id="cFeeWrap"><label for="cFee">Ongkir tambahan (Rp) *</label><input id="cFee" type="text" value="75.000" class="tabular" /></div>
+              </div>
+            </div>
+          </div>
+
+          <aside class="card-sage" style="position:sticky; top:24px;">
+            <h2 style="margin:0 0 12px; font-size:17px; color:var(--primary);">Ringkasan Tagihan</h2>
+            <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #BFD5C8;"><span>Total bunga</span><strong class="tabular">Rp1.300.000</strong></div>
+            <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #BFD5C8;"><span>Ongkir terpisah</span><strong class="tabular">Rp75.000</strong></div>
+            <div style="display:flex; justify-content:space-between; padding:12px 0 0; font-size:18px; color:var(--primary);"><strong>Total tagihan</strong><strong class="tabular">Rp1.375.000</strong></div>
+            <button type="submit" class="btn btn-rose" style="width:100%; margin-top:16px;">Simpan Pesanan</button>
+            <button type="button" class="btn btn-outline" style="width:100%; margin-top:8px;" data-switch="dashboard">Batal</button>
+          </aside>
+        </form>
+      </section>
+
+      <!-- VIEW 3: ORDER DETAIL -->
+      <section id="view-order-detail" class="view-panel" aria-labelledby="h1-c-detail">
+        <div class="page-head">
+          <div>
+            <h1 id="h1-c-detail" class="tabular">Pesanan MF-261117 · #XY7ETE</h1>
+            <p class="page-desc">PT Sinar Harapan Nusantara Tbk (0215550192) · Pesan 08/11/2026</p>
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button type="button" class="btn btn-outline" data-switch="order-create">Edit Pesanan</button>
+            <button type="button" class="btn btn-rose" onclick="document.getElementById('cPayModal').showModal()">+ Catat Pembayaran</button>
+          </div>
+        </div>
+
+        <div class="studio-2col">
+          <div style="display:flex; flex-direction:column; gap:16px;">
+            <article class="card">
+              <div style="display:flex; justify-content:space-between; gap:10px;">
+                <div>
+                  <h2 style="margin:0; font-size:17px;">1. Standing Flower Anggrek Putih</h2>
+                  <p style="margin:4px 0 0; font-size:13px; color:var(--ink-muted);">2 buah · Kirim 09/11/2026 · Ongkir terpisah Rp75.000</p>
+                </div>
+                <span class="badge b-sage">Terkirim</span>
+              </div>
+              <p style="margin:10px 0 0; font-size:14px;">Untuk: <strong>Direktur PT Mitra Jaya</strong> · Menara Imperium Lt. 12</p>
+            </article>
+
+            <article class="card">
+              <div style="display:flex; justify-content:space-between; gap:10px;">
+                <div>
+                  <h2 style="margin:0; font-size:17px;">2. Papan Bunga Grand Opening</h2>
+                  <p style="margin:4px 0 0; font-size:13px; color:var(--ink-muted);">1 buah · Kirim 10/11/2026 · Ongkir terpisah Rp100.000</p>
+                </div>
+                <span class="badge b-ready">Siap kirim</span>
+              </div>
+              <p style="margin:10px 0 12px; font-size:14px;">Untuk: <strong>Cabang Baru PT Mitra Jaya</strong> · Kelapa Gading</p>
+              <button type="button" class="btn btn-primary btn-sm" onclick="alert('Status item dimajukan ke Terkirim (simulasi)')">Konfirmasi Terkirim di Lokasi</button>
+            </article>
+          </div>
+
+          <aside class="card-blush" style="position:sticky; top:24px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <h2 style="margin:0; font-size:17px; color:var(--accent);">Ringkasan Pembayaran</h2>
+              <span class="badge b-amber">Sebagian</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; padding:6px 0;"><span>Total tagihan</span><strong class="tabular">Rp2.675.000</strong></div>
+            <div style="display:flex; justify-content:space-between; padding:6px 0;"><span>Sudah dibayar</span><strong class="tabular">Rp1.500.000</strong></div>
+            <div style="display:flex; justify-content:space-between; padding:10px 0 0; border-top:1px solid #F3CBD2; font-size:18px; color:var(--accent);">
+              <strong>Sisa tagihan</strong><strong class="tabular">Rp1.175.000</strong>
+            </div>
+            <div style="margin-top:14px; padding-top:12px; border-top:1px solid #F3CBD2; font-size:13px;">
+              <p style="margin:0 0 6px; font-weight:700;">Riwayat:</p>
+              <p style="margin:0 0 4px;" class="tabular">Rp1.500.000 · Transfer (Tercatat)</p>
+              <p style="margin:0; color:var(--ink-muted);" class="tabular"><del>Rp1.000.000</del> · Dibatalkan (Void)</p>
+            </div>
+          </aside>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="cPayModal" class="studio-modal" aria-labelledby="cPayTitle">
+    <h2 id="cPayTitle" style="margin:0 0 6px; font-size:18px;">Catat Pembayaran</h2>
+    <p style="margin:0 0 14px; font-size:13px; color:var(--ink-muted);">Sisa tagihan: <strong class="tabular">Rp1.175.000</strong></p>
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <div><label for="cPayAmt">Nominal (Rp)</label><input id="cPayAmt" type="text" value="1.175.000" class="tabular" /></div>
+      <div><label for="cPayMeth">Metode</label><select id="cPayMeth"><option>Transfer bank</option><option>Tunai</option><option>QRIS</option></select></div>
+    </div>
+    <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
+      <button type="button" class="btn btn-outline" onclick="document.getElementById('cPayModal').close()">Batal</button>
+      <button type="button" class="btn btn-rose" onclick="document.getElementById('cPayModal').close()">Simpan Pembayaran</button>
+    </div>
+  </dialog>
+
+  <script>
+    const cDrawer = document.getElementById('cDrawer');
+    const cOpen = document.getElementById('cOpenMenu');
+    const cClose = document.getElementById('cCloseMenu');
+
+    function showView(name) {
+      document.querySelectorAll('.view-panel').forEach(p => p.classList.toggle('active', p.id === 'view-' + name));
+      document.querySelectorAll('.rail-link').forEach(b => {
+        if (b.dataset.switch) b.setAttribute('aria-current', b.dataset.switch === name ? 'page' : 'false');
+      });
+      document.querySelectorAll('.preview-tab').forEach(t => {
+        const on = t.dataset.switch === name;
+        t.classList.toggle('active', on);
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+      cDrawer.classList.remove('open');
+      cOpen.setAttribute('aria-expanded', 'false');
+      window.scrollTo(0, 0);
+    }
+
+    document.querySelectorAll('[data-switch]').forEach(el => el.addEventListener('click', () => showView(el.dataset.switch)));
+    cOpen.addEventListener('click', () => {
+      cDrawer.classList.add('open');
+      cOpen.setAttribute('aria-expanded', 'true');
+      cClose.focus();
+    });
+    cClose.addEventListener('click', () => {
+      cDrawer.classList.remove('open');
+      cOpen.setAttribute('aria-expanded', 'false');
+    });
+    cDrawer.addEventListener('click', (e) => { if (e.target === cDrawer) cClose.click(); });
+    window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && cDrawer.classList.contains('open')) cClose.click(); });
+  </script>
+</body>
+</html>
