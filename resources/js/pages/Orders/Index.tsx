@@ -22,35 +22,31 @@ type OrdersIndexProps = {
     };
 };
 
-type FilterChipKey = 'all' | 'unpaid' | 'NEW' | 'PROCESSING' | 'READY' | 'COMPLETED';
+type StatusFilterKey = '' | 'NEW' | 'PROCESSING' | 'READY' | 'COMPLETED';
 
-const FILTER_CHIPS: Array<{ key: FilterChipKey; label: string }> = [
-    { key: 'all', label: 'Semua' },
-    { key: 'unpaid', label: 'Belum Lunas' },
+const STATUS_CHIPS: Array<{ key: StatusFilterKey; label: string }> = [
+    { key: '', label: 'Semua Status' },
     { key: 'READY', label: 'Siap Kirim' },
     { key: 'PROCESSING', label: 'Diproses' },
     { key: 'NEW', label: 'Baru' },
     { key: 'COMPLETED', label: 'Selesai' },
 ];
 
-function resolveActiveChip(status?: string, payment?: string): FilterChipKey {
-    if (payment === 'UNPAID' && !status) return 'unpaid';
-    if (status === 'NEW' || status === 'PROCESSING' || status === 'READY' || status === 'COMPLETED') {
-        return status;
-    }
-    return 'all';
-}
-
 export default function OrdersIndex({ orders, filters }: OrdersIndexProps) {
     const { errors } = usePage<AppPageProps>().props;
     const [search, setSearch] = useState(filters.q ?? '');
     const [isLoading, setIsLoading] = useState(false);
 
-    const activeChip = resolveActiveChip(filters.status, filters.payment);
+    const activeStatus: StatusFilterKey =
+        filters.status === 'NEW' ||
+        filters.status === 'PROCESSING' ||
+        filters.status === 'READY' ||
+        filters.status === 'COMPLETED'
+            ? filters.status
+            : '';
+    const onlyUnpaid = filters.payment === 'UNPAID';
     const isFiltered =
-        (filters.q ?? '').trim() !== '' ||
-        (filters.status ?? '').trim() !== '' ||
-        (filters.payment ?? '').trim() !== '';
+        (filters.q ?? '').trim() !== '' || activeStatus !== '' || onlyUnpaid;
 
     useEffect(() => {
         setSearch(filters.q ?? '');
@@ -65,14 +61,11 @@ export default function OrdersIndex({ orders, filters }: OrdersIndexProps) {
         };
     }, []);
 
-    const applyFilters = (qValue: string, chip: FilterChipKey) => {
+    const applyFilters = (qValue: string, nextStatus: StatusFilterKey, nextUnpaid: boolean) => {
         const params: Record<string, string> = {};
         if (qValue.trim()) params.q = qValue.trim();
-        if (chip === 'unpaid') {
-            params.payment = 'UNPAID';
-        } else if (chip !== 'all') {
-            params.status = chip;
-        }
+        if (nextStatus !== '') params.status = nextStatus;
+        if (nextUnpaid) params.payment = 'UNPAID';
 
         router.get('/ui-orders', params, {
             preserveState: true,
@@ -83,7 +76,7 @@ export default function OrdersIndex({ orders, filters }: OrdersIndexProps) {
 
     const handleSearchSubmit = (e: FormEvent) => {
         e.preventDefault();
-        applyFilters(search, activeChip);
+        applyFilters(search, activeStatus, onlyUnpaid);
     };
 
     const handleReset = () => {
@@ -230,15 +223,15 @@ export default function OrdersIndex({ orders, filters }: OrdersIndexProps) {
                         role="group"
                         aria-label="Filter status pesanan"
                     >
-                        {FILTER_CHIPS.map((chip) => {
-                            const selected = activeChip === chip.key;
+                        {STATUS_CHIPS.map((chip) => {
+                            const selected = activeStatus === chip.key;
                             return (
                                 <button
-                                    key={chip.key}
+                                    key={chip.key || 'ALL'}
                                     type="button"
                                     aria-pressed={selected}
                                     disabled={isLoading}
-                                    onClick={() => applyFilters(search, chip.key)}
+                                    onClick={() => applyFilters(search, chip.key, onlyUnpaid)}
                                     className={cn(
                                         'inline-flex min-h-[44px] items-center rounded-full border px-4 py-2 text-xs font-bold transition-colors',
                                         selected
@@ -250,6 +243,20 @@ export default function OrdersIndex({ orders, filters }: OrdersIndexProps) {
                                 </button>
                             );
                         })}
+                        <button
+                            type="button"
+                            aria-pressed={onlyUnpaid}
+                            disabled={isLoading}
+                            onClick={() => applyFilters(search, activeStatus, !onlyUnpaid)}
+                            className={cn(
+                                'inline-flex min-h-[44px] items-center rounded-full border px-4 py-2 text-xs font-bold transition-colors',
+                                onlyUnpaid
+                                    ? 'border-[#8C3B4A] bg-[#8C3B4A] text-white'
+                                    : 'border-[#858E87] bg-white text-[#1E2420] hover:bg-[#FDF2F4]',
+                            )}
+                        >
+                            Belum Lunas
+                        </button>
                     </div>
 
                     <form
@@ -280,7 +287,7 @@ export default function OrdersIndex({ orders, filters }: OrdersIndexProps) {
                                         type="button"
                                         onClick={() => {
                                             setSearch('');
-                                            applyFilters('', activeChip);
+                                            applyFilters('', activeStatus, onlyUnpaid);
                                         }}
                                         aria-label="Hapus kata kunci pesanan"
                                         className="absolute right-0 inline-flex size-11 items-center justify-center rounded text-[#525B54] hover:bg-[#F1EDE6] hover:text-[#1E2420]"

@@ -7,7 +7,8 @@ import { OrderCodeBadge } from '@/components/order-code-badge';
 import { PaymentModal, type PaymentModalTarget } from '@/components/payment-modal';
 import { Badge, getFulfillmentBadgeMeta, getPaymentBadgeMeta } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { formatAmount, formatRupiah } from '@/lib/format';
+import { Modal } from '@/components/ui/modal';
+import { formatAmount, formatRupiah, getWibTodayIso } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type {
     AppPageProps,
@@ -63,11 +64,12 @@ export default function Dashboard({
     const createOrderHref = nav?.uiOrdersCreate ?? '/ui-orders/create';
     const paymentsHref = nav?.uiPayments ?? '/ui-payments';
 
-    const fallbackTodayIso = todayIso ?? new Date().toISOString().split('T')[0];
+    const fallbackTodayIso = todayIso ?? getWibTodayIso();
 
     const [submittingItemId, setSubmittingItemId] = useState<number | null>(null);
     const stepLockRef = useRef(false);
     const [deliverTarget, setDeliverTarget] = useState<DeliveryConfirmTarget | null>(null);
+    const [paymentPickerOpen, setPaymentPickerOpen] = useState(false);
     const [paymentTarget, setPaymentTarget] = useState<PaymentModalTarget | null>(null);
     const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -153,15 +155,7 @@ export default function Dashboard({
                         <Button
                             type="button"
                             variant="primary"
-                            onClick={() => {
-                                const top = receivables[0];
-                                setPaymentTarget({
-                                    id: top.id,
-                                    order_number: top.order_number,
-                                    customer_name: top.customer_name,
-                                    outstanding: top.outstanding,
-                                });
-                            }}
+                            onClick={() => setPaymentPickerOpen(true)}
                         >
                             + Catat Pembayaran
                         </Button>
@@ -443,6 +437,72 @@ export default function Dashboard({
                 returnTo="dashboard"
                 onClose={() => setPaymentTarget(null)}
             />
+
+            <Modal
+                open={paymentPickerOpen}
+                onClose={() => setPaymentPickerOpen(false)}
+                title="Pilih Nota untuk Pembayaran"
+                description="Pilih pesanan belum lunas yang ingin dicatat pembayarannya."
+                footer={
+                    <>
+                        <Button asChild variant="secondary">
+                            <Link href={paymentsHref}>Lihat Semua Piutang</Link>
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => setPaymentPickerOpen(false)}
+                        >
+                            Tutup
+                        </Button>
+                    </>
+                }
+            >
+                <div className="space-y-2.5">
+                    {receivables.map((rec) => {
+                        const pMeta = getPaymentBadgeMeta(rec.payment_status);
+                        return (
+                            <div
+                                key={rec.id}
+                                className="flex flex-col justify-between gap-2.5 rounded-lg border border-[#E3DED4] bg-[#FAF8F4]/70 p-3 sm:flex-row sm:items-center"
+                            >
+                                <div className="min-w-0">
+                                    <div className="flex flex-wrap items-center gap-1.5">
+                                        <Badge tone={pMeta.tone}>{pMeta.label}</Badge>
+                                        <OrderCodeBadge orderNumber={rec.order_number} />
+                                    </div>
+                                    <p className="mt-1 text-sm font-bold text-[#1E2420]">
+                                        {rec.customer_name}
+                                    </p>
+                                    <p className="mt-0.5 text-xs text-[#525B54] tabular-nums">
+                                        Total {formatRupiah(rec.total_amount)} | Sisa:{' '}
+                                        <strong className="text-[#8C3B4A]">
+                                            {formatRupiah(rec.outstanding)}
+                                        </strong>
+                                    </p>
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="primary"
+                                    size="sm"
+                                    className="shrink-0"
+                                    onClick={() => {
+                                        setPaymentPickerOpen(false);
+                                        setPaymentTarget({
+                                            id: rec.id,
+                                            order_number: rec.order_number,
+                                            customer_name: rec.customer_name,
+                                            outstanding: rec.outstanding,
+                                        });
+                                    }}
+                                >
+                                    Pilih Nota
+                                </Button>
+                            </div>
+                        );
+                    })}
+                </div>
+            </Modal>
         </AppLayout>
     );
 }

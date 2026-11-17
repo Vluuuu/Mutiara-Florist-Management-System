@@ -16,7 +16,7 @@ import { CurrencyInput } from '@/components/ui/currency-input';
 import { FormField, Input, Select, Textarea } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { SearchableSelect } from '@/components/ui/searchable-select';
-import { formatRupiah } from '@/lib/format';
+import { formatRupiah, getWibTodayIso } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type {
     AppPageProps,
@@ -96,7 +96,10 @@ export function OrderForm({
     todayIso,
 }: OrderFormProps) {
     const { errors, csrf_token } = usePage<AppPageProps>().props;
-    const defaultDate = todayIso ?? new Date().toISOString().split('T')[0];
+    const defaultDate = todayIso ?? getWibTodayIso();
+    const [activeErrors, setActiveErrors] = useState<Record<string, string>>(
+        () => errors ?? {},
+    );
 
     const [customerList, setCustomerList] = useState<OrderCustomerOption[]>(initialCustomers);
     const [customerId, setCustomerId] = useState<number | null>(() => {
@@ -181,13 +184,31 @@ export function OrderForm({
     const grandTotal = productTotal + shippingTotal;
     const belowReceived = hasPayments && order ? grandTotal < order.received : false;
 
-    const errorEntries = useMemo(() => Object.entries(errors ?? {}), [errors]);
+    useEffect(() => {
+        setActiveErrors(errors ?? {});
+    }, [errors]);
+
+    const errorEntries = useMemo(() => Object.entries(activeErrors), [activeErrors]);
 
     useEffect(() => {
-        if (errorEntries.length > 0) {
+        if (errorEntries.length > 0 && errors && Object.keys(errors).length > 0) {
             errorSummaryRef.current?.focus();
         }
-    }, [errorEntries]);
+    }, [errors]);
+
+    const clearFieldErrors = (...keys: string[]) => {
+        setActiveErrors((prev) => {
+            let changed = false;
+            const next = { ...prev };
+            for (const key of keys) {
+                if (key in next) {
+                    delete next[key];
+                    changed = true;
+                }
+            }
+            return changed ? next : prev;
+        });
+    };
 
     const customerOptions = useMemo(
         () =>
@@ -201,7 +222,9 @@ export function OrderForm({
 
     const handleAddItem = () => {
         if (items.length >= MAX_ITEMS) return;
-        setItems((prev) => [...prev, createBlankItem(orderDate || defaultDate)]);
+        const newItemDate = mode === 'edit' ? defaultDate : orderDate || defaultDate;
+        setItems((prev) => [...prev, createBlankItem(newItemDate)]);
+        clearFieldErrors('items');
     };
 
     const handleDuplicateItem = (index: number) => {
@@ -211,12 +234,27 @@ export function OrderForm({
             ...source,
             _key: keyCounter++,
             id: null,
+            delivery_date: source.delivery_date || defaultDate,
             fulfillment_status: 'NEW',
             _initialStatus: 'NEW',
         };
         setItems((prev) => {
             const next = [...prev];
             next.splice(index + 1, 0, copy);
+            return next;
+        });
+        setActiveErrors((prev) => {
+            const next: Record<string, string> = {};
+            for (const [key, val] of Object.entries(prev)) {
+                if (key === 'items') continue;
+                const m = /^items\.(\d+)\.(.+)$/.exec(key);
+                if (m) {
+                    const idx = Number.parseInt(m[1], 10);
+                    next[idx > index ? `items.${idx + 1}.${m[2]}` : key] = val;
+                } else {
+                    next[key] = val;
+                }
+            }
             return next;
         });
     };
@@ -226,6 +264,21 @@ export function OrderForm({
         if (target.id && target._initialStatus && target._initialStatus !== 'NEW') return;
         if (items.length <= 1) return;
         setItems((prev) => prev.filter((_, idx) => idx !== index));
+        setActiveErrors((prev) => {
+            const next: Record<string, string> = {};
+            for (const [key, val] of Object.entries(prev)) {
+                if (key === 'items') continue;
+                const m = /^items\.(\d+)\.(.+)$/.exec(key);
+                if (m) {
+                    const idx = Number.parseInt(m[1], 10);
+                    if (idx === index) continue;
+                    next[idx > index ? `items.${idx - 1}.${m[2]}` : key] = val;
+                } else {
+                    next[key] = val;
+                }
+            }
+            return next;
+        });
     };
 
     const handleItemChange = <K extends keyof OrderFormItem>(
@@ -246,6 +299,12 @@ export function OrderForm({
             next[index] = updated;
             return next;
         });
+
+        const keysToClear = ['items', `items.${index}.${String(field)}`];
+        if (field === 'shipping_mode') {
+            keysToClear.push(`items.${index}.shipping_fee`);
+        }
+        clearFieldErrors(...keysToClear);
     };
 
     const handleSubmit = (e: FormEvent) => {
@@ -285,6 +344,10 @@ export function OrderForm({
 
         const options = {
             preserveScroll: true,
+            onError: (serverErrors: Record<string, string>) => {
+                setActiveErrors(serverErrors ?? {});
+                window.setTimeout(() => errorSummaryRef.current?.focus(), 0);
+            },
             onFinish: () => {
                 submitLockRef.current = false;
                 setIsSubmitting(false);
@@ -364,6 +427,7 @@ export function OrderForm({
                 [...prev, created].sort((a, b) => a.name.localeCompare(b.name, 'id')),
             );
             setCustomerId(created.id);
+            clearFieldErrors('customer_id');
             setQuickSuccessMessage(`Pelanggan "${created.name}" ditambahkan dan langsung dipilih.`);
             setQuickModalOpen(false);
         } catch {
@@ -508,21 +572,22 @@ export function OrderForm({
                                             ? 'Pelanggan tidak dapat diganti setelah pesanan menerima pembayaran.'
                                             : 'Ketik nama atau nomor HP untuk mencari. Menambah pelanggan baru tidak menghapus draf bunga.'
                                     }
-                                    error={errors?.customer_id}
+                                    error={activeErrors.customer_id}
                                 >
                                     <SearchableSelect
                                         id="customer_id"
                                         options={customerOptions}
                                         value={customerId}
-                                        onChange={(val) =>
-                                            setCustomerId(val === null ? null : Number(val))
-                                        }
+                                        onChange={(val) => {
+                                            setCustomerId(val === null ? null : Number(val));
+                                            clearFieldErrors('customer_id');
+                                        }}
                                         placeholder="Pilih atau cari nama/telepon pelanggan..."
                                         emptyText="Pelanggan tidak cocok. Gunakan + Pelanggan Baru."
-                                        invalid={Boolean(errors?.customer_id)}
+                                        invalid={Boolean(activeErrors.customer_id)}
                                         disabled={hasPayments && mode === 'edit'}
                                         describedBy={
-                                            errors?.customer_id
+                                            activeErrors.customer_id
                                                 ? 'customer_id-error'
                                                 : 'customer_id-hint'
                                         }
@@ -547,15 +612,18 @@ export function OrderForm({
                                     id="order_date"
                                     label="Tanggal Nota / Pesan"
                                     required
-                                    error={errors?.order_date}
+                                    error={activeErrors.order_date}
                                 >
                                     <Input
                                         id="order_date"
                                         name="order_date"
                                         type="date"
                                         value={orderDate}
-                                        onChange={(e) => setOrderDate(e.target.value)}
-                                        invalid={Boolean(errors?.order_date)}
+                                        onChange={(e) => {
+                                            setOrderDate(e.target.value);
+                                            clearFieldErrors('order_date');
+                                        }}
+                                        invalid={Boolean(activeErrors.order_date)}
                                         required
                                     />
                                 </FormField>
@@ -565,7 +633,7 @@ export function OrderForm({
                                 <FormField
                                     id="notes"
                                     label="Catatan Pesanan (opsional)"
-                                    error={errors?.notes}
+                                    error={activeErrors.notes}
                                 >
                                     <Textarea
                                         id="notes"
@@ -573,9 +641,12 @@ export function OrderForm({
                                         rows={2}
                                         maxLength={2000}
                                         value={notes}
-                                        onChange={(e) => setNotes(e.target.value)}
+                                        onChange={(e) => {
+                                            setNotes(e.target.value);
+                                            clearFieldErrors('notes');
+                                        }}
                                         placeholder="Misal: Konfirmasi foto hasil rangkaian ke WA pemesan"
-                                        invalid={Boolean(errors?.notes)}
+                                        invalid={Boolean(activeErrors.notes)}
                                     />
                                 </FormField>
                             </div>
@@ -595,7 +666,7 @@ export function OrderForm({
                                                 ? 'Wajib diisi karena nilai, ongkir, atau jumlah item berubah pada pesanan yang sudah menerima pembayaran.'
                                                 : 'Isi alasan perubahan jika melakukan penyesuaian harga atau daftar bunga.'
                                         }
-                                        error={errors?.change_reason}
+                                        error={activeErrors.change_reason}
                                     >
                                         <Input
                                             id="change_reason"
@@ -603,9 +674,12 @@ export function OrderForm({
                                             type="text"
                                             maxLength={500}
                                             value={changeReason}
-                                            onChange={(e) => setChangeReason(e.target.value)}
+                                            onChange={(e) => {
+                                                setChangeReason(e.target.value);
+                                                clearFieldErrors('change_reason');
+                                            }}
                                             placeholder="Misal: Tambah 1 rangkaian sesuai permintaan pemesan"
-                                            invalid={Boolean(errors?.change_reason)}
+                                            invalid={Boolean(activeErrors.change_reason)}
                                             required={hasPayments && financialChanged}
                                         />
                                     </FormField>
@@ -639,12 +713,12 @@ export function OrderForm({
                                 </Button>
                             </div>
 
-                            {errors?.items && (
+                            {activeErrors?.items && (
                                 <div
                                     role="alert"
                                     className="mb-4 rounded-md border border-[#991B1B]/40 bg-[#FEE2E2] p-3 text-xs font-semibold text-[#991B1B]"
                                 >
-                                    {errors.items}
+                                    {activeErrors.items}
                                 </div>
                             )}
 
@@ -719,7 +793,7 @@ export function OrderForm({
                                                     id={`item-${idx}-flower_type`}
                                                     label="Jenis bunga / rangkaian"
                                                     required
-                                                    error={errors?.[`items.${idx}.flower_type`]}
+                                                    error={activeErrors?.[`items.${idx}.flower_type`]}
                                                 >
                                                     <Input
                                                         id={`item-${idx}-flower_type`}
@@ -735,7 +809,7 @@ export function OrderForm({
                                                         }
                                                         placeholder="Contoh: Papan Bunga Ucapan Selamat"
                                                         invalid={Boolean(
-                                                            errors?.[`items.${idx}.flower_type`],
+                                                            activeErrors?.[`items.${idx}.flower_type`],
                                                         )}
                                                         required
                                                     />
@@ -745,7 +819,7 @@ export function OrderForm({
                                                     id={`item-${idx}-delivery_date`}
                                                     label="Tanggal kirim"
                                                     required
-                                                    error={errors?.[`items.${idx}.delivery_date`]}
+                                                    error={activeErrors?.[`items.${idx}.delivery_date`]}
                                                 >
                                                     <Input
                                                         id={`item-${idx}-delivery_date`}
@@ -759,7 +833,7 @@ export function OrderForm({
                                                             )
                                                         }
                                                         invalid={Boolean(
-                                                            errors?.[`items.${idx}.delivery_date`],
+                                                            activeErrors?.[`items.${idx}.delivery_date`],
                                                         )}
                                                         required
                                                     />
@@ -769,7 +843,7 @@ export function OrderForm({
                                                     id={`item-${idx}-recipient`}
                                                     label="Untuk / nama penerima"
                                                     required
-                                                    error={errors?.[`items.${idx}.recipient`]}
+                                                    error={activeErrors?.[`items.${idx}.recipient`]}
                                                 >
                                                     <Input
                                                         id={`item-${idx}-recipient`}
@@ -785,7 +859,7 @@ export function OrderForm({
                                                         }
                                                         placeholder="Contoh: Bapak Hendra Wijaya"
                                                         invalid={Boolean(
-                                                            errors?.[`items.${idx}.recipient`],
+                                                            activeErrors?.[`items.${idx}.recipient`],
                                                         )}
                                                         required
                                                     />
@@ -795,7 +869,7 @@ export function OrderForm({
                                                     id={`item-${idx}-sender_name`}
                                                     label="Dari / nama pengirim ucapan"
                                                     required
-                                                    error={errors?.[`items.${idx}.sender_name`]}
+                                                    error={activeErrors?.[`items.${idx}.sender_name`]}
                                                 >
                                                     <Input
                                                         id={`item-${idx}-sender_name`}
@@ -811,7 +885,7 @@ export function OrderForm({
                                                         }
                                                         placeholder="Contoh: Direksi PT Maju Jaya"
                                                         invalid={Boolean(
-                                                            errors?.[`items.${idx}.sender_name`],
+                                                            activeErrors?.[`items.${idx}.sender_name`],
                                                         )}
                                                         required
                                                     />
@@ -823,7 +897,7 @@ export function OrderForm({
                                                     id={`item-${idx}-delivery_location`}
                                                     label="Alamat / lokasi pengiriman"
                                                     required
-                                                    error={errors?.[`items.${idx}.delivery_location`]}
+                                                    error={activeErrors?.[`items.${idx}.delivery_location`]}
                                                 >
                                                     <Textarea
                                                         id={`item-${idx}-delivery_location`}
@@ -839,7 +913,7 @@ export function OrderForm({
                                                         }
                                                         placeholder="Alamat lengkap lokasi pengiriman dan patokan"
                                                         invalid={Boolean(
-                                                            errors?.[
+                                                            activeErrors?.[
                                                                 `items.${idx}.delivery_location`
                                                             ],
                                                         )}
@@ -853,7 +927,7 @@ export function OrderForm({
                                                     id={`item-${idx}-quantity`}
                                                     label="Jumlah (buah)"
                                                     required
-                                                    error={errors?.[`items.${idx}.quantity`]}
+                                                    error={activeErrors?.[`items.${idx}.quantity`]}
                                                 >
                                                     <Input
                                                         id={`item-${idx}-quantity`}
@@ -876,7 +950,7 @@ export function OrderForm({
                                                         }
                                                         className="tabular-nums"
                                                         invalid={Boolean(
-                                                            errors?.[`items.${idx}.quantity`],
+                                                            activeErrors?.[`items.${idx}.quantity`],
                                                         )}
                                                         required
                                                     />
@@ -886,7 +960,7 @@ export function OrderForm({
                                                     id={`item-${idx}-unit_price`}
                                                     label="Harga satuan"
                                                     required
-                                                    error={errors?.[`items.${idx}.unit_price`]}
+                                                    error={activeErrors?.[`items.${idx}.unit_price`]}
                                                     className="md:col-span-2"
                                                 >
                                                     <CurrencyInput
@@ -897,7 +971,7 @@ export function OrderForm({
                                                         }
                                                         placeholder="Contoh: 500.000"
                                                         invalid={Boolean(
-                                                            errors?.[`items.${idx}.unit_price`],
+                                                            activeErrors?.[`items.${idx}.unit_price`],
                                                         )}
                                                         required
                                                     />
@@ -963,12 +1037,12 @@ export function OrderForm({
                                                             Ditagih terpisah
                                                         </button>
                                                     </div>
-                                                    {errors?.[`items.${idx}.shipping_mode`] && (
+                                                    {activeErrors?.[`items.${idx}.shipping_mode`] && (
                                                         <p
                                                             role="alert"
                                                             className="text-[13px] font-semibold text-[#991B1B]"
                                                         >
-                                                            {errors[`items.${idx}.shipping_mode`]}
+                                                            {activeErrors[`items.${idx}.shipping_mode`]}
                                                         </p>
                                                     )}
                                                 </div>
@@ -982,7 +1056,7 @@ export function OrderForm({
                                                             ? 'Dikunci Rp0 karena ongkir sudah termasuk harga bunga.'
                                                             : 'Wajib lebih dari Rp0 karena ongkir ditagih terpisah.'
                                                     }
-                                                    error={errors?.[`items.${idx}.shipping_fee`]}
+                                                    error={activeErrors?.[`items.${idx}.shipping_fee`]}
                                                 >
                                                     <CurrencyInput
                                                         id={`item-${idx}-shipping_fee`}
@@ -997,7 +1071,7 @@ export function OrderForm({
                                                         }
                                                         placeholder="Contoh: 50.000"
                                                         invalid={Boolean(
-                                                            errors?.[`items.${idx}.shipping_fee`],
+                                                            activeErrors?.[`items.${idx}.shipping_fee`],
                                                         )}
                                                         required={item.shipping_mode === 'SEPARATE'}
                                                     />
@@ -1008,7 +1082,7 @@ export function OrderForm({
                                                 <FormField
                                                     id={`item-${idx}-notes`}
                                                     label="Catatan item / pita ucapan (opsional)"
-                                                    error={errors?.[`items.${idx}.notes`]}
+                                                    error={activeErrors?.[`items.${idx}.notes`]}
                                                     className={mode === 'edit' ? '' : 'md:col-span-2'}
                                                 >
                                                     <Input
@@ -1025,7 +1099,7 @@ export function OrderForm({
                                                         }
                                                         placeholder="Misal: Pita warna emas, tulisan di kartu"
                                                         invalid={Boolean(
-                                                            errors?.[`items.${idx}.notes`],
+                                                            activeErrors?.[`items.${idx}.notes`],
                                                         )}
                                                     />
                                                 </FormField>
@@ -1040,7 +1114,7 @@ export function OrderForm({
                                                                 : 'Status hanya dapat tetap atau maju satu tahap.'
                                                         }
                                                         error={
-                                                            errors?.[
+                                                            activeErrors?.[
                                                                 `items.${idx}.fulfillment_status`
                                                             ]
                                                         }
@@ -1057,7 +1131,7 @@ export function OrderForm({
                                                                 )
                                                             }
                                                             invalid={Boolean(
-                                                                errors?.[
+                                                                activeErrors?.[
                                                                     `items.${idx}.fulfillment_status`
                                                                 ],
                                                             )}

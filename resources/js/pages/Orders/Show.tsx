@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { FormField, Textarea } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
-import { formatAmount, formatDateTimeWib, formatDateWib, formatRupiah } from '@/lib/format';
+import { formatAmount, formatDateTimeWib, formatDateWib, formatRupiah, getWibTodayIso } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type {
     AppPageProps,
@@ -31,6 +31,7 @@ import type {
 
 type OrdersShowProps = {
     order: OrderDetail;
+    todayIso?: string;
 };
 
 const STEPPER_ORDER: Array<{ key: FulfillmentStatus; label: string }> = [
@@ -50,13 +51,9 @@ const NEXT_STEP_CONFIG: Record<
     DELIVERED: { nextStatus: null, label: 'Terkirim' },
 };
 
-function getWibTodayIso(): string {
-    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date());
-}
-
-export default function OrdersShow({ order }: OrdersShowProps) {
+export default function OrdersShow({ order, todayIso: serverTodayIso }: OrdersShowProps) {
     const { errors } = usePage<AppPageProps>().props;
-    const todayIso = useMemo(() => getWibTodayIso(), []);
+    const todayIso = useMemo(() => serverTodayIso ?? getWibTodayIso(), [serverTodayIso]);
 
     // Modal Catat Pembayaran (berbagi komponen dengan Dashboard)
     const [paymentModalOpen, setPaymentModalOpen] = useState(false);

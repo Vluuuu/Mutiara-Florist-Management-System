@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Services\DashboardService;
 use App\Services\OrderService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -327,5 +328,199 @@ class Phase9Sprint2OperationsTest extends TestCase
             ->assertSessionHas('success');
 
         $this->assertSame(150000, (int) DB::table('payments')->where('order_id', $unpaidOrder->id)->where('status', 'POSTED')->sum('amount'));
+    }
+
+    public function test_wib_date_defaults_across_utc_boundaries_and_edit_preserves_stored_dates(): void
+    {
+        $cust = Customer::query()->create(['name' => 'Pelanggan Batas Waktu WIB']);
+        $oldOrder = $this->orderService->create([
+            'customer_id' => $cust->id,
+            'order_date' => '2026-11-10',
+            'items' => [
+                [
+                    'flower_type' => 'Buket Lama',
+                    'recipient' => 'Ibu Tini',
+                    'sender_name' => 'Keluarga',
+                    'delivery_date' => '2026-11-12',
+                    'delivery_location' => 'Bandung',
+                    'quantity' => 1,
+                    'unit_price' => 250000,
+                    'shipping_mode' => 'INCLUDED',
+                    'shipping_fee' => 0,
+                ],
+            ],
+        ], $this->admin->id);
+
+        $cases = [
+            ['wib' => '2026-11-16 23:59:00', 'expected' => '2026-11-16'],
+            ['wib' => '2026-11-17 00:30:00', 'expected' => '2026-11-17'],
+            ['wib' => '2026-11-17 06:59:00', 'expected' => '2026-11-17'],
+            ['wib' => '2026-11-17 07:00:00', 'expected' => '2026-11-17'],
+        ];
+
+        try {
+            foreach ($cases as $case) {
+                Carbon::setTestNow(Carbon::createFromFormat('Y-m-d H:i:s', $case['wib'], 'Asia/Jakarta'));
+
+                $this->actingAs($this->admin)
+                    ->get(route('ui-orders.create'))
+                    ->assertOk()
+                    ->assertInertia(fn (Assert $page) => $page
+                        ->where('todayIso', $case['expected'])
+                        ->etc());
+
+                $this->actingAs($this->admin)
+                    ->get(route('dashboard'))
+                    ->assertOk()
+                    ->assertInertia(fn (Assert $page) => $page
+                        ->where('todayIso', $case['expected'])
+                        ->etc());
+
+                $this->actingAs($this->admin)
+                    ->get(route('ui-orders.show', $oldOrder))
+                    ->assertOk()
+                    ->assertInertia(fn (Assert $page) => $page
+                        ->where('todayIso', $case['expected'])
+                        ->etc());
+
+                // Edit must keep saved historical dates rather than overwriting with todayIso
+                $this->actingAs($this->admin)
+                    ->get(route('ui-orders.edit', $oldOrder))
+                    ->assertOk()
+                    ->assertInertia(fn (Assert $page) => $page
+                        ->where('todayIso', $case['expected'])
+                        ->where('order.order_date', '2026-11-10')
+                        ->where('order.items.0.delivery_date', '2026-11-12')
+                        ->etc());
+            }
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
+    public function test_orders_index_supports_combined_unpaid_and_status_filters(): void
+    {
+        $cust = Customer::query()->create(['name' => 'Pelanggan Filter Gabungan']);
+
+        $readyUnpaid = $this->orderService->create([
+            'customer_id' => $cust->id,
+            'order_date' => '2026-11-17',
+            'items' => [
+                [
+                    'flower_type' => 'Papan Siap Belum Lunas',
+                    'recipient' => 'Pak Anton',
+                    'sender_name' => 'PT Jaya',
+                    'delivery_date' => '2026-11-17',
+                    'delivery_location' => 'Surabaya',
+                    'quantity' => 1,
+                    'unit_price' => 450000,
+                    'shipping_mode' => 'INCLUDED',
+                    'shipping_fee' => 0,
+                ],
+            ],
+        ], $this->admin->id);
+        $itemA = $readyUnpaid->items()->firstOrFail();
+        $this->orderService->updateItemFulfillment($readyUnpaid, $itemA->id, 'PROCESSING', $this->admin->id);
+        $this->orderService->updateItemFulfillment($readyUnpaid, $itemA->id, 'READY', $this->admin->id);
+
+        $readyPaid = $this->orderService->create([
+            'customer_id' => $cust->id,
+            'order_date' => '2026-11-17',
+            'items' => [
+                [
+                    'flower_type' => 'Papan Siap Lunas',
+                    'recipient' => 'Bu Sari',
+                    'sender_name' => 'PT Jaya',
+                    'delivery_date' => '2026-11-17',
+                    'delivery_location' => 'Surabaya',
+                    'quantity' => 1,
+                    'unit_price' => 300000,
+                    'shipping_mode' => 'INCLUDED',
+                    'shipping_fee' => 0,
+                ],
+            ],
+        ], $this->admin->id);
+        $itemB = $readyPaid->items()->firstOrFail();
+        $this->orderService->updateItemFulfillment($readyPaid, $itemB->id, 'PROCESSING', $this->admin->id);
+        $this->orderService->updateItemFulfillment($readyPaid, $itemB->id, 'READY', $this->admin->id);
+        Payment::query()->forceCreate([
+            'order_id' => $readyPaid->id,
+            'recorded_by' => $this->admin->id,
+            'payment_date' => '2026-11-17',
+            'amount' => 300000,
+            'method' => 'TRANSFER',
+            'idempotency_key' => (string) Str::uuid(),
+            'status' => 'POSTED',
+        ]);
+
+        $newUnpaid = $this->orderService->create([
+            'customer_id' => $cust->id,
+            'order_date' => '2026-11-17',
+            'items' => [
+                [
+                    'flower_type' => 'Papan Baru Belum Lunas',
+                    'recipient' => 'Pak Rudi',
+                    'sender_name' => 'PT Jaya',
+                    'delivery_date' => '2026-11-17',
+                    'delivery_location' => 'Surabaya',
+                    'quantity' => 1,
+                    'unit_price' => 500000,
+                    'shipping_mode' => 'INCLUDED',
+                    'shipping_fee' => 0,
+                ],
+            ],
+        ], $this->admin->id);
+
+        $this->assertSame('READY', $readyUnpaid->fresh()->status);
+        $this->assertSame('READY', $readyPaid->fresh()->status);
+        $this->assertSame('NEW', $newUnpaid->fresh()->status);
+
+        // Combined payment=UNPAID & status=READY MUST return ONLY $readyUnpaid
+        $this->actingAs($this->admin)
+            ->get(route('ui-orders.index', ['payment' => 'UNPAID', 'status' => 'READY']))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('orders.data', 1)
+                ->where('orders.data.0.id', $readyUnpaid->id)
+                ->where('filters.payment', 'UNPAID')
+                ->where('filters.status', 'READY')
+                ->etc());
+    }
+
+    public function test_dashboard_exposes_multiple_open_receivables_for_explicit_selection(): void
+    {
+        $cust1 = Customer::query()->create(['name' => 'Pelanggan Piutang Satu']);
+        $cust2 = Customer::query()->create(['name' => 'Pelanggan Piutang Dua']);
+        $cust3 = Customer::query()->create(['name' => 'Pelanggan Piutang Tiga']);
+
+        foreach ([$cust1, $cust2, $cust3] as $idx => $c) {
+            $this->orderService->create([
+                'customer_id' => $c->id,
+                'order_date' => '2026-11-17',
+                'items' => [
+                    [
+                        'flower_type' => 'Bunga Piutang '.($idx + 1),
+                        'recipient' => 'Penerima '.($idx + 1),
+                        'sender_name' => 'Pengirim',
+                        'delivery_date' => '2026-11-17',
+                        'delivery_location' => 'Jakarta',
+                        'quantity' => 1,
+                        'unit_price' => ($idx + 1) * 200000,
+                        'shipping_mode' => 'INCLUDED',
+                        'shipping_fee' => 0,
+                    ],
+                ],
+            ], $this->admin->id);
+        }
+
+        $this->actingAs($this->admin)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('receivables', 3)
+                ->where('receivables.0.customer_name', 'Pelanggan Piutang Satu')
+                ->where('receivables.1.customer_name', 'Pelanggan Piutang Dua')
+                ->where('receivables.2.customer_name', 'Pelanggan Piutang Tiga')
+                ->etc());
     }
 }

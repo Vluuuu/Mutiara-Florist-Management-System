@@ -6,9 +6,14 @@ import type { OrderCustomerOption } from '@/types';
 type OrdersCreateProps = {
     customers: OrderCustomerOption[];
     selectedCustomerId?: number | null;
+    todayIso?: string;
 };
 
-export default function OrdersCreate({ customers, selectedCustomerId = null }: OrdersCreateProps) {
+export default function OrdersCreate({
+    customers,
+    selectedCustomerId = null,
+    todayIso,
+}: OrdersCreateProps) {
     return (
         <AppLayout title="Buat Pesanan">
             <Head title="Buat Pesanan" />
@@ -16,6 +21,7 @@ export default function OrdersCreate({ customers, selectedCustomerId = null }: O
                 mode="create"
                 customers={customers}
                 selectedCustomerId={selectedCustomerId}
+                todayIso={todayIso}
             />
         </AppLayout>
     );

@@ -30,7 +30,7 @@ class UiOrderController extends Controller
         $status = $filters['status'] ?? '';
         $payment = $filters['payment'] ?? '';
 
-        if ($payment === 'UNPAID' && $status === '') {
+        if ($payment === 'UNPAID') {
             $escapedSearch = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $search);
             $pattern = '%'.$escapedSearch.'%';
 
@@ -44,6 +44,7 @@ class UiOrderController extends Controller
                             ->orWhereHas('customer', fn ($query) => $query->whereRaw("name LIKE ? ESCAPE '!'", [$pattern]));
                     });
                 })
+                ->when($status !== '', fn ($query) => $query->where('status', $status))
                 ->whereRaw(
                     'total_amount > COALESCE((SELECT SUM(amount) FROM payments WHERE payments.order_id = orders.id AND payments.status = ?), 0)',
                     ['POSTED']
@@ -114,6 +115,7 @@ class UiOrderController extends Controller
         return Inertia::render('Orders/Create', [
             'customers' => $customers,
             'selectedCustomerId' => $selectedCustomerId,
+            'todayIso' => now('Asia/Jakarta')->toDateString(),
         ]);
     }
 
@@ -134,6 +136,7 @@ class UiOrderController extends Controller
 
         return Inertia::render('Orders/Show', [
             'order' => $orderData,
+            'todayIso' => now('Asia/Jakarta')->toDateString(),
         ]);
     }
 
@@ -168,6 +171,7 @@ class UiOrderController extends Controller
                 ])->all(),
             ],
             'customers' => $this->activeCustomers(),
+            'todayIso' => now('Asia/Jakarta')->toDateString(),
         ]);
     }
 

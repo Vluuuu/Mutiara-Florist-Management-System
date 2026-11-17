@@ -93,3 +93,16 @@ export function formatDateTimeWib(value: string | null | undefined): string {
         .replace('.', ':');
     return `${datePart} ${timePart} WIB`;
 }
+
+/**
+ * Mengembalikan tanggal kalender hari ini (YYYY-MM-DD) menurut zona waktu Asia/Jakarta (WIB),
+ * bukan UTC atau zona waktu lokal perangkat operator.
+ */
+export function getWibTodayIso(now: Date = new Date()): string {
+    return new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Jakarta',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+    }).format(now);
+}
