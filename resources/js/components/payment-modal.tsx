@@ -18,7 +18,7 @@ type PaymentModalProps = {
     open: boolean;
     order: PaymentModalTarget | null;
     todayIso: string;
-    returnTo?: 'dashboard' | 'order';
+    returnTo?: 'dashboard' | 'order' | 'payments';
     onClose: () => void;
 };
 

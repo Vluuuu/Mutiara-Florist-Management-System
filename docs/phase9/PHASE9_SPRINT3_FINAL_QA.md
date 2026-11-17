@@ -1,0 +1,82 @@
+# MFMS Phase 9 Sprint 3 — Final Financial UX & Verification Report
+
+- **Branch:** `feat/phase9-sprint3-financial-ux`
+- **Base (`main`):** `33fc49c6021635eefc2559c4e9a85c0bde42d497`
+- **Design System:** Arah 2 — Botanical Studio Workspace (`docs/DESIGN.md`, `docs/phase8-2/direction-2-botanical-studio.html`)
+- **Database Safety:** Tidak ada perubahan skema/migrasi maupun modifikasi service domain inti (`OrderService`, `PaymentService`, `ExpenseService`, `ReportService`, `BackupService`). Seluruh pengujian PHPUnit dan browser QA dijalankan pada database terisolasi (`RefreshDatabase` dan SQLite sementara), tanpa menyentuh database operasional.
+
+---
+
+## 1. Ringkasan Implementasi Sprint 3
+
+### A. Piutang & Pembayaran (`Payments/Index.tsx`, `UiPaymentController.php`, `payment-modal.tsx`)
+- Menyelaraskan `Payments/Index.tsx` ke Botanical Studio Workspace dengan kartu ringkasan `Total Piutang Aktif` (`formatRupiah`, `tabular-nums`) dan `ResponsiveDataList` (tabel desktop, kartu mobile).
+- Menambahkan tombol langsung `Catat Bayar` pada setiap tagihan terbuka yang membuka shared `<PaymentModal>` lengkap dengan konfirmasi nota/pelanggan/sisa tagihan, proteksi double-submit + `idempotency_key`, penolakan overpay di sisi UI dan server, serta dukungan `return_to="payments"` di `UiPaymentController::store()`.
+- Menambahkan seksi sekunder read-only `Riwayat Pembayaran Terakhir` dengan paginasi terpisah (`history_page`) dan filter status (`Semua`, `Hanya Tercatat`, `Hanya Dibatalkan`), lengkap dengan nominal dicoret + alasan + waktu WIB untuk catatan berstatus `VOIDED`, terpisah jelas dari metrik piutang aktif.
+
+### B. Pengeluaran & Tambah Pengeluaran (`Expenses/Index.tsx`, `Expenses/Create.tsx`, `UiExpenseController.php`)
+- **P0 WIB Date Integrity Fix:** Menghapus `new Date().toISOString().split('T')[0]` pada `Expenses/Create.tsx` dan menggantinya dengan `todayIso` server (`now('Asia/Jakarta')->toDateString()`) plus fallback `getWibTodayIso()`. Teruji pada batas `00:30 WIB`, `06:59 WIB`, dan `07:00 WIB`.
+- **No Auto-Selected Category:** `Expenses/Create.tsx` memulai `expense_category_id` dalam keadaan kosong (`""`) agar operator memilih kategori secara sadar.
+- **Quick-Create Category Modal (`+ Kategori Baru`):** Menyediakan modal pembuatan kategori cepat (`POST /ui-expense-categories` JSON `201`) langsung dari formulir tambah pengeluaran tanpa menghapus isian tanggal, nominal (`CurrencyInput`), atau keterangan yang sedang diketik.
+- **Expenses Ledger (`Expenses/Index.tsx`):** Memakai `ResponsiveDataList`, ringkasan `Total Pengeluaran Sah`, filter teks/kategori/status/rentang tanggal lengkap dengan banner error (`errors.to` saat `to < from`), mengganti label `VOIDED` mentah dengan badge Bahasa Indonesia `Dibatalkan`, serta mengganti modal manual dengan shared accessible `<Modal>` berproteksi anti double-submit dan alasan minimal 10 karakter (`x/10`).
+
+### C. Kategori Biaya (`ExpenseCategories/Index.tsx`, `UiExpenseCategoryController.php`)
+- Menghapus `window.confirm()` sepenuhnya dan menggantinya dengan shared accessible `<Modal>` konfirmasi untuk aktivasi/nonaktivasi serta modal ubah nama.
+- Mempertahankan prinsip non-destructive ledger (tanpa hard delete) agar riwayat transaksi kategori lama tetap utuh, menampilkan `expenses_count` (`tabular-nums`), filter chip `Semua / Aktif / Nonaktif`, dan kontrol interaktif `>= 44x44px`.
+
+### D. Laporan Keuangan & Ekspor Excel (`Reports/Index.tsx`)
+- Menjaga `ReportService.php` tetap 100% tidak diubah.
+- Merancang ulang `Reports/Index.tsx` mengikuti Botanical Studio dengan `formatRupiah()`, `tabular-nums`, preset periode (`Hari Ini`, `7 Hari`, `30 Hari`, `Bulan Ini`, `Bulan Lalu`, `Kustom`), validasi rentang tanggal kustom, penggantian seluruh label enum/SQL mentah (`POSTED`, `VOIDED`, `NEW`, `PROCESSING`, `READY`, `COMPLETED`, `UNPAID`, `PARTIAL`, `PAID`, `order_date`) menjadi istilah operator Bahasa Indonesia yang alami.
+- Mempertahankan seluruh 5 catatan akuntansi/rekonsiliasi finansial dan menambahkan toggle `Semua Hari` vs `Hanya Hari Bertransaksi` beserta `<ResponsiveDataList>` mobile card + desktop table untuk tren harian.
+
+---
+
+## 2. Verifikasi Teknis & Kepatuhan Anti-Slop
+
+### 2.1 TypeScript, Build, & PHPUnit
+- `npm run typecheck` (`tsc --noEmit`): **PASS** (0 error)
+- `npm run build` (`vite build`): **PASS** (built in 2.29s)
+- `php artisan test`: **166 passed (1965 assertions)** dalam `11.50s` setelah edit final, mencakup `Phase9Sprint3FinancialTest` (6 test, 246 assertions):
+  - `payments_index_provides_wib_date_filtered_payment_history_and_return_to_payments`
+  - `expenses_create_defaults_today_iso_in_wib_across_boundary_hours`
+  - `expense_category_quick_create_json_and_status_toggle_preserve_history`
+  - `expenses_index_rejects_invalid_date_range_and_prevents_double_idempotency_write`
+  - `full_reconciliation_parity_across_all_modules_and_database_pre_and_post_void` (memverifikasi kesamaan nilai exact antara query SQL langsung, React Dashboard, Legacy Blade Dashboard, `Payments/Index`, `Expenses/Index`, dan `Reports/Index` sebelum dan sesudah `VOIDED` payment & expense)
+  - `excel_export_contains_expected_sheets_numeric_cells_and_reconciled_totals`
+
+### 2.2 Pemeriksaan File Excel (`.xlsx`)
+- Programmatic ECMA-376 Zip/XML inspection (`ZipArchive` + `SimpleXMLElement`) via `UiReportTest` dan `Phase9Sprint3FinancialTest` memverifikasi:
+  - Header HTTP: `Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` dan filename `laporan-mutiara-florist-{from}-sd-{to}.xlsx`
+  - Keberadaan part wajib `[Content_Types].xml`, `_rels/.rels`, `docProps/core.xml`, `docProps/app.xml`, `xl/workbook.xml`, `xl/styles.xml`, dan 4 sheet (`Ringkasan`, `Pesanan`, `Kas Masuk (POSTED)`, `Kas Keluar (POSTED)`)
+  - Nilai numerik integer Rupiah pada XML (`<v>...</v>`), format tanggal `dd/mm/yyyy`, serta sanitasi anti formula injection (`'=`, `'-`, `'@`, `'+`)
+- **Catatan Microsoft Excel Desktop:** Binary `C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE` versi `16.0.20527.20196` terdeteksi pada sistem, namun pembukaan visual interaktif di aplikasi GUI Microsoft Excel tidak dieksekusi pada sesi QA headless ini.
+
+### 2.3 Kontras WCAG AA & Anti-Slop Scan
+- `.agents/skills/antislop-human/contrast-check.py --selftest`: **PASS** (`9 reference pairs OK`)
+- Pasangan warna teks Sprint 3:
+  - `#143326` vs `#FFFFFF`: `13.71:1` (PASS normal & large)
+  - `#1E2420` vs `#F1EDE6`: `13.55:1` (PASS)
+  - `#525B54` vs `#F1EDE6`: `6.03:1` (PASS)
+  - `#8C3B4A` vs `#FDF2F4`: `6.76:1` (PASS)
+  - `#166534` vs `#FFFFFF`: `7.13:1` (PASS) | vs `#DCFCE7`: `6.49:1` (PASS)
+  - `#92400E` vs `#FFFFFF`: `7.09:1` (PASS) | vs `#FEF3C7`: `6.37:1` (PASS)
+  - `#991B1B` vs `#FEE2E2`: `6.80:1` (PASS)
+  - `#858E87` vs `#FFFFFF` (input border): `3.38:1` (PASS WCAG 1.4.11 UI component)
+- Pemindaian `U+2014` (`em dash`), `window.confirm()`, dan `toISOString()` pada seluruh file Sprint 3: **0 pelanggaran**.
+
+### 2.4 Browser QA 5 Viewport (`agent-browser`, SQLite Terisolasi)
+Diuji di Chromium across `360x780`, `390x844`, `768x1024`, `1024x768`, dan `1440x900` pada rute `/ui-payments`, `/ui-expenses`, `/ui-expenses/create`, `/ui-expense-categories`, `/ui-reports`:
+- Horizontal overflow (`scrollWidth > innerWidth`): **0 di seluruh 25 kombinasi rute x viewport**
+- Target interaktif `< 43px`: **0 temuan** di seluruh 25 kombinasi
+- Em dash (`\u2014`) & kebocoran enum mentah di DOM teks: **0 temuan**
+- Alur interaktif terverifikasi:
+  - Pencatatan pembayaran modal + guard overpay + pembaruan saldo piutang dan riwayat
+  - Form pengeluaran tanpa auto-select kategori + WIB `todayIso` + modal `+ Kategori Baru` tanpa kehilangan draft input + submit pengeluaran + modal void alasan >= 10 karakter
+  - Kelola kategori modal nonaktifkan tanpa `window.confirm`
+  - Laporan toggle `Hanya Hari Bertransaksi` + tautan ekspor `.xlsx` tersinkronisasi periode
+- Bukti screenshot tersimpan di `docs/phase9/sprint3-screenshots/`.
+
+---
+
+## 3. Batasan Status Rilis
+Penyelesaian Phase 9 Sprint 3 ini **tidak** otomatis menyatakan sistem siap rilis produksi penuh (v1.0.0) secara keseluruhan tanpa verifikasi kesiapan produksi menyeluruh di tingkat rilis (backup operasional, deployment hardening, dan review PR).

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ExpenseCategoryRequest;
 use App\Models\ExpenseCategory;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -25,9 +26,9 @@ class UiExpenseCategoryController extends Controller
         ]);
     }
 
-    public function store(ExpenseCategoryRequest $request): RedirectResponse
+    public function store(ExpenseCategoryRequest $request): RedirectResponse|JsonResponse
     {
-        DB::transaction(function () use ($request): void {
+        $category = DB::transaction(function () use ($request): ExpenseCategory {
             $category = new ExpenseCategory();
             $category->forceFill([
                 'name' => $request->validated()['name'],
@@ -37,7 +38,20 @@ class UiExpenseCategoryController extends Controller
             $this->audit($request, 'expense_category.created', $category, [
                 'name_after' => $category->name,
             ]);
+
+            return $category;
         });
+
+        if ($request->wantsJson() && ! $request->header('X-Inertia')) {
+            return response()->json([
+                'message' => 'Kategori pengeluaran berhasil ditambahkan.',
+                'category' => [
+                    'id' => $category->id,
+                    'name' => $category->name,
+                    'is_active' => true,
+                ],
+            ], 201);
+        }
 
         return redirect()->route('ui-expense-categories.index')
             ->with('success', 'Kategori pengeluaran berhasil ditambahkan.');
