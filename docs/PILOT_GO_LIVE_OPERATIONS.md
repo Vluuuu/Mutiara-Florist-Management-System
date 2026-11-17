@@ -23,7 +23,11 @@ Dokumen ini disiapkan untuk operator harian dan pemilik toko Mutiara Florist pad
 ### B. Mematikan Sistem (Saat Toko Tutup)
 1. Pastikan seluruh operator sudah menekan tombol **Keluar** (Logout) dan tidak ada transaksi yang sedang disimpan.
 2. Klik dua kali **`Stop-MFMS.bat`** di folder `scripts\`.
-3. Skrip akan menghentikan server web pada port `8000` secara aman. Jika MariaDB dijalankan oleh `Start-MFMS.bat`, skrip juga akan mematikannya dengan `mysqladmin shutdown`. Jika MariaDB dijalankan via **XAMPP Control Panel**, hentikan melalui tombol **Stop** di XAMPP Control Panel sebelum mematikan komputer.
+3. Perilaku skrip shutdown yang aman:
+   - Skrip **hanya** menghentikan proses web Laravel yang benar-benar dibuat oleh `Start-MFMS.bat` (memverifikasi `PID`, waktu mulai proses untuk mencegah *PID reuse*, `ExecutablePath`, dan `CommandLine` pada `storage\framework\mfms_laravel.state.json`).
+   - Jika port `8000` dipakai aplikasi lain atau file status *stale*, skrip **tidak akan** mematikan proses lain tersebut.
+   - Skrip memverifikasi bahwa proses Laravel benar-benar telah berhenti sebelum menampilkan status selesai.
+   - Skrip **tidak pernah** melakukan *force-kill* (`Stop-Process -Force`) terhadap `mysqld.exe` demi menjaga integritas data MariaDB. Jika MariaDB dijalankan via **XAMPP Control Panel**, hentikan MariaDB melalui tombol **Stop** pada modul MySQL di XAMPP Control Panel sebelum mematikan komputer.
 
 ---
 

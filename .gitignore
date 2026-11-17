@@ -17,6 +17,7 @@
 /storage/framework/sessions/*
 /storage/framework/views/*
 /storage/framework/*.pid
+/storage/framework/*.state.json
 .phpunit.result.cache
 .phpunit-watcher.yml
 

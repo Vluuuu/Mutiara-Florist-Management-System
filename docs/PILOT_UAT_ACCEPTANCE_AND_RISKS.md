@@ -34,6 +34,17 @@ Tanda Tangan Operator: `____________________` &nbsp;&nbsp;&nbsp; Tanda Tangan Pe
 
 ---
 
+## 1B. Checklist Wajib Sebelum Go-Live dengan Data Nyata (Owner Gate)
+
+Sebelum toko mulai mencatat transaksi pelanggan nyata:
+- [ ] **Akun demo dinonaktifkan/dihapus secara terkendali:** Pemilik telah menyetujui dan menghapus akun pengujian (`QA Dashboard Temp` / `@example.test`).
+- [ ] **Pemahaman hak akses penuh (Tanpa RBAC):** Operator & pemilik memahami bahwa semua akun saat ini memiliki hak akses penuh karena RBAC belum tersedia.
+- [ ] **`APP_DEBUG=false`:** Konfigurasi `.env` lokal telah diubah ke `APP_DEBUG=false` sebelum pilot dengan data nyata agar detail teknis tidak tampil ke layar kasir.
+- [ ] **Backup & Encryption Key teruji pulih:** Salinan backup `.enc` + `.meta.json` dan kunci enkripsinya tersimpan di luar komputer utama dan terbukti dapat dipulihkan lewat `php artisan mfms:restore-test`.
+- [ ] **Persetujuan UAT Manusia:** Form UAT Operator pada Bagian 1 di atas telah ditandatangani oleh operator dan pemilik toko.
+
+---
+
 ## 2. Catatan Risiko yang Masih Tersisa (Residual Risks)
 
 Pengelola dan pemilik toko wajib memahami risiko tersisa berikut selama masa pilot lokal:

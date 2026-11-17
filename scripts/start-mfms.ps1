@@ -2,10 +2,11 @@
 # Mutiara Florist Management System (MFMS) - Local Windows Startup Script
 # ==============================================================================
 # Aman untuk operator harian:
-# - Memeriksa MariaDB di port 3307 (tidak menjalankan instance ganda)
+# - Memastikan MariaDB aktif di port 3307 (prioritas dikelola XAMPP Control Panel)
+# - Tidak menjalankan instance MariaDB atau Laravel ganda
 # - Tidak menjalankan migrasi, seeding, atau reset database otomatis
-# - Memeriksa ketersediaan port 8000 & hasil build production (public/build)
-# - Menjalankan server Laravel hanya di 127.0.0.1:8000
+# - Memeriksa identitas aplikasi pada port 8000 sebelum menyatakan SISTEM SIAP
+# - Menyimpan metadata kepemilikan proses (PID + CreationDate + ExecutablePath + CommandLine)
 # ==============================================================================
 
 $ErrorActionPreference = 'Stop'
@@ -18,14 +19,48 @@ Write-Host "  MUTIARA FLORIST MANAGEMENT SYSTEM (MFMS) - STARTUP LOKAL  " -Foreg
 Write-Host "============================================================" -ForegroundColor DarkGreen
 Write-Host ""
 
-function Test-LocalPort {
+function Get-ListeningPids {
     param([int]$Port)
     try {
-        $conn = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue
-        return ($null -ne $conn)
+        $conns = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue
+        if ($conns) {
+            return @($conns | Select-Object -ExpandProperty OwningProcess -Unique)
+        }
+    } catch {}
+    return @()
+}
+
+function Test-LocalPort {
+    param([int]$Port)
+    return ((Get-ListeningPids -Port $Port).Count -gt 0)
+}
+
+function Get-ProcessMetadata {
+    param([int]$ProcessId)
+    try {
+        $cim = Get-CimInstance Win32_Process -Filter "ProcessId = $ProcessId" -ErrorAction SilentlyContinue
+        if ($null -eq $cim) { return $null }
+        $createdIso = if ($cim.CreationDate) { $cim.CreationDate.ToUniversalTime().ToString('o') } else { '' }
+        return @{
+            pid             = [int]$cim.ProcessId
+            parent_pid      = [int]$cim.ParentProcessId
+            start_time      = $createdIso
+            executable_path = [string]$cim.ExecutablePath
+            command_line    = [string]$cim.CommandLine
+            name            = [string]$cim.Name
+        }
     } catch {
-        $output = netstat -ano | Select-String ":$Port\s+.*LISTENING"
-        return ($null -ne $output)
+        return $null
+    }
+}
+
+function Test-IsMfmsHttp {
+    param([string]$Url)
+    try {
+        $resp = Invoke-WebRequest -Uri $Url -UseBasicParsing -TimeoutSec 3 -MaximumRedirection 3
+        return ($resp.StatusCode -eq 200 -and $resp.Content -match 'Mutiara Florist')
+    } catch {
+        return $false
     }
 }
 
@@ -63,22 +98,23 @@ if (Test-Path "$ProjectRoot\public\hot") {
     Remove-Item "$ProjectRoot\public\hot" -Force
 }
 
-# 3. Pastikan MariaDB aktif di port 3307 (tanpa menjalankan instance kedua)
+# 3. Pastikan MariaDB aktif di port 3307 (tanpa instance kedua)
 $MysqlPort = 3307
-$MysqlPidFile = "$ProjectRoot\storage\framework\mfms_mysql.pid"
+$MysqlStateFile = "$ProjectRoot\storage\framework\mfms_mysql.state.json"
 
 if (Test-LocalPort -Port $MysqlPort) {
     Write-Host "[OK] MariaDB sudah aktif di port $MysqlPort." -ForegroundColor Green
 } else {
     Write-Host "[INFO] MariaDB belum berjalan di port $MysqlPort. Mencoba menyalakan MariaDB XAMPP..." -ForegroundColor Yellow
+    Write-Host "       (Disarankan menyalakan modul MySQL melalui XAMPP Control Panel)." -ForegroundColor Gray
     if (-not $XamppRoot -or -not (Test-Path "$XamppRoot\mysql\bin\mysqld.exe")) {
         Write-Host "[GAGAL] mysqld.exe XAMPP tidak ditemukan. Buka XAMPP Control Panel dan nyalakan MySQL secara manual." -ForegroundColor Red
         exit 1
     }
 
+    $MysqlExe = "$XamppRoot\mysql\bin\mysqld.exe"
     $MysqlArgs = @("--defaults-file=$XamppRoot\mysql\bin\my.ini", "--standalone")
-    $MysqlProc = Start-Process -FilePath "$XamppRoot\mysql\bin\mysqld.exe" -ArgumentList $MysqlArgs -WindowStyle Hidden -PassThru
-    Set-Content -Path $MysqlPidFile -Value $MysqlProc.Id -Encoding ASCII
+    $MysqlProc = Start-Process -FilePath $MysqlExe -ArgumentList $MysqlArgs -WindowStyle Hidden -PassThru
 
     $WaitSec = 0
     while (-not (Test-LocalPort -Port $MysqlPort) -and $WaitSec -lt 15) {
@@ -88,38 +124,56 @@ if (Test-LocalPort -Port $MysqlPort) {
 
     if (-not (Test-LocalPort -Port $MysqlPort)) {
         Write-Host "[GAGAL] MariaDB gagal aktif di port $MysqlPort dalam 15 detik." -ForegroundColor Red
-        Write-Host "        Periksa log error MariaDB di $XamppRoot\mysql\data\mysql_error.log." -ForegroundColor Yellow
+        Write-Host "        Periksa log error MariaDB di $XamppRoot\mysql\data\mysql_error.log atau nyalakan lewat XAMPP Control Panel." -ForegroundColor Yellow
         exit 1
+    }
+
+    $mysqlMeta = Get-ProcessMetadata -ProcessId $MysqlProc.Id
+    if ($mysqlMeta) {
+        $mysqlMeta['port'] = $MysqlPort
+        $mysqlMeta['managed_by'] = 'mfms-start'
+        $mysqlMeta | ConvertTo-Json -Depth 3 | Set-Content -Path $MysqlStateFile -Encoding UTF8
     }
     Write-Host "[OK] MariaDB berhasil dijalankan di port $MysqlPort (PID: $($MysqlProc.Id))." -ForegroundColor Green
 }
 
-# 4. Uji koneksi database Laravel (tanpa migrasi/seeding)
+# 4. Uji koneksi database Laravel (READ-ONLY, tanpa migrasi/seeding/reset)
 Write-Host "[INFO] Memeriksa koneksi database Laravel..." -ForegroundColor Cyan
-$DbCheck = & $PhpExe artisan db:show --counts 2>&1
-if ($LASTEXITCODE -ne 0) {
-    # Fallback ke check PDO sederhana jika db:show butuh ekstensi tertentu
-    $PdoCheck = & $PhpExe -r "require 'vendor/autoload.php'; `$app = require 'bootstrap/app.php'; `$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); Illuminate\Support\Facades\DB::connection()->getPdo(); echo 'OK';" 2>&1
-    if ($LASTEXITCODE -ne 0 -or ($PdoCheck -notmatch 'OK')) {
-        Write-Host "[GAGAL] Koneksi ke database MariaDB gagal. Periksa konfigurasi DB_PORT=3307 dan DB_DATABASE di .env." -ForegroundColor Red
-        exit 1
-    }
+$PdoCheck = & $PhpExe -r "require 'vendor/autoload.php'; `$app = require 'bootstrap/app.php'; `$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); Illuminate\Support\Facades\DB::connection()->getPdo(); echo 'OK';" 2>&1
+if ($LASTEXITCODE -ne 0 -or ($PdoCheck -notmatch 'OK')) {
+    Write-Host "[GAGAL] Koneksi ke database MariaDB gagal. Periksa DB_PORT=3307 dan DB_DATABASE di .env." -ForegroundColor Red
+    exit 1
 }
 Write-Host "[OK] Koneksi database operasional terverifikasi." -ForegroundColor Green
 
-# 5. Periksa port Laravel 8000 agar tidak bentrok
+# 5. Periksa port Laravel 8000 agar tidak bentrok dengan aplikasi lain
 $LaravelPort = 8000
-$LaravelPidFile = "$ProjectRoot\storage\framework\mfms_laravel.pid"
+$LaravelStateFile = "$ProjectRoot\storage\framework\mfms_laravel.state.json"
+$ExistingPids = Get-ListeningPids -Port $LaravelPort
 
-if (Test-LocalPort -Port $LaravelPort) {
-    Write-Host ""
-    Write-Host "[INFO] Server pada 127.0.0.1:$LaravelPort sudah berjalan." -ForegroundColor Yellow
-    Write-Host "       Jika itu adalah MFMS, Anda dapat langsung membuka browser." -ForegroundColor Yellow
-    Write-Host "       Jika ingin memulai ulang, jalankan Stop-MFMS.bat terlebih dahulu." -ForegroundColor Yellow
+if ($ExistingPids.Count -gt 0) {
+    $VerifiedExistingMfms = $false
+    foreach ($p in $ExistingPids) {
+        $meta = Get-ProcessMetadata -ProcessId $p
+        if ($meta -and $meta.executable_path -match 'php\.exe$' -and ($meta.command_line -match [regex]::Escape($ProjectRoot) -or (Test-IsMfmsHttp -Url "http://127.0.0.1:$LaravelPort/login"))) {
+            $VerifiedExistingMfms = $true
+            break
+        }
+    }
+
+    if (-not $VerifiedExistingMfms) {
+        $firstMeta = Get-ProcessMetadata -ProcessId $ExistingPids[0]
+        $procDesc = if ($firstMeta) { "$($firstMeta.name) (PID $($firstMeta.pid))" } else { "PID $($ExistingPids[0])" }
+        Write-Host ""
+        Write-Host "[GAGAL] Port $LaravelPort sudah dipakai oleh aplikasi lain: $procDesc." -ForegroundColor Red
+        Write-Host "        Skrip tidak akan mematikan aplikasi tersebut. Tutup aplikasi lain di port $LaravelPort terlebih dahulu." -ForegroundColor Yellow
+        exit 1
+    }
+
+    Write-Host "[OK] Server MFMS sudah berjalan aktif pada http://127.0.0.1:$LaravelPort (tidak menjalankan instance ganda)." -ForegroundColor Green
 } else {
     Write-Host "[INFO] Menyalakan server MFMS di http://127.0.0.1:$LaravelPort ..." -ForegroundColor Cyan
     $ServeProc = Start-Process -FilePath $PhpExe -ArgumentList @("artisan", "serve", "--host=127.0.0.1", "--port=$LaravelPort") -WorkingDirectory $ProjectRoot -WindowStyle Minimized -PassThru
-    Set-Content -Path $LaravelPidFile -Value $ServeProc.Id -Encoding ASCII
 
     $WaitWeb = 0
     while (-not (Test-LocalPort -Port $LaravelPort) -and $WaitWeb -lt 10) {
@@ -131,7 +185,34 @@ if (Test-LocalPort -Port $LaravelPort) {
         Write-Host "[GAGAL] Server Laravel gagal aktif di port $LaravelPort." -ForegroundColor Red
         exit 1
     }
-    Write-Host "[OK] Server MFMS aktif (PID: $($ServeProc.Id))." -ForegroundColor Green
+
+    # Cari proses listener anak yang terikat ke port 8000 dan catat metadata kepemilikan
+    $ListenerPids = Get-ListeningPids -Port $LaravelPort
+    $ListenerMeta = $null
+    foreach ($lp in $ListenerPids) {
+        $m = Get-ProcessMetadata -ProcessId $lp
+        if ($m -and ($m.pid -eq $ServeProc.Id -or $m.parent_pid -eq $ServeProc.Id -or $m.command_line -match '127\.0\.0\.1:8000')) {
+            $ListenerMeta = $m
+            break
+        }
+    }
+
+    $ParentMeta = Get-ProcessMetadata -ProcessId $ServeProc.Id
+    $StateObj = @{
+        managed_by   = 'mfms-start'
+        project_root = $ProjectRoot
+        port         = $LaravelPort
+        created_at   = (Get-Date).ToUniversalTime().ToString('o')
+        parent       = $ParentMeta
+        listener     = $ListenerMeta
+    }
+    $StateObj | ConvertTo-Json -Depth 4 | Set-Content -Path $LaravelStateFile -Encoding UTF8
+
+    if (-not (Test-IsMfmsHttp -Url "http://127.0.0.1:$LaravelPort/login")) {
+        Write-Host "[GAGAL] Server di port $LaravelPort aktif namun halaman login MFMS tidak merespons dengan benar." -ForegroundColor Red
+        exit 1
+    }
+    Write-Host "[OK] Server MFMS aktif & terverifikasi (Parent PID: $($ServeProc.Id), Listener PID: $(if ($ListenerMeta) { $ListenerMeta.pid } else { 'N/A' }))." -ForegroundColor Green
 }
 
 Write-Host ""
@@ -140,6 +221,6 @@ Write-Host "  SISTEM SIAP DIGUNAKAN!" -ForegroundColor Green
 Write-Host "  Buka Google Chrome / Edge dan kunjungi alamat:" -ForegroundColor White
 Write-Host "  -->  http://127.0.0.1:8000  <--" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "  Untuk mematikan sistem dengan aman setelah toko tutup," -ForegroundColor Gray
+Write-Host "  Untuk mematikan server web MFMS secara aman setelah tutup toko," -ForegroundColor Gray
 Write-Host "  jalankan scripts\Stop-MFMS.bat" -ForegroundColor Gray
 Write-Host "============================================================" -ForegroundColor DarkGreen
