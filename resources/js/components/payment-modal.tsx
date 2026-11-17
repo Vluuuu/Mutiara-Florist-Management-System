@@ -113,11 +113,12 @@ export function PaymentModal({
         });
     };
 
+    const hasIdempotencyConflict = Boolean(activeErrors.idempotency_key);
     const amountInvalid = amount === null || amount <= 0 || amount > order.outstanding;
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
-        if (submitLockRef.current || isSubmitting) return;
+        if (submitLockRef.current || isSubmitting || hasIdempotencyConflict) return;
 
         if (amount === null || amount <= 0) {
             setLocalError('Nominal pembayaran wajib lebih dari Rp0.');
@@ -157,10 +158,6 @@ export function PaymentModal({
                         serverErrors as Record<string, string>,
                     );
                     setActiveErrors(nextErrors);
-                    // Putar ulang kunci hanya jika server menolak kunci lama akibat perubahan payload setelah sukses parsial
-                    if (nextErrors.idempotency_key) {
-                        setIdempotencyKey(generateUuidV4());
-                    }
                 },
                 onFinish: () => {
                     submitLockRef.current = false;
@@ -170,7 +167,22 @@ export function PaymentModal({
         );
     };
 
-    const serverErrorEntries = Object.entries(activeErrors);
+    const handleInspectOrderDetail = () => {
+        onClose();
+        router.visit(`/ui-orders/${order.id}`, {
+            preserveState: false,
+            preserveScroll: false,
+        });
+    };
+
+    const handleReloadCurrentPage = () => {
+        onClose();
+        router.reload();
+    };
+
+    const serverErrorEntries = Object.entries(activeErrors).filter(
+        ([key]) => key !== 'idempotency_key',
+    );
 
     return (
         <Modal
@@ -181,6 +193,45 @@ export function PaymentModal({
             description={`${order.order_number} · ${order.customer_name} · Sisa tagihan ${formatRupiah(order.outstanding)}`}
         >
             <form id="shared-payment-form" onSubmit={handleSubmit} noValidate className="space-y-4">
+                {hasIdempotencyConflict && (
+                    <div
+                        role="alert"
+                        className="space-y-3 rounded-md border border-[#8C3B4A]/50 bg-[#FDF2F4] p-3.5 text-xs text-[#8C3B4A]"
+                    >
+                        <div className="space-y-1">
+                            <p className="text-sm font-bold text-[#8C3B4A]">
+                                Pembayaran mungkin sudah tersimpan (sesi ini dikunci)
+                            </p>
+                            <p className="font-medium text-[#1E2420]">
+                                {activeErrors.idempotency_key}
+                            </p>
+                            <p className="text-[#1E2420]">
+                                Untuk mencegah pembayaran ganda, pengiriman ulang dari dialog ini diblokir. Periksa riwayat pembayaran pada detail nota terlebih dahulu, lalu buka sesi pencatatan baru jika memang belum tercatat.
+                            </p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            <Button
+                                type="button"
+                                variant="primary"
+                                size="sm"
+                                onClick={handleInspectOrderDetail}
+                            >
+                                Buka Detail Nota &amp; Riwayat
+                            </Button>
+                            {returnTo !== 'order' && (
+                                <Button
+                                    type="button"
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={handleReloadCurrentPage}
+                                >
+                                    Muat Ulang Halaman
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 {(localError || serverErrorEntries.length > 0) && (
                     <div
                         role="alert"
@@ -311,14 +362,18 @@ export function PaymentModal({
                         disabled={isSubmitting}
                         onClick={onClose}
                     >
-                        Batal
+                        {hasIdempotencyConflict ? 'Tutup Dialog' : 'Batal'}
                     </Button>
                     <Button
                         type="submit"
                         variant="primary"
-                        disabled={isSubmitting || amountInvalid}
+                        disabled={isSubmitting || amountInvalid || hasIdempotencyConflict}
                     >
-                        {isSubmitting ? 'Memproses pembayaran...' : 'Simpan Pembayaran'}
+                        {hasIdempotencyConflict
+                            ? 'Submit Diblokir (Periksa Nota)'
+                            : isSubmitting
+                              ? 'Memproses pembayaran...'
+                              : 'Simpan Pembayaran'}
                     </Button>
                 </div>
             </form>

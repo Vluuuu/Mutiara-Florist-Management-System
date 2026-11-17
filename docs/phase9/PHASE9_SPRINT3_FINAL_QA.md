@@ -107,3 +107,28 @@ Penyelesaian Phase 9 Sprint 3 ini **tidak** otomatis menyatakan sistem siap rili
   - Alur `PaymentModal` server validation (konflik saldo Rp850.000 -> sisa Rp450.000 -> edit method tidak menghapus error amount -> edit amount menghapus error -> resubmit lunas tanpa duplikasi `850000|2`), `payment_date` validation & isolasi antar nota, pencarian literal `100%`, `_Bunga`, `!A\B`, `TRF_BCA%99!1\X`, serta laporan 30d & 45d kustom mobile/desktop terverifikasi.
   - Bukti screenshot revisi: `payments-modal-error-1440.png`, `reports-360.png`, `reports-1440.png`, `reports-custom45-360.png`, `reports-custom45-1440.png`.
 
+---
+
+## 5. PATCH-02 Verification Addendum (Final Payment Safety Gate)
+
+### 5.1 Perbaikan
+1. **P1 — Lock Konflik Idempotensi pada `PaymentModal` (`resources/js/components/payment-modal.tsx`):**
+   - Menghapus rotasi otomatis UUID saat `activeErrors.idempotency_key` diterima dari server.
+   - Mengunci sesi modal (`hasIdempotencyConflict`), memblokir `handleSubmit` dan menonaktifkan tombol kirim (`Submit Diblokir (Periksa Nota)`), serta menampilkan peringatan tegas bahwa transaksi mungkin sudah tersimpan.
+   - Menyediakan aksi eksplisit `Buka Detail Nota & Riwayat` (`/ui-orders/{id}`) dan `Muat Ulang Halaman`; pembayaran baru hanya dapat dimulai pada sesi modal baru setelah operator memeriksa status transaksi.
+   - `PaymentService` dan logika backend tidak diubah; overpayment rejection serta koreksi validasi field normal tetap berfungsi seperti biasa.
+2. **P2 — Klarifikasi Batas 92 Hari Rincian Harian (`resources/js/pages/Reports/Index.tsx`):**
+   - Mendeteksi `isDailyTrendsCapped = totalPeriodDays > daily_trends.length` untuk periode lebih dari 92 hari (misalnya 123 hari).
+   - Menambahkan banner peringatan dan subjudul eksplisit bahwa ringkasan keuangan di KPI cards & bar total mencakup seluruh hari periode, sementara rincian harian hanya mencakup maksimal `92` hari terakhir.
+   - Menghilangkan pelabelan `Semua Hari` pada tombol periode >92 hari dan menggantinya dengan `Maks. 92 Hari Terakhir` (serta `Tampilkan 92 Hari Terakhir` pada empty state mobile); `ReportService` tidak diubah.
+
+### 5.2 Hasil Verifikasi Pasca PATCH-02
+- `npm run typecheck`: **PASS**
+- `npm run build`: **PASS** (`2.96s`)
+- `php artisan test`: **170 passed (2075 assertions)** dalam `12.62s` (menambahkan `test_payment_idempotency_conflict_lifecycle_prevents_duplicates_and_recovers_after_reopening_order` dan `test_reports_period_boundaries_for_30_45_and_123_days`).
+- Browser QA (`agent-browser`, SQLite terisolasi):
+  - Simulasi Request 1 (`Rp250.000`) tersimpan di server sementara respons XHR gagal di klien (`AFTER_REQ1_DROPPED_DB: 250000|1`) -> retry payload berbeda (`Rp300.000`) dengan kunci yang sama ditolak server -> modal terkunci (`locked: true`, `Submit Diblokir (Periksa Nota)` tetap terkunci meski nominal diubah) -> klik `Buka Detail Nota & Riwayat` menampilkan `Rp250.000` -> sesi modal baru berhasil mencatat cicilan berikutnya (`P1_FINAL_O1_DB: 500000|2`, nol pembayaran ganda).
+  - Verifikasi `/ui-reports` pada periode `30d` (30 baris), `45d` (45 baris), dan `123d` (banner klarifikasi `Batas Tampilan Harian`, 92 baris harian di `1440px`, 0 baris bertransaksi + ringkasan penuh `Rp900.000` di `360px` tanpa overflow).
+  - Bukti screenshot PATCH-02: `payments-modal-idempotency-conflict-1440.png`, `reports-123d-1440.png`, `reports-123d-360.png`.
+
+

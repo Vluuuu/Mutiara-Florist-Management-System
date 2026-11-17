@@ -640,4 +640,121 @@ class Phase9Sprint3FinancialTest extends TestCase
         $this->assertSame(600000, $report['summary']['current_outstanding']);
         $this->assertCount(92, $report['daily_trends']);
     }
+
+    public function test_payment_idempotency_conflict_lifecycle_prevents_duplicates_and_recovers_after_reopening_order(): void
+    {
+        $today = now('Asia/Jakarta')->toDateString();
+        $cust = Customer::query()->create(['name' => 'Ibu Anggraini']);
+
+        $order = $this->orderService->create([
+            'customer_id' => $cust->id,
+            'order_date' => $today,
+            'items' => [[
+                'flower_type' => 'Papan Bunga Ucapan',
+                'recipient' => 'Pak Hendro',
+                'sender_name' => 'Ibu Anggraini',
+                'delivery_date' => $today,
+                'delivery_location' => 'Senayan',
+                'quantity' => 1,
+                'unit_price' => 1000000,
+                'shipping_mode' => 'INCLUDED',
+                'shipping_fee' => 0,
+            ]],
+        ], $this->admin->id);
+
+        $key1 = (string) Str::uuid();
+        $payload1 = [
+            'payment_date' => $today,
+            'amount' => 200000,
+            'method' => 'TRANSFER',
+            'reference' => 'BCA-DP-01',
+            'idempotency_key' => $key1,
+            'return_to' => 'payments',
+        ];
+
+        // 1. First request saves on server (even if response dropped on client)
+        $this->actingAs($this->admin)
+            ->post(route('ui-orders.payments.store', $order), $payload1)
+            ->assertRedirect(route('ui-payments.index'));
+
+        $this->assertSame(1, Payment::query()->where('order_id', $order->id)->count());
+
+        // 2. Identical retry with exact same idempotency key does NOT create duplicate row
+        $this->actingAs($this->admin)
+            ->post(route('ui-orders.payments.store', $order), $payload1)
+            ->assertRedirect(route('ui-payments.index'));
+
+        $this->assertSame(1, Payment::query()->where('order_id', $order->id)->count());
+
+        // 3. Retry with same key but DIFFERENT payload is rejected on idempotency_key
+        $this->actingAs($this->admin)
+            ->from(route('ui-payments.index'))
+            ->post(route('ui-orders.payments.store', $order), [
+                ...$payload1,
+                'amount' => 250000,
+            ])
+            ->assertSessionHasErrors('idempotency_key');
+
+        $this->assertSame(1, Payment::query()->where('order_id', $order->id)->count());
+        $this->assertSame(200000, (int) Payment::query()->where('order_id', $order->id)->where('status', 'POSTED')->sum('amount'));
+
+        // 4. Inspect order detail shows updated balance (Rp800.000 outstanding)
+        $this->actingAs($this->admin)
+            ->get(route('ui-orders.show', $order))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('order.received', 200000)
+                ->where('order.outstanding', 800000)
+                ->has('order.payments', 1)
+            );
+
+        // 5. After inspecting order, operator explicitly starts new payment with fresh key
+        $key2 = (string) Str::uuid();
+        $this->actingAs($this->admin)
+            ->post(route('ui-orders.payments.store', $order), [
+                'payment_date' => $today,
+                'amount' => 300000,
+                'method' => 'CASH',
+                'idempotency_key' => $key2,
+                'return_to' => 'order',
+            ])
+            ->assertRedirect(route('ui-orders.show', $order));
+
+        $this->assertSame(2, Payment::query()->where('order_id', $order->id)->count());
+        $this->assertSame(500000, (int) Payment::query()->where('order_id', $order->id)->where('status', 'POSTED')->sum('amount'));
+    }
+
+    public function test_reports_period_boundaries_for_30_45_and_123_days(): void
+    {
+        // 30-day preset => 30 daily rows (uncapped)
+        $resp30 = $this->actingAs($this->admin)
+            ->get(route('ui-reports.index', ['preset' => '30d']))
+            ->assertOk();
+        $rep30 = $resp30->viewData('page')['props']['report'];
+        $this->assertCount(30, $rep30['daily_trends']);
+
+        // 45-day custom range (2026-09-01 to 2026-10-15) => 45 daily rows (uncapped)
+        $resp45 = $this->actingAs($this->admin)
+            ->get(route('ui-reports.index', [
+                'preset' => 'custom',
+                'from' => '2026-09-01',
+                'to' => '2026-10-15',
+            ]))
+            ->assertOk();
+        $rep45 = $resp45->viewData('page')['props']['report'];
+        $this->assertCount(45, $rep45['daily_trends']);
+
+        // 123-day custom range (2026-07-01 to 2026-10-31) => 92 daily rows (capped), full period preserved
+        $resp123 = $this->actingAs($this->admin)
+            ->get(route('ui-reports.index', [
+                'preset' => 'custom',
+                'from' => '2026-07-01',
+                'to' => '2026-10-31',
+            ]))
+            ->assertOk();
+        $rep123 = $resp123->viewData('page')['props']['report'];
+        $this->assertSame('2026-07-01', $rep123['period']['from']);
+        $this->assertSame('2026-10-31', $rep123['period']['to']);
+        $this->assertCount(92, $rep123['daily_trends']);
+    }
 }

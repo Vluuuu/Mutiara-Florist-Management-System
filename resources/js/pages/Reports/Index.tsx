@@ -125,6 +125,22 @@ export default function ReportsIndex({ report }: ReportsIndexProps) {
         [daily_trends],
     );
 
+    const totalPeriodDays = useMemo(() => {
+        const start = Date.parse(`${period.from}T00:00:00Z`);
+        const end = Date.parse(`${period.to}T00:00:00Z`);
+        if (Number.isNaN(start) || Number.isNaN(end) || end < start) {
+            return daily_trends.length;
+        }
+        return Math.round((end - start) / 86400000) + 1;
+    }, [period.from, period.to, daily_trends.length]);
+
+    const isDailyTrendsCapped = totalPeriodDays > daily_trends.length;
+    const dailyFirstDate = daily_trends[0]?.date;
+    const dailyLastDate = daily_trends[daily_trends.length - 1]?.date;
+    const fullDailyViewLabel = isDailyTrendsCapped
+        ? `Maks. ${formatAmount(daily_trends.length)} Hari Terakhir`
+        : `Semua Hari (${formatAmount(daily_trends.length)})`;
+
     const visibleTrends = useMemo(() => {
         if (!onlyActiveDays) return daily_trends;
         return daily_trends.filter(
@@ -591,7 +607,9 @@ export default function ReportsIndex({ report }: ReportsIndexProps) {
                             Rincian Arus Transaksi Harian
                         </h2>
                         <p className="mt-0.5 text-xs text-[#525B54]">
-                            Nilai pesanan baru, kas masuk sah, dan kas keluar sah per hari ({formatAmount(activeDaysCount)} hari bertransaksi dari {formatAmount(daily_trends.length)} hari ditampilkan).
+                            {isDailyTrendsCapped
+                                ? `Menampilkan ${formatAmount(activeDaysCount)} hari bertransaksi dalam ${formatAmount(daily_trends.length)} hari terakhir (${dailyFirstDate ? formatDateWib(dailyFirstDate) : '-'} s.d. ${dailyLastDate ? formatDateWib(dailyLastDate) : '-'}) dari total ${formatAmount(totalPeriodDays)} hari periode.`
+                                : `Nilai pesanan baru, kas masuk sah, dan kas keluar sah per hari (${formatAmount(activeDaysCount)} hari bertransaksi dari ${formatAmount(daily_trends.length)} hari ditampilkan).`}
                         </p>
                     </div>
 
@@ -620,10 +638,27 @@ export default function ReportsIndex({ report }: ReportsIndexProps) {
                                     : 'border-[#858E87] bg-white text-[#1E2420] hover:bg-[#F1EDE6]',
                             )}
                         >
-                            Semua Hari ({formatAmount(daily_trends.length)})
+                            {fullDailyViewLabel}
                         </button>
                     </div>
                 </div>
+
+                {isDailyTrendsCapped && (
+                    <div
+                        role="status"
+                        className="flex items-start gap-2.5 border-b border-[#E3DED4] bg-[#FEF3C7]/70 px-4 py-3 text-xs text-[#92400E] sm:px-5"
+                    >
+                        <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                        <p>
+                            <strong className="font-bold">Batas Tampilan Harian (Maksimal {formatAmount(daily_trends.length)} Hari Terakhir):</strong>{' '}
+                            Ringkasan total keuangan di bawah dan pada kartu atas mencakup seluruh periode{' '}
+                            <strong className="font-semibold">
+                                {formatAmount(totalPeriodDays)} hari ({formatDateWib(period.from)} s.d. {formatDateWib(period.to)})
+                            </strong>
+                            , sedangkan rincian baris harian hanya menampilkan maksimal {formatAmount(daily_trends.length)} hari terakhir.
+                        </p>
+                    </div>
+                )}
 
                 {/* Period Total Bar */}
                 <div className="grid grid-cols-2 gap-3 border-b border-[#E3DED4] bg-[#F1EDE6] p-4 text-xs tabular-nums sm:grid-cols-4 sm:px-5">
@@ -679,7 +714,9 @@ export default function ReportsIndex({ report }: ReportsIndexProps) {
                                             size="sm"
                                             onClick={() => setDayViewOverride('all')}
                                         >
-                                            Tampilkan Semua {formatAmount(daily_trends.length)} Hari
+                                            {isDailyTrendsCapped
+                                                ? `Tampilkan ${formatAmount(daily_trends.length)} Hari Terakhir`
+                                                : `Tampilkan Semua ${formatAmount(daily_trends.length)} Hari`}
                                         </Button>
                                     </div>
                                 )}
