@@ -1,11 +1,11 @@
 # Form Penerimaan UAT Operator & Catatan Risiko Tersisa
-**Mutiara Florist Management System (MFMS) — Phase 6 Local Pilot Readiness**
+**Mutiara Florist Management System (MFMS) — Phase 10 Local Pilot Readiness (Botanical Studio UI)**
 
 ---
 
 ## 1. Form Penerimaan UAT Operator (User Acceptance Testing)
 
-Diisi oleh Operator Florist dan Pemilik Toko saat uji coba operasional di komputer toko sebelum penggunaan harian penuh:
+Diisi oleh Operator Florist dan Pemilik Toko saat uji coba operasional di komputer toko sebelum penggunaan harian penuh (diperbarui sesuai UI **Botanical Studio Workspace**):
 
 - **Tanggal Uji Coba:** `____ / ____ / 2026`
 - **Nama Operator Penguji:** `______________________________`
@@ -14,17 +14,27 @@ Diisi oleh Operator Florist dan Pemilik Toko saat uji coba operasional di komput
 | No | Skenario Uji Operasional | Hasil yang Diharapkan | Status (Lulus / Gagal) | Catatan Operator |
 |----|--------------------------|------------------------|------------------------|------------------|
 | 1 | Menyalakan sistem dengan `Start-MFMS.bat` | MariaDB port `3307` & web `127.0.0.1:8000` aktif tanpa error | [ ] Lulus / [ ] Gagal | |
-| 2 | Login dengan akun operator resmi | Berhasil masuk ke Dashboard React | [ ] Lulus / [ ] Gagal | |
-| 3 | Tambah & cari pelanggan | Pelanggan tersimpan dan muncul di pencarian | [ ] Lulus / [ ] Gagal | |
-| 4 | Buat pesanan multi-item (ongkir Termasuk & Terpisah) | Total tagihan otomatis akurat sesuai perhitungan item + ongkir | [ ] Lulus / [ ] Gagal | |
+| 2 | Login dengan akun operator resmi | Berhasil masuk ke Dashboard React (`/ui-dashboard`) | [ ] Lulus / [ ] Gagal | |
+| 3 | Tambah & cari pelanggan | Pelanggan tersimpan dan muncul di pencarian (`/ui-customers`) | [ ] Lulus / [ ] Gagal | |
+| 4 | Buat pesanan multi-item (`Sudah termasuk harga bunga` & `Ditagih terpisah`) | Total tagihan otomatis akurat sesuai perhitungan item + ongkir | [ ] Lulus / [ ] Gagal | |
 | 5 | Catat DP, cicilan, dan pelunasan | Sisa piutang berkurang tepat; saat lunas menjadi Rp0; tidak bisa overpay | [ ] Lulus / [ ] Gagal | |
-| 6 | Majukan status item (`NEW` → `PROCESSING` → `READY` → `DELIVERED`) | Tombol di Detail Pesanan jelas, ada konfirmasi, dan pesanan otomatis `COMPLETED` | [ ] Lulus / [ ] Gagal | |
+| 6 | Majukan status item (`Baru` -> `Diproses` -> `Siap kirim` -> `Terkirim`) | Tombol (`Mulai Proses`, `Tandai Siap Kirim`, `Tandai Terkirim` + modal konfirmasi) jelas dan pesanan otomatis `Selesai` | [ ] Lulus / [ ] Gagal | |
 | 7 | Catat pengeluaran operasional toko | Saldo kas keluar dan selisih kas di Dashboard & Laporan ikut terbarui | [ ] Lulus / [ ] Gagal | |
-| 8 | Buka Laporan & Ekspor Excel (`.xlsx`) | File terunduh dan terbuka bersih di Microsoft Excel (4 sheet lengkap) | [ ] Lulus / [ ] Gagal | |
-| 9 | Akses tampilan di layar smartphone / browser sempit | Navigasi & kartu terbaca rapi tanpa terpotong | [ ] Lulus / [ ] Gagal | |
-| 10 | Klik **Keluar** (Logout) | Keluar ke halaman login tanpa error HTTP 419 | [ ] Lulus / [ ] Gagal | |
-| 11 | Jalankan `php artisan mfms:backup` & salin ke media eksternal | File `.enc` & `.meta.json` terbentuk tanpa mengubah data toko | [ ] Lulus / [ ] Gagal | |
+| 8 | Buka Laporan & klik **Unduh Excel (.xlsx)** | File terunduh dan terbuka bersih di Microsoft Excel GUI (4 sheet lengkap tanpa peringatan rusak) | [ ] Lulus / [ ] Gagal | |
+| 9 | Akses tampilan di layar smartphone / browser sempit | Navigasi bawah/drawer & kartu terbaca rapi tanpa terpotong | [ ] Lulus / [ ] Gagal | |
+| 10 | Klik **Keluar Akun** lalu konfirmasi **Keluar Sekarang** | Keluar ke halaman login tanpa error HTTP 419 | [ ] Lulus / [ ] Gagal | |
+| 11 | Jalankan `php artisan mfms:backup` & salin ke media eksternal | File `.enc` & `.meta.json` terbentuk tanpa mengubah data toko & tersimpan di luar PC kasir | [ ] Lulus / [ ] Gagal | |
 | 12 | Matikan sistem dengan `Stop-MFMS.bat` | Server port `8000` berhenti dengan aman | [ ] Lulus / [ ] Gagal | |
+
+### 1A. Penilaian Usability Operator
+
+| No | Pertanyaan Evaluasi Operator | Jawaban | Catatan |
+|----|------------------------------|---------|---------|
+| 1 | Apakah operator menemukan tombol yang diperlukan tanpa diarahkan? | [ ] Ya / [ ] Perlu Bantuan | |
+| 2 | Apakah istilah menu mudah dipahami? | [ ] Ya / [ ] Kurang Jelas | |
+| 3 | Apakah operator memahami perbedaan nilai pesanan, kas masuk, dan piutang? | [ ] Ya / [ ] Perlu Penjelasan | |
+| 4 | Apakah operator dapat memperbaiki salah input (**Batalkan Catatan** / edit nota) tanpa bingung? | [ ] Ya / [ ] Bingung | |
+| 5 | Apakah operator mengetahui apa yang harus dilakukan jika status pembayaran belum pasti (konflik idempotensi / cek detail nota)? | [ ] Ya / [ ] Belum | |
 
 **Keputusan Penerimaan Pilot:**
 - [ ] **DITERIMA** untuk operasional pilot harian lokal
