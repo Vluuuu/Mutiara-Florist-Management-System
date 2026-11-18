@@ -48,6 +48,7 @@ class DashboardService
             ->selectRaw('COUNT(*) as total_count')
             ->selectRaw('SUM(CASE WHEN DATE(order_items.delivery_date) < ? THEN 1 ELSE 0 END) as overdue_count', [$todayIso])
             ->selectRaw('SUM(CASE WHEN DATE(order_items.delivery_date) = ? THEN 1 ELSE 0 END) as today_count', [$todayIso])
+            ->selectRaw("SUM(CASE WHEN order_items.fulfillment_status = 'READY' THEN 1 ELSE 0 END) as ready_count")
             ->first();
 
         $rows = (clone $baseQuery)
@@ -102,6 +103,68 @@ class DashboardService
             'total_count' => (int) ($counts->total_count ?? 0),
             'overdue_count' => (int) ($counts->overdue_count ?? 0),
             'today_count' => (int) ($counts->today_count ?? 0),
+            'ready_count' => (int) ($counts->ready_count ?? 0),
+        ];
+    }
+
+    /**
+     * Ringkasan operasional & transaksi khusus tanggal hari ini (WIB).
+     */
+    public function todayStats(): array
+    {
+        $todayIso = now('Asia/Jakarta')->toDateString();
+
+        $ordersToday = DB::table('orders')
+            ->whereRaw('DATE(order_date) = ?', [$todayIso])
+            ->selectRaw('COUNT(*) as orders_count, COALESCE(SUM(total_amount), 0) as orders_billed')
+            ->first();
+
+        $deliveries = DB::table('order_items')
+            ->selectRaw('SUM(CASE WHEN DATE(delivery_date) = ? THEN 1 ELSE 0 END) as deliveries_total_today', [$todayIso])
+            ->selectRaw("SUM(CASE WHEN DATE(delivery_date) = ? AND fulfillment_status IN ('NEW', 'PROCESSING', 'READY') THEN 1 ELSE 0 END) as deliveries_pending_today", [$todayIso])
+            ->selectRaw("SUM(CASE WHEN DATE(delivery_date) = ? AND fulfillment_status = 'DELIVERED' THEN 1 ELSE 0 END) as deliveries_delivered_today", [$todayIso])
+            ->selectRaw("SUM(CASE WHEN DATE(delivery_date) < ? AND fulfillment_status IN ('NEW', 'PROCESSING', 'READY') THEN 1 ELSE 0 END) as deliveries_overdue", [$todayIso])
+            ->selectRaw("SUM(CASE WHEN fulfillment_status = 'READY' THEN 1 ELSE 0 END) as deliveries_ready")
+            ->first();
+
+        $paymentsToday = DB::table('payments')
+            ->where('status', 'POSTED')
+            ->whereRaw('DATE(payment_date) = ?', [$todayIso])
+            ->selectRaw('COUNT(*) as cash_in_count, COALESCE(SUM(amount), 0) as cash_in')
+            ->first();
+
+        $expensesToday = DB::table('expenses')
+            ->where('status', 'POSTED')
+            ->whereRaw('DATE(expense_date) = ?', [$todayIso])
+            ->selectRaw('COUNT(*) as cash_out_count, COALESCE(SUM(amount), 0) as cash_out')
+            ->first();
+
+        $paidSub = DB::table('payments')
+            ->selectRaw('order_id, SUM(amount) as paid_amount')
+            ->where('status', 'POSTED')
+            ->groupBy('order_id');
+
+        $openReceivablesCount = (int) DB::table('orders')
+            ->leftJoinSub($paidSub, 'paid_totals', function ($join): void {
+                $join->on('paid_totals.order_id', '=', 'orders.id');
+            })
+            ->whereRaw('orders.total_amount > COALESCE(paid_totals.paid_amount, 0)')
+            ->count();
+
+        return [
+            'today_iso' => $todayIso,
+            'orders_count' => (int) ($ordersToday->orders_count ?? 0),
+            'orders_billed' => (int) ($ordersToday->orders_billed ?? 0),
+            'deliveries_total_today' => (int) ($deliveries->deliveries_total_today ?? 0),
+            'deliveries_pending_today' => (int) ($deliveries->deliveries_pending_today ?? 0),
+            'deliveries_delivered_today' => (int) ($deliveries->deliveries_delivered_today ?? 0),
+            'deliveries_overdue' => (int) ($deliveries->deliveries_overdue ?? 0),
+            'deliveries_ready' => (int) ($deliveries->deliveries_ready ?? 0),
+            'cash_in' => (int) ($paymentsToday->cash_in ?? 0),
+            'cash_in_count' => (int) ($paymentsToday->cash_in_count ?? 0),
+            'cash_out' => (int) ($expensesToday->cash_out ?? 0),
+            'cash_out_count' => (int) ($expensesToday->cash_out_count ?? 0),
+            'open_receivables_count' => $openReceivablesCount,
         ];
     }
 

@@ -1,47 +1,65 @@
 @import 'tailwindcss';
+@import '@fontsource-variable/plus-jakarta-sans/index.css';
+@import '@fontsource-variable/jetbrains-mono/index.css';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
 @theme {
-    --font-display: Fraunces, Georgia, 'Times New Roman', serif;
-    --font-sans: 'Plus Jakarta Sans', 'Segoe UI', ui-sans-serif, system-ui, -apple-system, sans-serif;
-    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --font-display: 'Plus Jakarta Sans Variable', 'Plus Jakarta Sans', 'Segoe UI', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --font-sans: 'Plus Jakarta Sans Variable', 'Plus Jakarta Sans', 'Segoe UI', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 :root {
-    /* Botanical Studio Locked Tokens (Phase 8.2 -> Phase 9) */
-    --bg-canvas: #FBF9F6;
-    --bg-surface: #FFFFFF;
-    --bg-sunken: #F1EDE6;
-    --bg-rail: #143326;
-    --bg-rail-hover: #1D4534;
-    --bg-rail-active: #E6EFEA;
+    /* Atelier Kertas & Terakota Tokens (WCAG AA Verified via contrast-check.py) */
+    --bg-canvas: #F7F3EC;
+    --bg-surface: #FFFDF9;
+    --bg-sunken: #EFE9DE;
+    --bg-rail: #182920;
+    --bg-rail-hover: #233B2E;
+    --bg-rail-active: #F2ECE1;
 
-    --text-primary: #1E2420;
-    --text-secondary: #525B54;
-    --text-on-rail: #F6F4EF;
-    --text-on-rail-muted: #C6D7CE;
+    --text-primary: #1C211E;
+    --text-secondary: #545852;
+    --text-placeholder: #60645E;
+    --text-on-rail: #F5F1E8;
+    --text-on-rail-muted: #B8C6BD;
 
-    --brand-primary: #143326;
-    --brand-primary-hover: #0E251B;
-    --brand-urgent: #8C3B4A;
-    --brand-urgent-hover: #712D3A;
-    --brand-urgent-soft: #FDF2F4;
+    --brand-primary: #1D3B2A;
+    --brand-primary-hover: #13281C;
+    --brand-urgent: #9A3B22;
+    --brand-urgent-hover: #7D2E19;
+    --brand-urgent-soft: #FCF0EC;
+    --danger-ink: #8A2619;
+    --danger-hover: #6E1D12;
 
-    --border-hairline: #E3DED4;
-    --border-input: #858E87;
+    --chart-orders: #545852;
+    --chart-cash-in: #1D3B2A;
+    --chart-cash-out: #8F4B1E;
 
-    --status-paid-bg: #DCFCE7;
-    --status-paid-fg: #166534;
-    --status-warn-bg: #FEF3C7;
-    --status-warn-fg: #92400E;
-    --status-ready-bg: #DBEAFE;
-    --status-ready-fg: #1E40AF;
-    --status-danger-bg: #FEE2E2;
-    --status-danger-fg: #991B1B;
-    --status-neutral-bg: #E5E7EB;
-    --status-neutral-fg: #374151;
+    --border-hairline: #DED6C8;
+    --border-input: #7D776C;
+
+    --status-paid-bg: #EEF5F0;
+    --status-paid-border: #B8D0C0;
+    --status-paid-fg: #164B2A;
+
+    --status-warn-bg: #FAF1E1;
+    --status-warn-border: #DFC393;
+    --status-warn-fg: #6E3D09;
+
+    --status-ready-bg: #EDF3F8;
+    --status-ready-border: #B5CAE0;
+    --status-ready-fg: #193F66;
+
+    --status-danger-bg: #FCECE9;
+    --status-danger-border: #E2B3AA;
+    --status-danger-fg: #8A2619;
+
+    --status-neutral-bg: #EFE9DE;
+    --status-neutral-border: #CCC3B3;
+    --status-neutral-fg: #3D3A35;
 }
 
 @layer base {
@@ -49,6 +67,8 @@
         background-color: var(--bg-canvas);
         color: var(--text-primary);
         font-family: var(--font-sans);
+        font-size: 16px;
+        line-height: 1.55;
         -webkit-font-smoothing: antialiased;
     }
 
@@ -76,6 +96,43 @@
 .tabular-nums {
     font-variant-numeric: tabular-nums;
     font-feature-settings: 'tnum' 1;
+}
+
+.atelier-h1 {
+    font-family: var(--font-sans);
+    font-size: clamp(1.625rem, 2.2vw, 1.875rem);
+    line-height: 1.25;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+    color: var(--text-primary);
+}
+
+.atelier-h2 {
+    font-family: var(--font-sans);
+    font-size: 1.1875rem;
+    line-height: 1.35;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+    color: var(--text-primary);
+}
+
+.atelier-prose {
+    max-width: 65ch;
+    text-wrap: pretty;
+    color: var(--text-secondary);
+}
+
+.atelier-sheet {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-hairline);
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(28, 33, 30, 0.04);
+}
+
+.atelier-double-rule {
+    border-top: 2px solid #C5BBA8;
 }
 
 @media (prefers-reduced-motion: reduce) {

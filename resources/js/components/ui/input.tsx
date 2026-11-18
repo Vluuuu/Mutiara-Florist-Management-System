@@ -14,10 +14,10 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(function Inp
             ref={ref}
             aria-invalid={invalid || props['aria-invalid'] ? true : undefined}
             className={cn(
-                'min-h-[44px] w-full rounded-md border-[1.5px] px-3 py-2 text-[15px] text-[#1E2420] placeholder:text-[#525B54]/75 focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[#143326] disabled:bg-[#F1EDE6] disabled:text-[#525B54]',
+                'min-h-[44px] w-full rounded-[8px] border-[1.5px] px-3.5 py-2 text-[15px] text-[#1C211E] placeholder:text-[#60645E] focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[#1D3B2A] disabled:bg-[#EFE9DE] disabled:text-[#545852]',
                 invalid || props['aria-invalid']
-                    ? 'border-[#991B1B] bg-[#FFF9F9]'
-                    : 'border-[#858E87] bg-white',
+                    ? 'border-[#8A2619] bg-[#FCF0EC]/60'
+                    : 'border-[#7D776C] bg-[#FFFDF9]',
                 className,
             )}
             {...props}
@@ -38,10 +38,10 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(fun
             ref={ref}
             aria-invalid={invalid || props['aria-invalid'] ? true : undefined}
             className={cn(
-                'min-h-[84px] w-full rounded-md border-[1.5px] px-3 py-2 text-[15px] text-[#1E2420] placeholder:text-[#525B54]/75 focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[#143326] disabled:bg-[#F1EDE6]',
+                'min-h-[88px] w-full rounded-[8px] border-[1.5px] px-3.5 py-2.5 text-[15px] text-[#1C211E] placeholder:text-[#60645E] focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[#1D3B2A] disabled:bg-[#EFE9DE] disabled:text-[#545852]',
                 invalid || props['aria-invalid']
-                    ? 'border-[#991B1B] bg-[#FFF9F9]'
-                    : 'border-[#858E87] bg-white',
+                    ? 'border-[#8A2619] bg-[#FCF0EC]/60'
+                    : 'border-[#7D776C] bg-[#FFFDF9]',
                 className,
             )}
             {...props}
@@ -62,10 +62,10 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(function 
             ref={ref}
             aria-invalid={invalid || props['aria-invalid'] ? true : undefined}
             className={cn(
-                'min-h-[44px] w-full rounded-md border-[1.5px] px-3 py-2 text-[15px] text-[#1E2420] focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[#143326] disabled:bg-[#F1EDE6]',
+                'min-h-[44px] w-full rounded-[8px] border-[1.5px] px-3.5 py-2 text-[15px] text-[#1C211E] focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[#1D3B2A] disabled:bg-[#EFE9DE] disabled:text-[#545852]',
                 invalid || props['aria-invalid']
-                    ? 'border-[#991B1B] bg-[#FFF9F9]'
-                    : 'border-[#858E87] bg-white',
+                    ? 'border-[#8A2619] bg-[#FCF0EC]/60'
+                    : 'border-[#7D776C] bg-[#FFFDF9]',
                 className,
             )}
             {...props}
@@ -96,22 +96,22 @@ export function FormField({
 }: FormFieldProps) {
     return (
         <div className={cn('space-y-1.5', className)}>
-            <label htmlFor={id} className="block text-sm font-semibold text-[#1E2420]">
+            <label htmlFor={id} className="block text-sm font-semibold text-[#1C211E]">
                 {label}
                 {required && (
-                    <span className="ml-0.5 text-[#8C3B4A]" aria-hidden="true">
+                    <span className="ml-0.5 text-[#9A3B22]" aria-hidden="true">
                         *
                     </span>
                 )}
             </label>
             {children}
             {hint && (
-                <p id={`${id}-hint`} className="text-[13px] text-[#525B54]">
+                <p id={`${id}-hint`} className="text-[13px] leading-snug text-[#545852]">
                     {hint}
                 </p>
             )}
             {error && (
-                <p id={`${id}-error`} role="alert" className="text-[13px] font-semibold text-[#991B1B]">
+                <p id={`${id}-error`} role="alert" className="text-[13px] font-semibold text-[#8A2619]">
                     {error}
                 </p>
             )}

@@ -20,6 +20,23 @@ export type DashboardQueueSummary = {
     total_count: number;
     overdue_count: number;
     today_count: number;
+    ready_count?: number;
+};
+
+export type DashboardTodayStats = {
+    today_iso: string;
+    orders_count: number;
+    orders_billed: number;
+    deliveries_total_today: number;
+    deliveries_pending_today: number;
+    deliveries_delivered_today: number;
+    deliveries_overdue: number;
+    deliveries_ready: number;
+    cash_in: number;
+    cash_in_count: number;
+    cash_out: number;
+    cash_out_count: number;
+    open_receivables_count: number;
 };
 
 export type DashboardReceivableItem = {
@@ -321,7 +338,17 @@ export type ExpenseFilters = {
     to: string | null;
 };
 
-export type ReportPreset = 'today' | '7d' | '30d' | 'this_month' | 'last_month' | 'custom';
+export type ReportPreset =
+    | 'today'
+    | '7d'
+    | '30d'
+    | 'this_month'
+    | 'last_month'
+    | 'this_year'
+    | 'all_time'
+    | 'custom';
+
+export type ReportGranularity = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
 export type ReportPeriod = {
     preset: ReportPreset;
@@ -355,6 +382,13 @@ export type PaymentBreakdown = {
     PAID: number;
 };
 
+export type ExpenseBreakdownItem = {
+    category: string;
+    amount: number;
+    count: number;
+    percent: number;
+};
+
 export type DailyTrendItem = {
     date: string;
     formatted_date: string;
@@ -362,6 +396,23 @@ export type DailyTrendItem = {
     billed: number;
     cash_in: number;
     cash_out: number;
+};
+
+export type ReportChartPoint = {
+    key: string;
+    label: string;
+    full_label: string;
+    orders_count: number;
+    billed: number;
+    cash_in: number;
+    cash_out: number;
+    cash_diff: number;
+};
+
+export type ReportChartSeries = {
+    granularity: ReportGranularity;
+    range_label: string;
+    points: ReportChartPoint[];
 };
 
 export type ReportNotes = {
@@ -375,7 +426,9 @@ export type FinancialReportData = {
     summary: ReportSummary;
     fulfillment_breakdown: FulfillmentBreakdown;
     payment_breakdown: PaymentBreakdown;
+    expense_breakdown?: ExpenseBreakdownItem[];
     daily_trends: DailyTrendItem[];
+    chart_series?: ReportChartSeries;
     notes: ReportNotes;
 };
 

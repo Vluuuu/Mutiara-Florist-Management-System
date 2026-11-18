@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { AlertCircle, CheckCircle2, Plus } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChevronRight, Plus } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { DeliveryConfirmModal, type DeliveryConfirmTarget } from '@/components/delivery-confirm-modal';
-import { OrderCodeBadge } from '@/components/order-code-badge';
+import { LedgerSummaryStrip } from '@/components/ledger-summary-strip';
 import { PaymentModal, type PaymentModalTarget } from '@/components/payment-modal';
 import { Badge, getFulfillmentBadgeMeta, getPaymentBadgeMeta } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,11 +17,13 @@ import type {
     DashboardQueueSummary,
     DashboardReceivableItem,
     DashboardStats,
+    DashboardTodayStats,
     FulfillmentStatus,
 } from '@/types';
 
 type DashboardProps = {
     stats: DashboardStats;
+    todayStats?: DashboardTodayStats;
     deliveryQueue?: DashboardQueueItem[];
     queueSummary?: DashboardQueueSummary;
     receivables?: DashboardReceivableItem[];
@@ -30,28 +32,58 @@ type DashboardProps = {
     nav: DashboardNav;
 };
 
+type QueueFilter = 'all' | 'overdue' | 'today' | 'ready';
+
+type GroupedQueueOrder = {
+    groupKey: string;
+    orderId: number;
+    orderNumber: string;
+    customerName: string;
+    urgency: 'overdue' | 'today' | 'upcoming';
+    items: DashboardQueueItem[];
+};
+
 const NEXT_STEP_LABEL: Record<FulfillmentStatus, string> = {
     NEW: 'Mulai Proses',
-    PROCESSING: 'Tandai Siap Kirim',
+    PROCESSING: 'Siap Kirim',
     READY: 'Tandai Terkirim',
     DELIVERED: 'Terkirim',
 };
 
-function getUrgencyBadge(item: DashboardQueueItem): {
-    label: string;
-    tone: 'danger' | 'warn' | 'neutral';
-} {
-    if (item.urgency === 'overdue') {
-        return { label: `Terlambat (${item.delivery_date})`, tone: 'danger' };
+const URGENCY_SECTION_LABEL: Record<'overdue' | 'today' | 'upcoming', string> = {
+    overdue: 'Perlu Perhatian (Terlambat)',
+    today: 'Jadwal Kirim Hari Ini',
+    upcoming: 'Jadwal Berikutnya',
+};
+
+function groupQueueItems(items: DashboardQueueItem[]): GroupedQueueOrder[] {
+    const groups: GroupedQueueOrder[] = [];
+    const byKey = new Map<string, GroupedQueueOrder>();
+
+    for (const item of items) {
+        const key = `${item.urgency}:${item.order_id}`;
+        let grp = byKey.get(key);
+        if (!grp) {
+            grp = {
+                groupKey: key,
+                orderId: item.order_id,
+                orderNumber: item.order_number,
+                customerName: item.customer_name,
+                urgency: item.urgency,
+                items: [],
+            };
+            byKey.set(key, grp);
+            groups.push(grp);
+        }
+        grp.items.push(item);
     }
-    if (item.urgency === 'today') {
-        return { label: `Kirim hari ini (${item.delivery_date})`, tone: 'warn' };
-    }
-    return { label: `Jadwal ${item.delivery_date}`, tone: 'neutral' };
+
+    return groups;
 }
 
 export default function Dashboard({
     stats,
+    todayStats,
     deliveryQueue = [],
     queueSummary,
     receivables = [],
@@ -60,7 +92,6 @@ export default function Dashboard({
     nav,
 }: DashboardProps) {
     const { errors } = usePage<AppPageProps>().props;
-    const ordersHref = nav?.uiOrders ?? '/ui-orders';
     const createOrderHref = nav?.uiOrdersCreate ?? '/ui-orders/create';
     const paymentsHref = nav?.uiPayments ?? '/ui-payments';
 
@@ -72,6 +103,7 @@ export default function Dashboard({
     const [paymentPickerOpen, setPaymentPickerOpen] = useState(false);
     const [paymentTarget, setPaymentTarget] = useState<PaymentModalTarget | null>(null);
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [queueFilter, setQueueFilter] = useState<QueueFilter>('all');
 
     useEffect(() => {
         const stopStart = router.on('start', () => setIsRefreshing(true));
@@ -83,8 +115,69 @@ export default function Dashboard({
     }, []);
 
     const overdueCount =
+        todayStats?.deliveries_overdue ??
         queueSummary?.overdue_count ??
         deliveryQueue.filter((item) => item.urgency === 'overdue').length;
+
+    const readyCount =
+        todayStats?.deliveries_ready ??
+        queueSummary?.ready_count ??
+        deliveryQueue.filter((item) => item.fulfillment_status === 'READY').length;
+
+    const todayDueCount =
+        todayStats?.deliveries_pending_today ??
+        queueSummary?.today_count ??
+        deliveryQueue.filter((item) => item.urgency === 'today').length;
+
+    const todayTotalDeliveries = todayStats?.deliveries_total_today ?? todayDueCount;
+    const todayDeliveredCount = todayStats?.deliveries_delivered_today ?? 0;
+
+    const filteredQueue = useMemo(() => {
+        if (queueFilter === 'overdue') {
+            return deliveryQueue.filter((item) => item.urgency === 'overdue');
+        }
+        if (queueFilter === 'today') {
+            return deliveryQueue.filter((item) => item.urgency === 'today');
+        }
+        if (queueFilter === 'ready') {
+            return deliveryQueue.filter((item) => item.fulfillment_status === 'READY');
+        }
+        return deliveryQueue;
+    }, [deliveryQueue, queueFilter]);
+
+    const groupedByUrgency = useMemo(() => {
+        const order: Array<'overdue' | 'today' | 'upcoming'> = ['overdue', 'today', 'upcoming'];
+        return order
+            .map((urgency) => {
+                const bandItems = filteredQueue.filter((item) => item.urgency === urgency);
+                return {
+                    urgency,
+                    label: URGENCY_SECTION_LABEL[urgency],
+                    itemCount: bandItems.length,
+                    groups: groupQueueItems(bandItems),
+                };
+            })
+            .filter((section) => section.itemCount > 0);
+    }, [filteredQueue]);
+
+    const queueFilterOptions: Array<{ key: QueueFilter; label: string; count: number }> = [
+        { key: 'all', label: 'Semua', count: deliveryQueue.length },
+        {
+            key: 'today',
+            label: 'Hari Ini',
+            count: deliveryQueue.filter((item) => item.urgency === 'today').length,
+        },
+        {
+            key: 'overdue',
+            label: 'Terlambat',
+            count: deliveryQueue.filter((item) => item.urgency === 'overdue').length,
+        },
+        {
+            key: 'ready',
+            label: 'Siap Kirim',
+            count: deliveryQueue.filter((item) => item.fulfillment_status === 'READY').length,
+        },
+    ];
 
     const advanceStatus = (orderId: number, itemId: number, targetStatus: FulfillmentStatus) => {
         if (stepLockRef.current || submittingItemId !== null) return;
@@ -131,280 +224,396 @@ export default function Dashboard({
     };
 
     const queueError = errors?.target_status ?? errors?.item;
+    const displayedReceivables = receivables.slice(0, 6);
 
     return (
         <AppLayout title="Hari Ini">
             <Head title="Hari Ini" />
 
-            <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            {/* A. Header Sederhana */}
+            <header className="mb-5 flex flex-col gap-3 border-b border-[#DED6C8] pb-4 sm:mb-6 sm:flex-row sm:items-end sm:justify-between sm:pb-5">
                 <div>
-                    <h1 className="font-[var(--font-display)] text-[clamp(20px,2.2vw,25px)] font-semibold leading-tight tracking-[-0.015em] text-[#1E2420]">
-                        Jadwal Pengiriman &amp; Ringkasan Toko
-                    </h1>
-                    <p className="mt-1 text-sm text-[#525B54]">
-                        {todayDisplay ? `Tanggal acuan: ${todayDisplay} | ` : ''}
-                        Urutan berdasar tanggal kirim terdekat
-                        {isRefreshing ? ' (Memperbarui data...)' : ''}
-                    </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                    <Button asChild variant="secondary">
-                        <Link href={ordersHref}>Semua Pesanan</Link>
-                    </Button>
-                    {receivables.length > 0 ? (
-                        <Button
-                            type="button"
-                            variant="primary"
-                            onClick={() => setPaymentPickerOpen(true)}
-                        >
-                            + Catat Pembayaran
-                        </Button>
-                    ) : (
-                        <Button asChild variant="primary">
-                            <Link href={createOrderHref}>
-                                <Plus className="size-4" aria-hidden="true" />
-                                Pesanan Baru
-                            </Link>
-                        </Button>
+                    <h1 className="atelier-h1">Hari Ini</h1>
+                    {(todayDisplay || isRefreshing) && (
+                        <p className="mt-0.5 text-[14px] text-[#545852] sm:mt-1 sm:text-[15px]">
+                            {todayDisplay ?? ''}
+                            {isRefreshing ? ' · Memperbarui...' : ''}
+                        </p>
                     )}
                 </div>
-            </div>
+
+                <div className="flex w-full items-center gap-2.5 sm:w-auto sm:flex-wrap">
+                    {receivables.length > 0 && (
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() => setPaymentPickerOpen(true)}
+                            className="flex-1 sm:min-w-[164px] sm:flex-none"
+                        >
+                            Catat Pembayaran
+                        </Button>
+                    )}
+                    <Button
+                        asChild
+                        variant="primary"
+                        className="flex-1 sm:min-w-[164px] sm:flex-none"
+                    >
+                        <Link href={createOrderHref}>
+                            <Plus className="size-4" aria-hidden="true" />
+                            Buat Pesanan
+                        </Link>
+                    </Button>
+                </div>
+            </header>
 
             {queueError && (
                 <div
                     role="alert"
-                    className="mb-4 flex items-start gap-2.5 rounded-md border border-[#991B1B]/40 bg-[#FEE2E2] p-3.5 text-sm font-medium text-[#991B1B]"
+                    className="mb-6 flex items-start gap-2.5 rounded-[8px] border border-[#E2B3AA] bg-[#FCECE9] p-4 text-sm font-medium text-[#8A2619]"
                 >
                     <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
                     <span>{queueError}</span>
                 </div>
             )}
 
-            {/* Mobile (< 768px): Antrean & Piutang tampil lebih dulu (order-1), KPI ringkas 2x2 di bawah (order-2) */}
-            <div className="flex flex-col gap-4">
-                <section
-                    aria-label="Ringkasan angka toko"
-                    className="order-2 grid grid-cols-2 gap-2.5 md:order-1 md:gap-3 lg:grid-cols-4"
-                >
-                    <div className="rounded-[10px] border border-[#E3DED4] bg-white p-3 md:px-4 md:py-3.5">
-                        <p className="text-xs font-semibold text-[#525B54] md:text-[13px]">
-                            Total Nilai Pesanan
-                        </p>
-                        <p className="mt-1 font-bold text-[#1E2420] tabular-nums text-[19px] leading-snug md:text-[22px]">
-                            {formatRupiah(stats.billed)}
-                        </p>
-                        <p className="mt-1 text-xs text-[#525B54] tabular-nums">
-                            Dari {formatAmount(stats.orders)} pesanan tercatat
-                        </p>
-                    </div>
+            <div className="flex flex-col gap-5 sm:gap-7">
+                {/* B. Ringkasan Utama (2x2 ringkas di mobile, 4 kolom di desktop) */}
+                <LedgerSummaryStrip
+                    ariaLabel="Ringkasan operasional hari ini"
+                    mobileColumns={2}
+                    items={[
+                        {
+                            label: 'Pesanan Masuk Hari Ini',
+                            value: `${formatAmount(todayStats?.orders_count ?? 0)} pesanan`,
+                            hint: `Nilai ${formatRupiah(todayStats?.orders_billed ?? 0)}`,
+                        },
+                        {
+                            label: 'Kiriman Hari Ini',
+                            value: `${formatAmount(todayTotalDeliveries)} rangkaian`,
+                            hint:
+                                overdueCount > 0 ? (
+                                    <span>
+                                        <strong className="font-semibold text-[#9A3B22]">
+                                            {formatAmount(overdueCount)} terlambat
+                                        </strong>
+                                        {' · '}
+                                        {formatAmount(todayDueCount)} masih antre
+                                    </span>
+                                ) : (
+                                    `${formatAmount(todayDueCount)} antre · ${formatAmount(todayDeliveredCount)} terkirim`
+                                ),
+                        },
+                        {
+                            label: 'Uang Diterima Hari Ini',
+                            value: formatRupiah(todayStats?.cash_in ?? 0),
+                            hint:
+                                (todayStats?.cash_out ?? 0) > 0
+                                    ? `Biaya hari ini ${formatRupiah(todayStats?.cash_out ?? 0)}`
+                                    : `${formatAmount(todayStats?.cash_in_count ?? 0)} pembayaran sah`,
+                        },
+                        {
+                            label: 'Piutang Belum Lunas',
+                            value: formatRupiah(stats.outstanding),
+                            hint: `${formatAmount(todayStats?.open_receivables_count ?? receivables.length)} pesanan terbuka`,
+                        },
+                    ]}
+                />
 
-                    <div className="rounded-[10px] border border-[#E3DED4] bg-white p-3 md:px-4 md:py-3.5">
-                        <p className="text-xs font-semibold text-[#525B54] md:text-[13px]">
-                            Uang Masuk (Sah)
-                        </p>
-                        <p className="mt-1 font-bold text-[#166534] tabular-nums text-[19px] leading-snug md:text-[22px]">
-                            {formatRupiah(stats.received)}
-                        </p>
-                        <p className="mt-1 text-xs text-[#525B54]">
-                            Pembayaran tercatat sah
-                        </p>
-                    </div>
-
-                    <div className="rounded-[10px] border border-[#E3DED4] bg-white p-3 md:px-4 md:py-3.5">
-                        <p className="text-xs font-semibold text-[#525B54] md:text-[13px]">
-                            Sisa Piutang Berjalan
-                        </p>
-                        <p className="mt-1 font-bold text-[#8C3B4A] tabular-nums text-[19px] leading-snug md:text-[22px]">
-                            {formatRupiah(stats.outstanding)}
-                        </p>
-                        <p className="mt-1 text-xs text-[#525B54]">
-                            Tagihan belum dilunasi
-                        </p>
-                    </div>
-
-                    <div className="rounded-[10px] border border-[#E3DED4] bg-[#F1EDE6] p-3 md:px-4 md:py-3.5">
-                        <p className="text-xs font-semibold text-[#525B54] md:text-[13px]">
-                            Selisih Kas Sederhana
-                        </p>
-                        <p className="mt-1 font-bold text-[#1E2420] tabular-nums text-[19px] leading-snug md:text-[22px]">
-                            {formatRupiah(stats.cash_flow)}
-                        </p>
-                        <p className="mt-1 text-xs text-[#525B54] tabular-nums">
-                            Biaya sah: {formatRupiah(stats.expenses)}
-                        </p>
-                    </div>
-                </section>
-
-                <div className="order-1 grid grid-cols-1 gap-4 md:order-2 lg:grid-cols-[minmax(0,1.6fr)_minmax(310px,1fr)] lg:items-start">
-                    {/* Kolom Kiri: Antrean Kiriman & Pengerjaan */}
+                {/* Workspace Grid: Antrean Pekerjaan & Piutang Ringkas */}
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.7fr)_minmax(300px,1fr)] lg:items-start">
+                    {/* C. Pekerjaan yang Perlu Ditangani */}
                     <section
                         aria-labelledby="dash-agenda-title"
-                        className="rounded-[10px] border border-[#E3DED4] bg-white p-3.5 md:p-5"
+                        className="atelier-sheet overflow-hidden"
                     >
-                        <div className="mb-3 flex flex-wrap items-center justify-between gap-2.5">
-                            <h2 id="dash-agenda-title" className="text-base font-bold text-[#1E2420]">
-                                Antrean Kiriman Terlambat &amp; Hari Ini
-                            </h2>
-                            <Badge tone={overdueCount > 0 ? 'danger' : 'paid'}>
-                                {overdueCount > 0
-                                    ? `${overdueCount} Terlambat tanggal`
-                                    : 'Semua tepat tanggal'}
-                            </Badge>
+                        <div className="border-b border-[#DED6C8] bg-[#FFFDF9] px-5 pt-4">
+                            <div className="flex flex-wrap items-baseline justify-between gap-2 pb-3">
+                                <h2 id="dash-agenda-title" className="atelier-h2">
+                                    Pekerjaan &amp; Pengiriman
+                                </h2>
+                                <span className="text-[13px] text-[#545852] tabular-nums">
+                                    {formatAmount(readyCount)} siap kirim
+                                    {overdueCount > 0 ? (
+                                        <>
+                                            {' · '}
+                                            <strong className="font-semibold text-[#9A3B22]">
+                                                {formatAmount(overdueCount)} terlambat
+                                            </strong>
+                                        </>
+                                    ) : null}
+                                </span>
+                            </div>
+
+                            {deliveryQueue.length > 0 && (
+                                <div
+                                    className="-mb-px flex flex-nowrap gap-1 overflow-x-auto sm:flex-wrap sm:overflow-visible"
+                                    role="tablist"
+                                    aria-label="Filter antrean pengiriman"
+                                >
+                                    {queueFilterOptions.map((opt) => {
+                                        const active = queueFilter === opt.key;
+                                        return (
+                                            <button
+                                                key={opt.key}
+                                                type="button"
+                                                role="tab"
+                                                aria-selected={active}
+                                                onClick={() => setQueueFilter(opt.key)}
+                                                className={cn(
+                                                    'inline-flex min-h-[44px] shrink-0 items-center whitespace-nowrap border-b-2 px-3 text-sm font-semibold transition-colors tabular-nums sm:px-3.5',
+                                                    active
+                                                        ? 'border-[#1D3B2A] text-[#1D3B2A]'
+                                                        : 'border-transparent text-[#545852] hover:text-[#1C211E]',
+                                                )}
+                                            >
+                                                {opt.label} ({formatAmount(opt.count)})
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
 
                         {deliveryQueue.length === 0 ? (
-                            <div className="rounded-lg border border-dashed border-[#858E87] bg-[#F1EDE6]/55 px-4 py-7 text-center">
+                            <div className="bg-[#FFFDF9] px-5 py-12 text-center">
                                 <CheckCircle2
-                                    className="mx-auto mb-2 size-7 text-[#166534]"
+                                    className="mx-auto mb-2.5 size-6 text-[#164B2A]"
                                     aria-hidden="true"
                                 />
-                                <p className="text-sm font-bold text-[#1E2420]">
-                                    Semua rangkaian sudah selesai dikirim
+                                <p className="text-[15px] font-bold text-[#1C211E]">
+                                    Tidak ada antrean rangkaian aktif
                                 </p>
-                                <p className="mt-1 text-[13px] text-[#525B54]">
-                                    Belum ada item pesanan aktif yang perlu dirangkai atau diantar.
+                                <p className="mt-1 text-sm text-[#545852]">
+                                    Semua kiriman terjadwal sudah selesai atau belum ada pesanan masuk.
                                 </p>
-                                <div className="mt-4">
-                                    <Button asChild variant="primary" size="sm">
-                                        <Link href={createOrderHref}>
-                                            <Plus className="size-4" aria-hidden="true" />
-                                            Buat Pesanan Baru
-                                        </Link>
+                            </div>
+                        ) : filteredQueue.length === 0 ? (
+                            <div className="bg-[#FFFDF9] px-5 py-10 text-center">
+                                <p className="text-[15px] font-semibold text-[#1C211E]">
+                                    Tidak ada item pada kategori ini.
+                                </p>
+                                <div className="mt-3">
+                                    <Button
+                                        type="button"
+                                        variant="secondary"
+                                        onClick={() => setQueueFilter('all')}
+                                    >
+                                        Lihat Semua Antrean
                                     </Button>
                                 </div>
                             </div>
                         ) : (
-                            <div className="flex flex-col gap-2.5">
-                                {deliveryQueue.map((item) => {
-                                    const urgencyMeta = getUrgencyBadge(item);
-                                    const statusMeta = getFulfillmentBadgeMeta(item.fulfillment_status);
-                                    const isUrgent = item.urgency === 'overdue';
-                                    const isBusy = submittingItemId === item.item_id;
-                                    const nextLabel = item.next_status
-                                        ? NEXT_STEP_LABEL[item.fulfillment_status]
-                                        : null;
-
-                                    return (
-                                        <article
-                                            key={item.item_id}
+                            <div className="divide-y divide-[#DED6C8]">
+                                {groupedByUrgency.map((section) => (
+                                    <div key={section.urgency}>
+                                        <div
                                             className={cn(
-                                                'flex flex-col justify-between gap-3 rounded-lg border px-3.5 py-3 md:flex-row md:items-center',
-                                                isUrgent
-                                                    ? 'border-[#E5B9C2] bg-[#FDF2F4]'
-                                                    : 'border-[#E3DED4] bg-white',
+                                                'flex items-center justify-between border-b border-[#DED6C8] px-5 py-2.5 text-[13px] font-bold',
+                                                section.urgency === 'overdue'
+                                                    ? 'bg-[#FCF0EC]/65 text-[#8A2619]'
+                                                    : 'bg-[#F7F3EC] text-[#545852]',
                                             )}
                                         >
-                                            <div className="min-w-0 flex-1">
-                                                <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
-                                                    <Badge tone={urgencyMeta.tone}>{urgencyMeta.label}</Badge>
-                                                    <Badge tone={statusMeta.tone}>{statusMeta.label}</Badge>
-                                                    <OrderCodeBadge orderNumber={item.order_number} />
-                                                </div>
-                                                <h3 className="text-[15px] font-bold text-[#1E2420]">
-                                                    {item.flower_type}{' '}
-                                                    <span className="font-semibold text-[#525B54] tabular-nums">
-                                                        ({formatAmount(item.quantity)} buah)
-                                                    </span>
-                                                </h3>
-                                                <p className="mt-0.5 text-[13px] text-[#525B54]">
-                                                    Untuk: <strong className="text-[#1E2420]">{item.recipient}</strong>
-                                                    {' | '}
-                                                    {item.delivery_location}
-                                                    {' | '}
-                                                    Pemesan: {item.customer_name}
-                                                </p>
-                                            </div>
+                                            <span>{section.label}</span>
+                                            <span className="tabular-nums">
+                                                {formatAmount(section.itemCount)} item
+                                            </span>
+                                        </div>
 
-                                            <div className="flex flex-wrap items-center gap-2 shrink-0">
-                                                {item.next_status && nextLabel && (
-                                                    <Button
-                                                        type="button"
-                                                        variant={isUrgent ? 'urgent' : 'primary'}
-                                                        size="sm"
-                                                        disabled={submittingItemId !== null}
-                                                        onClick={() => handleQueueAction(item)}
+                                        <div className="divide-y divide-[#DED6C8]">
+                                            {section.groups.map((grp) => {
+                                                const isOverdueGroup = grp.urgency === 'overdue';
+                                                return (
+                                                    <div
+                                                        key={grp.groupKey}
+                                                        className={cn(
+                                                            'bg-[#FFFDF9] px-5 py-4',
+                                                            isOverdueGroup &&
+                                                                'border-l-[3px] border-l-[#9A3B22]',
+                                                        )}
                                                     >
-                                                        {isBusy ? 'Memproses...' : nextLabel}
-                                                    </Button>
-                                                )}
-                                                <Button asChild variant="secondary" size="sm">
-                                                    <Link href={`/ui-orders/${item.order_id}`}>Detail</Link>
-                                                </Button>
-                                            </div>
-                                        </article>
-                                    );
-                                })}
+                                                        {/* Group Order Header */}
+                                                        <div className="flex items-start justify-between gap-2 pb-2.5">
+                                                            <div className="min-w-0 flex-1 sm:flex sm:flex-wrap sm:items-baseline sm:gap-x-2.5">
+                                                                <span className="block text-[15px] font-bold text-[#1C211E] sm:inline">
+                                                                    {grp.customerName}
+                                                                </span>
+                                                                <span className="block font-mono text-[13px] font-medium text-[#545852] sm:inline">
+                                                                    {grp.orderNumber}
+                                                                </span>
+                                                            </div>
+                                                            <Link
+                                                                href={`/ui-orders/${grp.orderId}`}
+                                                                className="inline-flex min-h-[44px] shrink-0 items-center gap-1 px-1 text-[13px] font-semibold text-[#1D3B2A] hover:underline"
+                                                            >
+                                                                <span>Detail Nota</span>
+                                                                <ChevronRight
+                                                                    className="size-4"
+                                                                    aria-hidden="true"
+                                                                />
+                                                            </Link>
+                                                        </div>
+
+                                                        {/* Grouped Bouquet Items (actions remain per item) */}
+                                                        <div
+                                                            className={cn(
+                                                                'space-y-3',
+                                                                grp.items.length > 1 &&
+                                                                    'border-l border-[#DED6C8] pl-3.5',
+                                                            )}
+                                                        >
+                                                            {grp.items.map((item) => {
+                                                                const statusMeta = getFulfillmentBadgeMeta(
+                                                                    item.fulfillment_status,
+                                                                );
+                                                                const isBusy =
+                                                                    submittingItemId === item.item_id;
+                                                                const nextLabel = item.next_status
+                                                                    ? NEXT_STEP_LABEL[
+                                                                          item.fulfillment_status
+                                                                      ]
+                                                                    : null;
+
+                                                                return (
+                                                                    <div
+                                                                        key={item.item_id}
+                                                                        className="flex flex-col justify-between gap-3 pt-1 sm:flex-row sm:items-center"
+                                                                    >
+                                                                        <div className="min-w-0 flex-1">
+                                                                            <div className="flex flex-wrap items-center gap-2">
+                                                                                <p className="text-[15px] font-semibold text-[#1C211E]">
+                                                                                    {item.flower_type}
+                                                                                    {item.quantity > 1
+                                                                                        ? ` (${formatAmount(item.quantity)})`
+                                                                                        : ''}
+                                                                                </p>
+                                                                                <Badge
+                                                                                    tone={
+                                                                                        statusMeta.tone
+                                                                                    }
+                                                                                >
+                                                                                    {statusMeta.label}
+                                                                                </Badge>
+                                                                            </div>
+                                                                            <p className="mt-0.5 text-[13px] text-[#545852]">
+                                                                                Kirim{' '}
+                                                                                <span className="font-medium text-[#1C211E] tabular-nums">
+                                                                                    {item.delivery_date}
+                                                                                </span>
+                                                                                {' · '}
+                                                                                Penerima{' '}
+                                                                                <span className="font-medium text-[#1C211E]">
+                                                                                    {item.recipient}
+                                                                                </span>
+                                                                                {' · '}
+                                                                                {item.delivery_location}
+                                                                            </p>
+                                                                        </div>
+
+                                                                        {item.next_status &&
+                                                                            nextLabel && (
+                                                                                <Button
+                                                                                    type="button"
+                                                                                    variant={
+                                                                                        item.fulfillment_status ===
+                                                                                        'READY'
+                                                                                            ? 'primary'
+                                                                                            : 'secondary'
+                                                                                    }
+                                                                                    disabled={
+                                                                                        submittingItemId !==
+                                                                                        null
+                                                                                    }
+                                                                                    onClick={() =>
+                                                                                        handleQueueAction(
+                                                                                            item,
+                                                                                        )
+                                                                                    }
+                                                                                    className="w-full shrink-0 sm:w-auto sm:min-w-[144px]"
+                                                                                >
+                                                                                    {isBusy
+                                                                                        ? 'Menyimpan...'
+                                                                                        : nextLabel}
+                                                                                </Button>
+                                                                            )}
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         )}
                     </section>
 
-                    {/* Kolom Kanan: Piutang Belum Lunas */}
+                    {/* D. Piutang Ringkas & Langsung Ditindaklanjuti */}
                     <aside
                         aria-labelledby="dash-piutang-title"
-                        className="rounded-[10px] border border-[#E3DED4] bg-white p-3.5 md:p-5"
+                        className="atelier-sheet overflow-hidden"
                     >
-                        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                            <h2 id="dash-piutang-title" className="text-base font-bold text-[#1E2420]">
-                                Piutang Belum Lunas
+                        <div className="flex items-center justify-between gap-2 border-b border-[#DED6C8] bg-[#FFFDF9] px-5 py-4">
+                            <h2 id="dash-piutang-title" className="atelier-h2">
+                                Piutang Terbuka
                             </h2>
-                            <Button asChild variant="ghost" size="sm">
-                                <Link href={paymentsHref}>Semua Piutang</Link>
-                            </Button>
+                            <Link
+                                href={paymentsHref}
+                                className="inline-flex min-h-[44px] items-center gap-1 px-1 text-[13px] font-semibold text-[#1D3B2A] hover:underline"
+                            >
+                                <span>Lihat Semua</span>
+                                <ChevronRight className="size-4" aria-hidden="true" />
+                            </Link>
                         </div>
 
-                        {receivables.length === 0 ? (
-                            <div className="rounded-lg border border-dashed border-[#858E87] bg-[#F1EDE6]/55 px-4 py-6 text-center">
-                                <p className="text-sm font-bold text-[#1E2420]">
-                                    Tidak ada tagihan piutang terbuka
-                                </p>
-                                <p className="mt-1 text-[13px] text-[#525B54]">
-                                    Seluruh pesanan tercatat telah dilunasi.
+                        {displayedReceivables.length === 0 ? (
+                            <div className="bg-[#FFFDF9] px-5 py-10 text-center">
+                                <p className="text-[15px] font-semibold text-[#1C211E]">
+                                    Semua tagihan sudah lunas
                                 </p>
                             </div>
                         ) : (
-                            <div className="flex flex-col gap-2.5">
-                                {receivables.map((rec) => {
+                            <div className="divide-y divide-[#DED6C8]">
+                                {displayedReceivables.map((rec) => {
                                     const pMeta = getPaymentBadgeMeta(rec.payment_status);
                                     return (
                                         <div
                                             key={rec.id}
-                                            className="flex flex-col gap-2.5 rounded-lg border border-[#E3DED4] bg-white px-3.5 py-3"
+                                            className="flex items-center justify-between gap-3 bg-[#FFFDF9] px-5 py-3.5"
                                         >
-                                            <div>
-                                                <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
-                                                    <Badge tone={pMeta.tone}>{pMeta.label}</Badge>
-                                                    <OrderCodeBadge orderNumber={rec.order_number} />
-                                                </div>
-                                                <p className="text-[15px] font-bold text-[#1E2420]">
+                                            <Link
+                                                href={`/ui-orders/${rec.id}`}
+                                                className="group flex min-h-[44px] min-w-0 flex-1 flex-col justify-center"
+                                            >
+                                                <span className="text-[15px] font-bold text-[#1C211E] group-hover:underline">
                                                     {rec.customer_name}
-                                                </p>
-                                                <p className="mt-0.5 text-[13px] text-[#525B54] tabular-nums">
-                                                    Total {formatRupiah(rec.total_amount)} | Sisa:{' '}
-                                                    <strong className="text-[#8C3B4A]">
+                                                </span>
+                                                <span className="mt-0.5 text-[13px] text-[#545852] tabular-nums">
+                                                    Sisa{' '}
+                                                    <strong className="font-bold text-[#9A3B22]">
                                                         {formatRupiah(rec.outstanding)}
                                                     </strong>
-                                                </p>
-                                            </div>
-                                            <div className="flex flex-wrap items-center gap-2">
-                                                <Button
-                                                    type="button"
-                                                    variant="primary"
-                                                    size="sm"
-                                                    onClick={() =>
-                                                        setPaymentTarget({
-                                                            id: rec.id,
-                                                            order_number: rec.order_number,
-                                                            customer_name: rec.customer_name,
-                                                            outstanding: rec.outstanding,
-                                                        })
-                                                    }
-                                                >
-                                                    Catat Bayar
-                                                </Button>
-                                                <Button asChild variant="secondary" size="sm">
-                                                    <Link href={`/ui-orders/${rec.id}`}>Detail</Link>
-                                                </Button>
-                                            </div>
+                                                    {' · '}
+                                                    <span>{pMeta.label}</span>
+                                                </span>
+                                            </Link>
+                                            <Button
+                                                type="button"
+                                                variant="secondary"
+                                                onClick={() =>
+                                                    setPaymentTarget({
+                                                        id: rec.id,
+                                                        order_number: rec.order_number,
+                                                        customer_name: rec.customer_name,
+                                                        outstanding: rec.outstanding,
+                                                    })
+                                                }
+                                                className="min-w-[112px] shrink-0"
+                                            >
+                                                Catat Bayar
+                                            </Button>
                                         </div>
                                     );
                                 })}
@@ -412,6 +621,44 @@ export default function Dashboard({
                         )}
                     </aside>
                 </div>
+
+                {/* E. Ringkasan Kumulatif (Tenang, Prioritas Visual Rendah) */}
+                <section
+                    aria-label="Ringkasan akumulasi keseluruhan toko"
+                    className="rounded-[8px] border border-[#DED6C8] bg-[#EFE9DE]/55 px-5 py-4"
+                >
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                        <h2 className="text-[13px] font-bold text-[#545852]">
+                            Ringkasan Kumulatif Sejak Awal Pencatatan ({formatAmount(stats.orders)} pesanan)
+                        </h2>
+                        <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-[13px] tabular-nums sm:grid-cols-4">
+                            <div>
+                                <span className="block text-[#545852]">Total Nilai Nota</span>
+                                <strong className="font-bold text-[#1C211E]">
+                                    {formatRupiah(stats.billed)}
+                                </strong>
+                            </div>
+                            <div>
+                                <span className="block text-[#545852]">Total Kas Masuk</span>
+                                <strong className="font-bold text-[#1C211E]">
+                                    {formatRupiah(stats.received)}
+                                </strong>
+                            </div>
+                            <div>
+                                <span className="block text-[#545852]">Total Pengeluaran</span>
+                                <strong className="font-bold text-[#1C211E]">
+                                    {formatRupiah(stats.expenses)}
+                                </strong>
+                            </div>
+                            <div>
+                                <span className="block text-[#545852]">Selisih Kas</span>
+                                <strong className="font-bold text-[#1C211E]">
+                                    {formatRupiah(stats.cash_flow)}
+                                </strong>
+                            </div>
+                        </div>
+                    </div>
+                </section>
             </div>
 
             <DeliveryConfirmModal
@@ -464,19 +711,21 @@ export default function Dashboard({
                         return (
                             <div
                                 key={rec.id}
-                                className="flex flex-col justify-between gap-2.5 rounded-lg border border-[#E3DED4] bg-[#FAF8F4]/70 p-3 sm:flex-row sm:items-center"
+                                className="flex flex-col justify-between gap-3 rounded-[8px] border border-[#DED6C8] bg-[#F7F3EC] p-3.5 sm:flex-row sm:items-center"
                             >
                                 <div className="min-w-0">
-                                    <div className="flex flex-wrap items-center gap-1.5">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span className="font-mono text-[13px] font-semibold text-[#545852]">
+                                            {rec.order_number}
+                                        </span>
                                         <Badge tone={pMeta.tone}>{pMeta.label}</Badge>
-                                        <OrderCodeBadge orderNumber={rec.order_number} />
                                     </div>
-                                    <p className="mt-1 text-sm font-bold text-[#1E2420]">
+                                    <p className="mt-1 text-[15px] font-bold text-[#1C211E]">
                                         {rec.customer_name}
                                     </p>
-                                    <p className="mt-0.5 text-xs text-[#525B54] tabular-nums">
-                                        Total {formatRupiah(rec.total_amount)} | Sisa:{' '}
-                                        <strong className="text-[#8C3B4A]">
+                                    <p className="mt-0.5 text-[13px] text-[#545852] tabular-nums">
+                                        Total {formatRupiah(rec.total_amount)} · Sisa{' '}
+                                        <strong className="text-[#9A3B22]">
                                             {formatRupiah(rec.outstanding)}
                                         </strong>
                                     </p>
@@ -484,8 +733,7 @@ export default function Dashboard({
                                 <Button
                                     type="button"
                                     variant="primary"
-                                    size="sm"
-                                    className="shrink-0"
+                                    className="shrink-0 sm:min-w-[120px]"
                                     onClick={() => {
                                         setPaymentPickerOpen(false);
                                         setPaymentTarget({

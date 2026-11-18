@@ -293,4 +293,66 @@ class UiReportTest extends TestCase
         $zip->close();
         @unlink($tempFile);
     }
+
+    public function test_reports_support_weekly_monthly_yearly_chart_series_and_expense_breakdown(): void
+    {
+        $customer = Customer::create(['name' => 'Pelanggan Grafik']);
+        $catFlowers = $this->createCategory('Bunga Segar');
+        $catCourier = $this->createCategory('Ongkos Kurir');
+
+        $order2025 = $this->createOrder($customer->id, '2025-12-10', 800000, 'COMPLETED', 'ORD-20251210-001');
+        $this->createPayment($order2025, '2025-12-10', 800000, 'POSTED');
+        $this->createExpense($catFlowers, '2025-12-10', 250000, 'Stok mawar tahun lalu', 'POSTED');
+
+        $orderJan = $this->createOrder($customer->id, '2026-01-15', 500000, 'COMPLETED', 'ORD-20260115-001');
+        $this->createPayment($orderJan, '2026-01-16', 500000, 'POSTED');
+        $this->createExpense($catFlowers, '2026-01-15', 150000, 'Bunga Januari', 'POSTED');
+        $this->createExpense($catCourier, '2026-01-16', 50000, 'Kurir Januari', 'POSTED');
+        $this->createExpense($catCourier, '2026-01-16', 99999, 'Kurir Void', 'VOIDED', 'Batal karena salah nominal input');
+
+        foreach (['weekly', 'monthly', 'yearly'] as $granularity) {
+            $resp = $this->actingAs($this->admin)
+                ->get(route('ui-reports.index', [
+                    'preset' => 'custom',
+                    'from' => '2026-01-01',
+                    'to' => '2026-02-28',
+                    'granularity' => $granularity,
+                ]))
+                ->assertOk();
+
+            $rep = $resp->viewData('page')['props']['report'];
+            $this->assertSame($granularity, $rep['chart_series']['granularity']);
+            $this->assertNotEmpty($rep['chart_series']['points']);
+
+            if ($granularity === 'yearly') {
+                $byYear = collect($rep['chart_series']['points'])->keyBy('key');
+                $this->assertSame(800000, $byYear['2025']['cash_in']);
+                $this->assertSame(500000, $byYear['2026']['cash_in']);
+            }
+
+            if ($granularity === 'monthly') {
+                $byMonth = collect($rep['chart_series']['points'])->keyBy('key');
+                $this->assertSame(500000, $byMonth['2026-01']['cash_in']);
+                $this->assertSame(200000, $byMonth['2026-01']['cash_out']);
+                $this->assertSame(300000, $byMonth['2026-01']['cash_diff']);
+            }
+        }
+
+        // Verify expense breakdown sums only POSTED expenses inside period
+        $repBreakdown = $this->actingAs($this->admin)
+            ->get(route('ui-reports.index', [
+                'preset' => 'custom',
+                'from' => '2026-01-01',
+                'to' => '2026-02-28',
+            ]))
+            ->assertOk()
+            ->viewData('page')['props']['report']['expense_breakdown'];
+
+        $this->assertCount(2, $repBreakdown);
+        $this->assertSame('Bunga Segar', $repBreakdown[0]['category']);
+        $this->assertSame(150000, $repBreakdown[0]['amount']);
+        $this->assertSame(75, $repBreakdown[0]['percent']);
+        $this->assertSame('Ongkos Kurir', $repBreakdown[1]['category']);
+        $this->assertSame(50000, $repBreakdown[1]['amount']);
+    }
 }

@@ -34,6 +34,7 @@ export default function AppLayout({ title: _title, children }: AppLayoutProps) {
     const [menuDrawerOpen, setMenuDrawerOpen] = useState(false);
     const [logoutModalOpen, setLogoutModalOpen] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
+    const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
     const [globalQuery, setGlobalQuery] = useState('');
 
     const flashKey = `${url}::${flash?.success ?? ''}::${flash?.error ?? ''}::${errors?.customer ?? ''}`;
@@ -41,6 +42,7 @@ export default function AppLayout({ title: _title, children }: AppLayoutProps) {
 
     useEffect(() => {
         setMenuDrawerOpen(false);
+        setMobileSearchOpen(false);
     }, [url]);
 
     const showFlash = dismissedKey !== flashKey;
@@ -79,102 +81,154 @@ export default function AppLayout({ title: _title, children }: AppLayoutProps) {
     ];
 
     return (
-        <div className="min-h-screen bg-[#FBF9F6] text-[#1E2420]">
+        <div className="min-h-screen bg-[#F7F3EC] text-[#1C211E]">
             <a
                 href="#main-content"
-                className="sr-only fixed left-3 top-3 z-[100] rounded-md bg-[#143326] px-4 py-2.5 text-sm font-bold text-white focus:not-sr-only"
+                className="sr-only fixed left-3 top-3 z-[100] rounded-[8px] bg-[#1D3B2A] px-4 py-2.5 text-sm font-bold text-[#FFFDF9] focus:not-sr-only"
             >
                 Langsung ke konten utama
             </a>
 
             <div className="flex min-h-screen">
-                {/* Desktop Dark Botanical Sidebar (>= 1024px) */}
+                {/* Desktop Deep Cypress Atelier Spine (>= 1024px) */}
                 <aside
                     aria-label="Sidebar navigasi"
-                    className="hidden lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-[248px] lg:shrink-0 lg:flex-col lg:overflow-y-auto"
+                    className="hidden lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-[256px] lg:shrink-0 lg:flex-col lg:overflow-y-auto"
                 >
                     <SidebarContent onRequestLogout={() => setLogoutModalOpen(true)} />
                 </aside>
 
                 <div className="flex min-w-0 flex-1 flex-col">
-                    {/* Sticky Topbar */}
-                    <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-[#E3DED4] bg-white px-4 py-2.5 lg:px-7">
-                        <div className="flex min-w-0 items-center gap-2.5">
-                            <div className="flex items-center gap-2 lg:hidden">
-                                <span
-                                    aria-hidden="true"
-                                    className="grid size-[30px] shrink-0 place-items-center rounded-md bg-[#143326] font-[var(--font-display)] text-[15px] font-semibold text-white"
+                    {/* Solid Matte Cotton Topbar */}
+                    <header className="sticky top-0 z-20 border-b border-[#DED6C8] bg-[#F7F3EC] px-4 py-2 md:py-3 lg:px-8">
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="flex min-w-0 items-center gap-3">
+                                <div className="flex items-center gap-2 lg:hidden">
+                                    <span
+                                        aria-hidden="true"
+                                        className="size-2 shrink-0 rounded-full bg-[#9A3B22]"
+                                    />
+                                    <span className="text-[17px] font-bold tracking-[-0.015em] text-[#182920] sm:text-lg">
+                                        Mutiara Florist
+                                    </span>
+                                </div>
+
+                                <form
+                                    onSubmit={handleGlobalSearch}
+                                    role="search"
+                                    className="hidden md:flex md:items-center md:gap-2"
                                 >
-                                    M
-                                </span>
-                                <span className="truncate text-base font-bold text-[#1E2420]">
-                                    Mutiara Florist
-                                </span>
+                                    <label htmlFor="topbar-global-search" className="sr-only">
+                                        Cari nomor nota atau nama pelanggan
+                                    </label>
+                                    <div className="relative w-72 lg:w-80">
+                                        <Search
+                                            className="pointer-events-none absolute left-3 top-3.5 size-4 text-[#545852]"
+                                            aria-hidden="true"
+                                        />
+                                        <input
+                                            id="topbar-global-search"
+                                            type="search"
+                                            value={globalQuery}
+                                            onChange={(e) => setGlobalQuery(e.target.value)}
+                                            placeholder="Cari no. nota atau pelanggan..."
+                                            className="h-11 w-full rounded-[8px] border-[1.5px] border-[#7D776C] bg-[#FFFDF9] py-2 pl-9 pr-3 text-[15px] text-[#1C211E] placeholder:text-[#60645E] focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[#1D3B2A]"
+                                        />
+                                    </div>
+                                    <Button
+                                        type="submit"
+                                        variant="secondary"
+                                        className="h-11 min-w-[104px]"
+                                    >
+                                        Cari Nota
+                                    </Button>
+                                </form>
                             </div>
 
+                            <div className="flex shrink-0 items-center gap-2.5">
+                                {/* Mobile ONLY Quick Search Toggle (< 768px) */}
+                                <Button
+                                    type="button"
+                                    variant="secondary"
+                                    onClick={() => setMobileSearchOpen((v) => !v)}
+                                    aria-expanded={mobileSearchOpen}
+                                    aria-label={mobileSearchOpen ? 'Tutup pencarian nota' : 'Cari Nota'}
+                                    className="h-11 min-w-[44px] px-3 md:hidden"
+                                >
+                                    {mobileSearchOpen ? (
+                                        <X className="size-4" aria-hidden="true" />
+                                    ) : (
+                                        <Search className="size-4" aria-hidden="true" />
+                                    )}
+                                    <span className="text-[13px]">Cari Nota</span>
+                                </Button>
+
+                                {/* Tablet ONLY Menu button (768px - 1023px) */}
+                                <Button
+                                    type="button"
+                                    variant="secondary"
+                                    onClick={() => setMenuDrawerOpen(true)}
+                                    className="hidden h-11 min-w-[104px] md:inline-flex lg:hidden"
+                                >
+                                    <Menu className="size-4" aria-hidden="true" />
+                                    <span>Menu</span>
+                                </Button>
+
+                                {/* Desktop & Tablet Create CTA (Mobile uses Bottom Nav + Buat) */}
+                                <Button
+                                    asChild
+                                    variant="primary"
+                                    className="hidden h-11 min-w-[144px] md:inline-flex"
+                                >
+                                    <Link href={createOrderHref}>+ Pesanan Baru</Link>
+                                </Button>
+                            </div>
+                        </div>
+
+                        {mobileSearchOpen && (
                             <form
                                 onSubmit={handleGlobalSearch}
                                 role="search"
-                                className="hidden md:flex md:w-80 md:items-center"
+                                className="mt-2.5 flex items-center gap-2 md:hidden"
                             >
-                                <label htmlFor="topbar-global-search" className="sr-only">
+                                <label htmlFor="mobile-global-search" className="sr-only">
                                     Cari nomor nota atau nama pelanggan
                                 </label>
-                                <div className="relative w-full">
-                                    <Search
-                                        className="pointer-events-none absolute left-3 top-3 size-4 text-[#525B54]"
-                                        aria-hidden="true"
-                                    />
-                                    <input
-                                        id="topbar-global-search"
-                                        type="search"
-                                        value={globalQuery}
-                                        onChange={(e) => setGlobalQuery(e.target.value)}
-                                        placeholder="Cari nomor nota (MF-...) atau pelanggan..."
-                                        className="min-h-[44px] w-full rounded-md border-[1.5px] border-[#858E87] bg-white py-2 pl-9 pr-3 text-sm text-[#1E2420] placeholder:text-[#525B54]/75 focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[#143326]"
-                                    />
-                                </div>
+                                <input
+                                    id="mobile-global-search"
+                                    type="search"
+                                    autoFocus
+                                    value={globalQuery}
+                                    onChange={(e) => setGlobalQuery(e.target.value)}
+                                    placeholder="Cari no. nota atau nama..."
+                                    className="h-11 min-w-0 flex-1 rounded-[8px] border-[1.5px] border-[#7D776C] bg-[#FFFDF9] px-3 text-[15px] text-[#1C211E] placeholder:text-[#60645E] focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[#1D3B2A]"
+                                />
+                                <Button type="submit" variant="primary" className="h-11 shrink-0 px-4">
+                                    Cari
+                                </Button>
                             </form>
-                        </div>
-
-                        <div className="flex shrink-0 items-center gap-2">
-                            {/* Tablet ONLY Menu button (768px - 1023px) */}
-                            <Button
-                                type="button"
-                                variant="secondary"
-                                size="sm"
-                                onClick={() => setMenuDrawerOpen(true)}
-                                className="hidden md:inline-flex lg:hidden"
-                            >
-                                <Menu className="size-4" aria-hidden="true" />
-                                <span>Menu</span>
-                            </Button>
-
-                            <Button asChild variant="primary" size="default">
-                                <Link href={createOrderHref}>+ Pesanan Baru</Link>
-                            </Button>
-                        </div>
+                        )}
                     </header>
 
                     {/* Main Content */}
                     <main
                         id="main-content"
-                        className="mx-auto w-full max-w-[1200px] flex-1 px-4 pb-[calc(64px+env(safe-area-inset-bottom)+28px)] pt-5 md:px-6 md:pb-14 lg:px-8 lg:pt-6"
+                        className="mx-auto w-full max-w-[1240px] flex-1 px-4 pb-[calc(76px+env(safe-area-inset-bottom))] pt-4 md:px-6 md:pb-16 md:pt-6 lg:px-8 lg:pt-8"
                     >
                         {successMessage && (
                             <div
                                 role="status"
-                                className="mb-5 flex items-start justify-between gap-3 rounded-lg border border-[#166534]/30 bg-[#DCFCE7] p-3.5 text-sm font-medium text-[#166534]"
+                                className="mb-6 flex items-start justify-between gap-3 rounded-[8px] border border-[#B8D0C0] bg-[#EEF5F0] p-4 text-[15px] font-medium text-[#164B2A]"
                             >
-                                <div className="flex items-center gap-2">
-                                    <CheckCircle2 className="size-5 shrink-0" aria-hidden="true" />
+                                <div className="flex items-start gap-2.5">
+                                    <CheckCircle2 className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
                                     <span>{successMessage}</span>
                                 </div>
                                 <button
                                     type="button"
                                     aria-label="Tutup pemberitahuan"
                                     onClick={() => setDismissedKey(flashKey)}
-                                    className="inline-flex size-11 shrink-0 items-center justify-center rounded text-[#166534] hover:bg-[#166534]/10"
+                                    className="inline-flex size-11 shrink-0 items-center justify-center rounded-[8px] text-[#164B2A] hover:bg-[#164B2A]/10"
                                 >
                                     <X className="size-4" aria-hidden="true" />
                                 </button>
@@ -184,17 +238,17 @@ export default function AppLayout({ title: _title, children }: AppLayoutProps) {
                         {errorMessage && (
                             <div
                                 role="alert"
-                                className="mb-5 flex items-start justify-between gap-3 rounded-lg border border-[#991B1B]/40 bg-[#FEE2E2] p-3.5 text-sm font-medium text-[#991B1B]"
+                                className="mb-6 flex items-start justify-between gap-3 rounded-[8px] border border-[#E2B3AA] bg-[#FCECE9] p-4 text-[15px] font-medium text-[#8A2619]"
                             >
-                                <div className="flex items-center gap-2">
-                                    <XCircle className="size-5 shrink-0" aria-hidden="true" />
+                                <div className="flex items-start gap-2.5">
+                                    <XCircle className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
                                     <span>{errorMessage}</span>
                                 </div>
                                 <button
                                     type="button"
                                     aria-label="Tutup peringatan"
                                     onClick={() => setDismissedKey(flashKey)}
-                                    className="inline-flex size-11 shrink-0 items-center justify-center rounded text-[#991B1B] hover:bg-[#991B1B]/10"
+                                    className="inline-flex size-11 shrink-0 items-center justify-center rounded-[8px] text-[#8A2619] hover:bg-[#8A2619]/10"
                                 >
                                     <X className="size-4" aria-hidden="true" />
                                 </button>
@@ -209,7 +263,7 @@ export default function AppLayout({ title: _title, children }: AppLayoutProps) {
             {/* Mobile 4-Destination Bottom Navigation (< 768px) */}
             <nav
                 aria-label="Navigasi utama mobile"
-                className="fixed inset-x-0 bottom-0 z-30 grid h-[calc(64px+env(safe-area-inset-bottom))] grid-cols-4 border-t border-[#E3DED4] bg-white pb-[env(safe-area-inset-bottom)] md:hidden"
+                className="fixed inset-x-0 bottom-0 z-30 grid h-[calc(62px+env(safe-area-inset-bottom))] grid-cols-4 border-t border-[#DED6C8] bg-[#FFFDF9] pb-[env(safe-area-inset-bottom)] md:hidden"
             >
                 {bottomDestinations.map((dest) => {
                     const isActive = isNavItemActive(url, dest.href, dest.exact);
@@ -219,10 +273,10 @@ export default function AppLayout({ title: _title, children }: AppLayoutProps) {
                             href={dest.href}
                             aria-current={isActive ? 'page' : undefined}
                             className={cn(
-                                'flex min-h-[44px] flex-col items-center justify-center gap-0.5 px-1 py-1.5 text-xs transition-colors',
+                                'flex min-h-[48px] flex-col items-center justify-center gap-1 px-1 py-1.5 text-[13px] transition-colors',
                                 isActive
-                                    ? 'bg-[#E6EFEA] font-bold text-[#143326]'
-                                    : 'font-semibold text-[#525B54] hover:bg-[#F1EDE6]',
+                                    ? 'border-t-2 border-[#1D3B2A] bg-[#EFE9DE]/80 font-bold text-[#182920]'
+                                    : 'font-semibold text-[#545852] hover:bg-[#EFE9DE]/50',
                             )}
                         >
                             <dest.icon className="size-5" aria-hidden="true" />
@@ -234,7 +288,7 @@ export default function AppLayout({ title: _title, children }: AppLayoutProps) {
                     type="button"
                     onClick={() => setMenuDrawerOpen(true)}
                     aria-expanded={menuDrawerOpen}
-                    className="flex min-h-[44px] flex-col items-center justify-center gap-0.5 px-1 py-1.5 text-xs font-semibold text-[#525B54] hover:bg-[#F1EDE6]"
+                    className="flex min-h-[48px] flex-col items-center justify-center gap-1 px-1 py-1.5 text-[13px] font-semibold text-[#545852] hover:bg-[#EFE9DE]/50"
                 >
                     <Menu className="size-5" aria-hidden="true" />
                     <span>Menu</span>
@@ -248,11 +302,11 @@ export default function AppLayout({ title: _title, children }: AppLayoutProps) {
                 title="Menu Mutiara Florist"
                 description={auth?.user ? `Masuk sebagai ${auth.user.name}` : undefined}
             >
-                <nav aria-label="Menu lanjutan" className="space-y-2">
+                <nav aria-label="Menu lanjutan" className="space-y-2.5">
                     <Link
                         href={paymentsHref}
                         onClick={() => setMenuDrawerOpen(false)}
-                        className="flex min-h-[44px] w-full items-center justify-center rounded-md border border-[#858E87] bg-white px-4 py-2 text-sm font-semibold text-[#1E2420] hover:bg-[#F1EDE6]"
+                        className="flex min-h-[44px] w-full items-center justify-center rounded-[8px] border-[1.5px] border-[#7D776C] bg-[#FFFDF9] px-4 py-2.5 text-[15px] font-semibold text-[#1C211E] hover:bg-[#EFE9DE]"
                     >
                         Piutang &amp; Pembayaran
                     </Link>
@@ -261,12 +315,12 @@ export default function AppLayout({ title: _title, children }: AppLayoutProps) {
                             key={item.label}
                             href={resolveNavHref(nav, item)}
                             onClick={() => setMenuDrawerOpen(false)}
-                            className="flex min-h-[44px] w-full items-center justify-center rounded-md border border-[#858E87] bg-white px-4 py-2 text-sm font-semibold text-[#1E2420] hover:bg-[#F1EDE6]"
+                            className="flex min-h-[44px] w-full items-center justify-center rounded-[8px] border-[1.5px] border-[#7D776C] bg-[#FFFDF9] px-4 py-2.5 text-[15px] font-semibold text-[#1C211E] hover:bg-[#EFE9DE]"
                         >
                             {item.label}
                         </Link>
                     ))}
-                    <div className="border-t border-[#E3DED4] pt-2">
+                    <div className="border-t border-[#DED6C8] pt-3">
                         <Button
                             type="button"
                             variant="urgent"
@@ -295,6 +349,7 @@ export default function AppLayout({ title: _title, children }: AppLayoutProps) {
                             variant="secondary"
                             disabled={isLoggingOut}
                             onClick={() => setLogoutModalOpen(false)}
+                            className="w-full sm:w-auto sm:min-w-[132px]"
                         >
                             Tetap Masuk
                         </Button>
@@ -303,13 +358,14 @@ export default function AppLayout({ title: _title, children }: AppLayoutProps) {
                             variant="urgent"
                             disabled={isLoggingOut}
                             onClick={handleConfirmLogout}
+                            className="w-full sm:w-auto sm:min-w-[148px]"
                         >
                             {isLoggingOut ? 'Mengakhiri sesi...' : 'Keluar Sekarang'}
                         </Button>
                     </>
                 }
             >
-                <p className="text-sm text-[#525B54]">
+                <p className="text-[15px] text-[#545852]">
                     Pastikan seluruh pesanan atau pembayaran yang sedang diketik sudah disimpan sebelum keluar.
                 </p>
             </Modal>

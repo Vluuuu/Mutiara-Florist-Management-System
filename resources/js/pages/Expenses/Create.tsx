@@ -216,33 +216,31 @@ export default function ExpensesCreate({
             <Head title="Catat Pengeluaran" />
 
             <div id="expense-form-top" className="pb-24 lg:pb-0">
-                <div className="mb-5">
-                    <Button asChild variant="ghost" size="sm" className="-ml-2 mb-2">
-                        <Link href="/ui-expenses">
-                            <ArrowLeft className="size-4" aria-hidden="true" />
-                            Kembali ke daftar pengeluaran
-                        </Link>
-                    </Button>
-                    <h1 className="font-[var(--font-display)] text-[clamp(20px,2.2vw,25px)] font-semibold leading-tight tracking-[-0.015em] text-[#1E2420]">
+                <div className="mb-6 border-b border-[#DED6C8] pb-4">
+                    <Link
+                        href="/ui-expenses"
+                        className="inline-flex min-h-[44px] items-center gap-1.5 text-sm font-semibold text-[#1D3B2A] hover:underline"
+                    >
+                        <ArrowLeft className="size-4" aria-hidden="true" />
+                        Kembali ke daftar pengeluaran
+                    </Link>
+                    <h1 className="atelier-h1 mt-2">
                         Catat Pengeluaran
                     </h1>
-                    <p className="mt-1 text-sm text-[#525B54]">
-                        Simpan belanja bahan bunga, perlengkapan toko, atau biaya kurir operasional.
-                    </p>
                 </div>
 
                 {/* Courier vs Customer Shipping Disclaimer */}
-                <div className="mb-5 flex items-start gap-2.5 rounded-[10px] border border-[#E3DED4] bg-[#F1EDE6] p-3.5 text-sm text-[#1E2420]">
-                    <Info className="mt-0.5 size-4 shrink-0 text-[#143326]" aria-hidden="true" />
+                <div className="mb-6 flex items-start gap-2.5 rounded-[8px] border border-[#DED6C8] bg-[#EFE9DE] p-4 text-sm text-[#1C211E]">
+                    <Info className="mt-0.5 size-4 shrink-0 text-[#1D3B2A]" aria-hidden="true" />
                     <p>
-                        <strong className="font-bold">Catatan Pembukuan:</strong> Catat biaya kurir yang dibayar toko atau belanja operasional di sini. Ongkos kirim yang ditagihkan ke pelanggan dicatat di formulir pesanan agar tidak terhitung ganda.
+                        Catat biaya kurir toko atau belanja bahan di sini. Ongkir tagihan pelanggan dicatat di formulir pesanan.
                     </p>
                 </div>
 
                 {quickSuccessMessage && (
                     <div
                         role="status"
-                        className="mb-4 flex items-center gap-2 rounded-md border border-[#166534]/30 bg-[#DCFCE7] px-3.5 py-2.5 text-sm font-medium text-[#166534]"
+                        className="mb-5 flex items-center gap-2 rounded-[8px] border border-[#B8D0C0] bg-[#EEF5F0] px-4 py-3 text-sm font-medium text-[#164B2A]"
                     >
                         <CheckCircle2 className="size-4 shrink-0" aria-hidden="true" />
                         <span>{quickSuccessMessage}</span>
@@ -252,7 +250,7 @@ export default function ExpensesCreate({
                 {errorFieldLinks.length > 0 && (
                     <div
                         role="alert"
-                        className="mb-5 rounded-[10px] border border-[#991B1B]/40 bg-[#FEE2E2] p-4 text-sm text-[#991B1B]"
+                        className="mb-5 rounded-[8px] border border-[#E2B3AA] bg-[#FCECE9] p-4 text-sm text-[#8A2619]"
                     >
                         <div className="flex items-start gap-2.5">
                             <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
@@ -276,23 +274,23 @@ export default function ExpensesCreate({
                 <form
                     onSubmit={handleSubmit}
                     noValidate
-                    className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1.55fr)_minmax(290px,1fr)]"
+                    className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1.55fr)_minmax(300px,1fr)]"
                 >
                     {/* Main Form */}
-                    <Card className="space-y-5 border-[#E3DED4] p-4 sm:p-6">
+                    <Card className="space-y-5 p-5 sm:p-6">
                         <div className="space-y-2">
                             <div className="flex flex-wrap items-center justify-between gap-2">
                                 <label
                                     htmlFor="expense_category_id"
-                                    className="text-sm font-semibold text-[#1E2420]"
+                                    className="text-sm font-semibold text-[#1C211E]"
                                 >
-                                    Kategori Pengeluaran <span className="text-[#991B1B]">*</span>
+                                    Kategori Pengeluaran <span className="text-[#9A3B22]">*</span>
                                 </label>
                                 <Button
                                     type="button"
                                     variant="secondary"
-                                    size="sm"
                                     onClick={openQuickCategoryModal}
+                                    className="min-w-[144px]"
                                 >
                                     <Plus className="size-4" aria-hidden="true" />
                                     Kategori Baru
@@ -300,8 +298,8 @@ export default function ExpensesCreate({
                             </div>
 
                             {categoryList.length === 0 ? (
-                                <div className="rounded-md border border-[#92400E]/30 bg-[#FEF3C7] p-3 text-sm text-[#92400E]">
-                                    Belum ada kategori aktif. Klik tombol <strong>+ Kategori Baru</strong> di atas atau buka menu Kategori Biaya untuk menambah kategori.
+                                <div className="rounded-[8px] border border-[#DFC393] bg-[#FAF1E1] p-3.5 text-sm text-[#6E3D09]">
+                                    Belum ada kategori aktif. Klik tombol <strong>Kategori Baru</strong> di atas untuk menambah kategori.
                                 </div>
                             ) : (
                                 <>
@@ -319,29 +317,26 @@ export default function ExpensesCreate({
                                         describedBy={
                                             mergedErrors.expense_category_id
                                                 ? 'expense_category_id-error'
-                                                : 'expense_category_id-hint'
+                                                : undefined
                                         }
                                         footerAction={
                                             <button
                                                 type="button"
                                                 onClick={openQuickCategoryModal}
-                                                className="flex min-h-[44px] w-full items-center gap-1.5 rounded-md px-2 text-xs font-bold text-[#143326] hover:bg-[#E6EFEA]"
+                                                className="flex min-h-[44px] w-full items-center gap-1.5 rounded-[6px] px-2 text-sm font-bold text-[#1D3B2A] hover:bg-[#EFE9DE]"
                                             >
                                                 <Plus className="size-4" aria-hidden="true" />
                                                 Tambah kategori baru sekarang
                                             </button>
                                         }
                                     />
-                                    <p id="expense_category_id-hint" className="text-xs text-[#525B54]">
-                                        Pilih kategori yang sesuai agar rekap biaya bulanan tetap akurat.
-                                    </p>
                                 </>
                             )}
 
                             {mergedErrors.expense_category_id && (
                                 <p
                                     id="expense_category_id-error"
-                                    className="text-xs font-medium text-[#991B1B]"
+                                    className="text-[13px] font-semibold text-[#8A2619]"
                                 >
                                     {mergedErrors.expense_category_id}
                                 </p>
@@ -353,7 +348,6 @@ export default function ExpensesCreate({
                                 id="expense_date"
                                 label="Tanggal pengeluaran"
                                 required
-                                hint="Tanggal default mengikuti waktu WIB (Asia/Jakarta)."
                                 error={mergedErrors.expense_date}
                             >
                                 <Input
@@ -366,7 +360,7 @@ export default function ExpensesCreate({
                                     }}
                                     invalid={Boolean(mergedErrors.expense_date)}
                                     aria-describedby={
-                                        mergedErrors.expense_date ? 'expense_date-error' : 'expense_date-hint'
+                                        mergedErrors.expense_date ? 'expense_date-error' : undefined
                                     }
                                     required
                                 />
@@ -376,7 +370,6 @@ export default function ExpensesCreate({
                                 id="expense_amount"
                                 label="Nominal (Rp)"
                                 required
-                                hint="Masukkan bilangan bulat tanpa tanda koma atau desimal."
                                 error={mergedErrors.amount}
                             >
                                 <CurrencyInput
@@ -389,7 +382,7 @@ export default function ExpensesCreate({
                                     placeholder="Contoh: 150.000"
                                     invalid={Boolean(mergedErrors.amount)}
                                     describedBy={
-                                        mergedErrors.amount ? 'expense_amount-error' : 'expense_amount-hint'
+                                        mergedErrors.amount ? 'expense_amount-error' : undefined
                                     }
                                     required
                                 />
@@ -400,7 +393,6 @@ export default function ExpensesCreate({
                             id="description"
                             label="Keterangan pengeluaran"
                             required
-                            hint="Sebutkan barang atau tujuan belanja secara jelas (minimal 3 karakter)."
                             error={mergedErrors.description}
                         >
                             <Textarea
@@ -416,7 +408,7 @@ export default function ExpensesCreate({
                                 placeholder="Misal: Beli mawar merah segar 2 ikat di Rawa Belong dan pita satin"
                                 invalid={Boolean(mergedErrors.description)}
                                 aria-describedby={
-                                    mergedErrors.description ? 'description-error' : 'description-hint'
+                                    mergedErrors.description ? 'description-error' : undefined
                                 }
                                 required
                             />
@@ -424,40 +416,37 @@ export default function ExpensesCreate({
                     </Card>
 
                     {/* Right Sticky Summary */}
-                    <Card className="space-y-4 border-[#E3DED4] bg-[#FAF8F4] p-4 sm:p-5 lg:sticky lg:top-6">
-                        <h2 className="text-base font-bold text-[#1E2420]">
+                    <Card className="space-y-4 bg-[#EFE9DE]/80 p-5 sm:p-6 lg:sticky lg:top-20">
+                        <h2 className="atelier-h2">
                             Ringkasan Catatan
                         </h2>
 
-                        <dl className="space-y-2.5 border-y border-[#E3DED4] py-3 text-sm">
+                        <dl className="space-y-2.5 border-y border-[#DED6C8] py-3 text-[15px]">
                             <div className="flex items-start justify-between gap-2">
-                                <dt className="text-[#525B54]">Kategori</dt>
-                                <dd className="text-right font-semibold text-[#1E2420]">
+                                <dt className="text-[#545852]">Kategori</dt>
+                                <dd className="text-right font-semibold text-[#1C211E]">
                                     {selectedCategory ? selectedCategory.name : 'Belum dipilih'}
                                 </dd>
                             </div>
                             <div className="flex items-start justify-between gap-2">
-                                <dt className="text-[#525B54]">Tanggal</dt>
-                                <dd className="text-right font-semibold text-[#1E2420] tabular-nums">
+                                <dt className="text-[#545852]">Tanggal</dt>
+                                <dd className="text-right font-semibold text-[#1C211E] tabular-nums">
                                     {data.expense_date ? formatDateWib(data.expense_date) : '-'}
                                 </dd>
                             </div>
                             <div className="flex items-baseline justify-between gap-2">
-                                <dt className="text-[#525B54]">Nominal</dt>
-                                <dd className="text-right text-lg font-bold text-[#143326] tabular-nums">
+                                <dt className="text-[#545852]">Nominal</dt>
+                                <dd className="text-right text-xl font-bold text-[#1D3B2A] tabular-nums">
                                     {data.amount ? formatRupiah(data.amount) : 'Rp0'}
                                 </dd>
                             </div>
                         </dl>
 
-                        <p className="text-xs text-[#525B54]">
-                            Setelah disimpan, catatan berstatus Tercatat. Jika salah input, koreksi dilakukan melalui tombol Batalkan dengan alasan wajib.
-                        </p>
-
-                        <div className="flex flex-col gap-2 pt-1">
+                        <div className="flex flex-col gap-2.5 pt-1">
                             <Button
                                 type="submit"
                                 variant="primary"
+                                size="lg"
                                 disabled={processing || categoryList.length === 0}
                                 className="w-full"
                             >
@@ -506,7 +495,7 @@ export default function ExpensesCreate({
                         />
                     </FormField>
 
-                    <div className="flex flex-col-reverse gap-2 border-t border-[#E3DED4] pt-4 sm:flex-row sm:justify-end">
+                    <div className="flex flex-col-reverse gap-2 border-t border-[#DED6C8] pt-4 sm:flex-row sm:justify-end">
                         <Button
                             type="button"
                             variant="secondary"

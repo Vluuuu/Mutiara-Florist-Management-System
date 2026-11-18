@@ -53,9 +53,9 @@ function getReceivableStatusMeta(order: ReceivableOrder): {
         return { label: 'Lunas', tone: 'paid' };
     }
     if (order.paid_amount > 0) {
-        return { label: 'Sebagian', tone: 'warn' };
+        return { label: 'Dibayar Sebagian', tone: 'warn' };
     }
-    return { label: 'Belum bayar', tone: 'danger' };
+    return { label: 'Belum Lunas', tone: 'danger' };
 }
 
 export default function PaymentsIndex({
@@ -128,38 +128,44 @@ export default function PaymentsIndex({
         {
             key: 'order_number',
             header: 'No. Pesanan',
-            cellClassName: 'whitespace-nowrap',
+            headerClassName: 'px-3 whitespace-nowrap',
+            cellClassName: 'px-3 whitespace-nowrap',
             render: (ord) => (
-                <div>
-                    <Link
-                        href={`/ui-orders/${ord.id}`}
-                        className="inline-flex min-h-[44px] items-center hover:underline"
-                    >
-                        <OrderCodeBadge orderNumber={ord.order_number} />
-                    </Link>
-                    <p className="text-xs text-[#525B54] tabular-nums">Nota {ord.order_date}</p>
-                </div>
+                <Link
+                    href={`/ui-orders/${ord.id}`}
+                    className="inline-flex min-h-[44px] flex-col justify-center gap-0.5 hover:underline"
+                >
+                    <OrderCodeBadge orderNumber={ord.order_number} compact />
+                    <span className="text-[13px] font-normal text-[#545852] tabular-nums">
+                        Nota {ord.order_date}
+                    </span>
+                </Link>
             ),
         },
         {
             key: 'customer',
             header: 'Pelanggan',
+            headerClassName: 'px-3 whitespace-nowrap',
+            cellClassName: 'px-3',
+            render: (ord) => (
+                <span className="font-bold text-[#1C211E]">{ord.customer_name}</span>
+            ),
+        },
+        {
+            key: 'fulfillment_status',
+            header: 'Pengerjaan',
+            headerClassName: 'px-3 whitespace-nowrap',
+            cellClassName: 'px-3 whitespace-nowrap',
             render: (ord) => {
                 const fulfill = getFulfillmentBadgeMeta(ord.status);
-                return (
-                    <div>
-                        <p className="font-bold text-[#1E2420]">{ord.customer_name}</p>
-                        <div className="mt-1">
-                            <Badge tone={fulfill.tone}>{fulfill.label}</Badge>
-                        </div>
-                    </div>
-                );
+                return <Badge tone={fulfill.tone}>{fulfill.label}</Badge>;
             },
         },
         {
             key: 'payment_status',
             header: 'Pembayaran',
-            cellClassName: 'whitespace-nowrap',
+            headerClassName: 'px-3 whitespace-nowrap',
+            cellClassName: 'px-3 whitespace-nowrap',
             render: (ord) => {
                 const payMeta = getReceivableStatusMeta(ord);
                 return <Badge tone={payMeta.tone}>{payMeta.label}</Badge>;
@@ -167,41 +173,44 @@ export default function PaymentsIndex({
         },
         {
             key: 'total_amount',
-            header: 'Total Tagihan',
+            header: 'Tagihan',
             align: 'right',
-            cellClassName: 'whitespace-nowrap font-medium text-[#1E2420] tabular-nums',
-            render: (ord) => formatRupiah(ord.total_amount),
-        },
-        {
-            key: 'paid_amount',
-            header: 'Sudah Dibayar',
-            align: 'right',
-            cellClassName: 'whitespace-nowrap text-[#525B54] tabular-nums',
-            render: (ord) => formatRupiah(ord.paid_amount),
+            headerClassName: 'px-3 whitespace-nowrap',
+            cellClassName: 'px-3 whitespace-nowrap tabular-nums',
+            render: (ord) => (
+                <div>
+                    <p className="font-semibold text-[#1C211E]">{formatRupiah(ord.total_amount)}</p>
+                    <p className="mt-0.5 text-[13px] text-[#545852]">
+                        Masuk {formatRupiah(ord.paid_amount)}
+                    </p>
+                </div>
+            ),
         },
         {
             key: 'outstanding',
             header: 'Sisa Tagihan',
             align: 'right',
-            cellClassName: 'whitespace-nowrap font-bold text-[#8C3B4A] tabular-nums',
+            headerClassName: 'px-3 whitespace-nowrap',
+            cellClassName: 'px-3 whitespace-nowrap font-bold text-[#9A3B22] tabular-nums',
             render: (ord) => formatRupiah(ord.outstanding),
         },
         {
             key: 'actions',
             header: 'Aksi',
             align: 'right',
-            cellClassName: 'whitespace-nowrap',
+            headerClassName: 'px-3 whitespace-nowrap',
+            cellClassName: 'px-3 whitespace-nowrap',
             render: (ord) => (
                 <div className="inline-flex items-center justify-end gap-2">
                     <Button
                         type="button"
-                        variant="primary"
-                        size="sm"
+                        variant="secondary"
                         onClick={() => openPaymentModal(ord)}
+                        className="min-w-[108px]"
                     >
                         Catat Bayar
                     </Button>
-                    <Button asChild variant="secondary" size="sm">
+                    <Button asChild variant="ghost" className="min-w-[84px] text-[#1D3B2A]">
                         <Link href={`/ui-orders/${ord.id}`}>Detail</Link>
                     </Button>
                 </div>
@@ -216,8 +225,8 @@ export default function PaymentsIndex({
             cellClassName: 'whitespace-nowrap',
             render: (item) => (
                 <div className="tabular-nums">
-                    <p className="font-semibold text-[#1E2420]">{item.payment_date}</p>
-                    <p className="mt-0.5 text-xs text-[#525B54]">Oleh {item.recorded_by}</p>
+                    <p className="font-semibold text-[#1C211E]">{item.payment_date}</p>
+                    <p className="mt-0.5 text-[13px] text-[#545852]">Oleh {item.recorded_by}</p>
                 </div>
             ),
         },
@@ -232,7 +241,7 @@ export default function PaymentsIndex({
                     >
                         <OrderCodeBadge orderNumber={item.order_number} compact />
                     </Link>
-                    <p className="text-sm font-medium text-[#1E2420]">{item.customer_name}</p>
+                    <p className="text-[15px] font-medium text-[#1C211E]">{item.customer_name}</p>
                 </div>
             ),
         },
@@ -241,8 +250,8 @@ export default function PaymentsIndex({
             header: 'Metode / Referensi',
             render: (item) => (
                 <div>
-                    <p className="font-medium text-[#1E2420]">{item.method_label}</p>
-                    <p className="mt-0.5 text-xs text-[#525B54]">
+                    <p className="font-medium text-[#1C211E]">{item.method_label}</p>
+                    <p className="mt-0.5 text-[13px] text-[#545852]">
                         {item.reference ? item.reference : 'Tanpa nomor referensi'}
                     </p>
                 </div>
@@ -259,7 +268,7 @@ export default function PaymentsIndex({
                             {isPosted ? 'Tercatat' : 'Dibatalkan'}
                         </Badge>
                         {!isPosted && item.void_reason && (
-                            <p className="mt-1.5 max-w-xs text-xs text-[#525B54]">
+                            <p className="mt-1.5 max-w-xs text-[13px] text-[#545852]">
                                 Alasan: {item.void_reason}
                                 {item.voided_at ? ` (${item.voided_at})` : ''}
                             </p>
@@ -278,8 +287,8 @@ export default function PaymentsIndex({
                     className={cn(
                         'font-bold',
                         item.status === 'VOIDED'
-                            ? 'text-[#525B54] line-through'
-                            : 'text-[#1E2420]',
+                            ? 'text-[#545852] line-through'
+                            : 'text-[#1C211E]',
                     )}
                 >
                     {formatRupiah(item.amount)}
@@ -292,7 +301,7 @@ export default function PaymentsIndex({
             align: 'right',
             cellClassName: 'whitespace-nowrap',
             render: (item) => (
-                <Button asChild variant="secondary" size="sm">
+                <Button asChild variant="secondary" className="min-w-[112px]">
                     <Link href={`/ui-orders/${item.order_id}`}>Lihat Nota</Link>
                 </Button>
             ),
@@ -306,28 +315,30 @@ export default function PaymentsIndex({
             <Head title="Piutang & Pembayaran" />
 
             {/* Header */}
-            <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div className="mb-7 flex flex-col gap-4 border-b border-[#DED6C8] pb-5 md:flex-row md:items-center md:justify-between">
                 <div>
-                    <h1 className="font-[var(--font-display)] text-[clamp(20px,2.2vw,25px)] font-semibold leading-tight tracking-[-0.015em] text-[#1E2420]">
-                        Piutang & Pembayaran
+                    <h1 className="atelier-h1">
+                        Piutang &amp; Pembayaran
                     </h1>
-                    <p className="mt-1 text-sm text-[#525B54]">
-                        Fokus pada tagihan belum lunas untuk pencatatan DP, cicilan, atau pelunasan. Catatan bayar disimpan permanen.
-                    </p>
                 </div>
 
-                <div className="rounded-[10px] border border-[#8C3B4A]/30 bg-[#FDF2F4] px-4 py-3 sm:min-w-[260px]">
+                <div className="atelier-sheet px-5 py-3.5 sm:min-w-[260px]">
                     <div className="flex items-center justify-between gap-3">
-                        <span className="text-xs font-bold uppercase tracking-wider text-[#8C3B4A]">
+                        <span className="text-[13px] font-semibold text-[#545852]">
                             Total Piutang Aktif
                         </span>
-                        <Wallet className="size-4 text-[#8C3B4A]" aria-hidden="true" />
+                        <Wallet className="size-4 text-[#545852]" aria-hidden="true" />
                     </div>
-                    <p className="mt-1 text-xl font-bold text-[#8C3B4A] tabular-nums">
+                    <p
+                        className={cn(
+                            'mt-1 text-2xl font-bold tabular-nums',
+                            outstanding > 0 ? 'text-[#9A3B22]' : 'text-[#1C211E]',
+                        )}
+                    >
                         {formatRupiah(outstanding)}
                     </p>
-                    <p className="mt-0.5 text-xs text-[#525B54] tabular-nums">
-                        {formatAmount(orders.total)} pesanan belum lunas saat ini
+                    <p className="mt-0.5 text-[13px] text-[#545852] tabular-nums">
+                        {formatAmount(orders.total)} pesanan belum lunas
                     </p>
                 </div>
             </div>
@@ -335,7 +346,7 @@ export default function PaymentsIndex({
             {filterError && (
                 <div
                     role="alert"
-                    className="mb-4 flex items-start gap-2.5 rounded-md border border-[#991B1B]/40 bg-[#FEE2E2] p-3.5 text-sm font-medium text-[#991B1B]"
+                    className="mb-5 flex items-start gap-2.5 rounded-[8px] border border-[#E2B3AA] bg-[#FCECE9] p-4 text-sm font-medium text-[#8A2619]"
                 >
                     <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
                     <span>{filterError}</span>
@@ -343,45 +354,65 @@ export default function PaymentsIndex({
             )}
 
             {/* Primary Section: Receivables */}
-            <Card className="mb-6 overflow-hidden border-[#E3DED4]">
-                <div className="flex flex-col gap-3 border-b border-[#E3DED4] bg-[#FAF8F4]/70 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-                    <div>
-                        <h2 className="text-base font-bold text-[#1E2420]">
-                            Tagihan Belum Lunas
-                        </h2>
-                        <p className="mt-0.5 text-xs text-[#525B54]">
-                            Daftar pesanan yang masih memiliki sisa tagihan terbuka.
-                        </p>
-                    </div>
+            <Card className="mb-7 overflow-hidden">
+                <div className="space-y-4 border-b border-[#DED6C8] bg-[#EFE9DE]/55 p-5 sm:p-6">
+                    <h2 className="atelier-h2">
+                        Tagihan Belum Lunas
+                    </h2>
 
-                    <form onSubmit={handleSearch} className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:shrink-0">
-                        <div className="relative min-w-0 flex-1 sm:w-72">
-                            <Search
-                                className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[#525B54]"
-                                aria-hidden="true"
-                            />
-                            <Input
-                                type="search"
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Cari nomor nota atau pelanggan..."
-                                aria-label="Cari piutang berdasarkan nota atau pelanggan"
-                                className="pl-9 pr-9"
-                            />
-                            {search && (
-                                <button
-                                    type="button"
-                                    onClick={handleClearSearch}
-                                    aria-label="Hapus kata kunci pencarian"
-                                    className="absolute top-1/2 right-0 flex size-11 -translate-y-1/2 items-center justify-center text-[#525B54] hover:text-[#1E2420]"
+                    <form onSubmit={handleSearch} role="search">
+                        <label
+                            htmlFor="payments-search-q"
+                            className="mb-2 block text-sm font-semibold text-[#1C211E]"
+                        >
+                            Cari Nomor Nota atau Pelanggan
+                        </label>
+                        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+                            <div className="relative flex-1">
+                                <Search
+                                    className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#545852]"
+                                    aria-hidden="true"
+                                />
+                                <Input
+                                    id="payments-search-q"
+                                    type="search"
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    placeholder="Cari no. nota atau nama..."
+                                    className={search ? 'h-11 pl-10 pr-12' : 'h-11 pl-10'}
+                                />
+                                {search && (
+                                    <button
+                                        type="button"
+                                        onClick={handleClearSearch}
+                                        aria-label="Hapus kata kunci pencarian"
+                                        className="absolute top-0 right-0 flex size-11 items-center justify-center rounded-[8px] text-[#545852] hover:bg-[#EFE9DE] hover:text-[#1C211E]"
+                                    >
+                                        <X className="size-4" aria-hidden="true" />
+                                    </button>
+                                )}
+                            </div>
+                            <div className="flex shrink-0 items-center gap-2.5">
+                                <Button
+                                    type="submit"
+                                    variant="primary"
+                                    disabled={isLoading}
+                                    className="h-11 min-w-[116px] flex-1 sm:flex-none"
                                 >
-                                    <X className="size-4" aria-hidden="true" />
-                                </button>
-                            )}
+                                    {isLoading ? 'Mencari...' : 'Cari'}
+                                </Button>
+                                {Boolean(filters.q) && (
+                                    <Button
+                                        type="button"
+                                        variant="secondary"
+                                        onClick={handleClearSearch}
+                                        className="h-11 min-w-[116px] flex-1 sm:flex-none"
+                                    >
+                                        Reset
+                                    </Button>
+                                )}
+                            </div>
                         </div>
-                        <Button type="submit" variant="primary" disabled={isLoading}>
-                            Cari
-                        </Button>
                     </form>
                 </div>
 
@@ -389,13 +420,13 @@ export default function PaymentsIndex({
                     <div
                         role="status"
                         aria-live="polite"
-                        className="border-b border-[#E3DED4] bg-[#F1EDE6] px-4 py-2 text-xs font-semibold text-[#143326]"
+                        className="border-b border-[#DED6C8] bg-[#EFE9DE] px-5 py-2.5 text-sm font-semibold text-[#1D3B2A]"
                     >
                         Memuat daftar piutang dan riwayat pembayaran...
                     </div>
                 )}
 
-                <div className="p-4 sm:p-0">
+                <div className="p-4 lg:p-0">
                     <ResponsiveDataList
                         items={orders.data}
                         columns={receivableColumns}
@@ -403,17 +434,17 @@ export default function PaymentsIndex({
                         tableAriaLabel="Daftar tagihan belum lunas"
                         emptyState={
                             <div className="px-6 py-12 text-center">
-                                <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-[#DCFCE7] text-[#166534]">
+                                <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-[8px] border border-[#B8D0C0] bg-[#EEF5F0] text-[#164B2A]">
                                     <CheckCircle2 className="size-6" aria-hidden="true" />
                                 </div>
-                                <h3 className="text-base font-bold text-[#1E2420]">
+                                <h3 className="atelier-h2">
                                     {filters.q
                                         ? 'Tagihan tidak ditemukan'
                                         : 'Semua tagihan sudah lunas'}
                                 </h3>
-                                <p className="mx-auto mt-1 max-w-md text-sm text-[#525B54]">
+                                <p className="mx-auto mt-1.5 max-w-md text-[15px] text-[#545852]">
                                     {filters.q
-                                        ? `Tidak ada tagihan terbuka untuk "${filters.q}". Periksa ejaan atau hapus filter.`
+                                        ? `Tidak ada tagihan terbuka untuk "${filters.q}".`
                                         : 'Belum ada pesanan dengan sisa piutang berjalan saat ini.'}
                                 </p>
                                 {filters.q && (
@@ -422,6 +453,7 @@ export default function PaymentsIndex({
                                             type="button"
                                             variant="secondary"
                                             onClick={handleClearSearch}
+                                            className="min-w-[164px]"
                                         >
                                             Tampilkan Semua Tagihan
                                         </Button>
@@ -433,60 +465,59 @@ export default function PaymentsIndex({
                             const payMeta = getReceivableStatusMeta(ord);
                             const fulfill = getFulfillmentBadgeMeta(ord.status);
                             return (
-                                <div className="rounded-[10px] border border-[#E3DED4] bg-white p-4">
-                                    <div className="flex flex-wrap items-start justify-between gap-2">
-                                        <Link
-                                            href={`/ui-orders/${ord.id}`}
-                                            className="inline-flex min-h-[44px] items-center hover:underline"
-                                        >
-                                            <OrderCodeBadge orderNumber={ord.order_number} compact />
-                                        </Link>
-                                        <div className="flex flex-wrap items-center gap-1.5">
-                                            <Badge tone={fulfill.tone}>{fulfill.label}</Badge>
-                                            <Badge tone={payMeta.tone}>{payMeta.label}</Badge>
+                                <div className="atelier-sheet flex flex-col gap-3 p-4">
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div className="min-w-0">
+                                            <Link
+                                                href={`/ui-orders/${ord.id}`}
+                                                className="inline-flex min-h-[44px] items-center text-base font-bold text-[#1C211E] hover:underline"
+                                            >
+                                                {ord.customer_name}
+                                            </Link>
+                                            <p className="text-[13px] text-[#545852] tabular-nums">
+                                                <span className="font-mono font-medium">
+                                                    {ord.order_number}
+                                                </span>
+                                                {' · Nota '}
+                                                {ord.order_date}
+                                            </p>
                                         </div>
+                                        <Badge tone={payMeta.tone} className="mt-1 shrink-0">
+                                            {payMeta.label}
+                                        </Badge>
                                     </div>
 
-                                    <p className="mt-1 text-base font-bold text-[#1E2420]">
-                                        {ord.customer_name}
-                                    </p>
-                                    <p className="text-xs text-[#525B54] tabular-nums">
-                                        Tanggal nota: {ord.order_date}
-                                    </p>
-
-                                    <div className="mt-3 grid grid-cols-3 gap-2 rounded-md border border-[#E3DED4] bg-[#FBF9F6] p-2.5 text-xs tabular-nums">
-                                        <div>
-                                            <span className="block text-[#525B54]">Total</span>
-                                            <strong className="font-semibold text-[#1E2420]">
-                                                {formatRupiah(ord.total_amount)}
-                                            </strong>
-                                        </div>
-                                        <div>
-                                            <span className="block text-[#525B54]">Terbayar</span>
-                                            <strong className="font-semibold text-[#166534]">
-                                                {formatRupiah(ord.paid_amount)}
-                                            </strong>
-                                        </div>
-                                        <div>
-                                            <span className="block text-[#525B54]">Sisa</span>
-                                            <strong className="font-bold text-[#8C3B4A]">
+                                    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#DED6C8] pt-3">
+                                        <div className="tabular-nums">
+                                            <span className="block text-[12px] font-semibold text-[#545852]">
+                                                Sisa Tagihan · {fulfill.label}
+                                            </span>
+                                            <strong className="text-lg font-bold text-[#9A3B22]">
                                                 {formatRupiah(ord.outstanding)}
                                             </strong>
+                                            <p className="text-[13px] text-[#545852]">
+                                                Total {formatRupiah(ord.total_amount)} · Masuk{' '}
+                                                {formatRupiah(ord.paid_amount)}
+                                            </p>
                                         </div>
-                                    </div>
 
-                                    <div className="mt-3 grid grid-cols-2 gap-2">
-                                        <Button
-                                            type="button"
-                                            variant="primary"
-                                            size="sm"
-                                            onClick={() => openPaymentModal(ord)}
-                                        >
-                                            Catat Bayar
-                                        </Button>
-                                        <Button asChild variant="secondary" size="sm">
-                                            <Link href={`/ui-orders/${ord.id}`}>Detail</Link>
-                                        </Button>
+                                        <div className="flex w-full items-center gap-2 pt-1 sm:w-auto">
+                                            <Button
+                                                type="button"
+                                                variant="primary"
+                                                onClick={() => openPaymentModal(ord)}
+                                                className="flex-1 sm:min-w-[128px] sm:flex-none"
+                                            >
+                                                Catat Bayar
+                                            </Button>
+                                            <Button
+                                                asChild
+                                                variant="ghost"
+                                                className="min-w-[80px] text-[#1D3B2A]"
+                                            >
+                                                <Link href={`/ui-orders/${ord.id}`}>Detail</Link>
+                                            </Button>
+                                        </div>
                                     </div>
                                 </div>
                             );
@@ -494,29 +525,28 @@ export default function PaymentsIndex({
                     />
                 </div>
 
-                <Pagination
-                    links={orders.links}
-                    from={orders.from}
-                    to={orders.to}
-                    total={orders.total}
-                    itemLabel="tagihan belum lunas"
-                />
+                {orders.total > 0 && (
+                    <div className="border-t border-[#DED6C8] bg-[#EFE9DE]/45 px-5 py-4">
+                        <Pagination
+                            links={orders.links}
+                            from={orders.from}
+                            to={orders.to}
+                            total={orders.total}
+                            itemLabel="tagihan belum lunas"
+                        />
+                    </div>
+                )}
             </Card>
 
             {/* Secondary Section: Read-Only Payment History */}
             {paymentHistory && (
-                <Card className="overflow-hidden border-[#E3DED4]">
-                    <div className="flex flex-col gap-3 border-b border-[#E3DED4] bg-[#FAF8F4]/70 p-4 lg:flex-row lg:items-center lg:justify-between lg:p-5">
-                        <div>
-                            <div className="flex items-center gap-2">
-                                <History className="size-4 text-[#143326]" aria-hidden="true" />
-                                <h2 className="text-base font-bold text-[#1E2420]">
-                                    Riwayat Pembayaran Terakhir
-                                </h2>
-                            </div>
-                            <p className="mt-0.5 text-xs text-[#525B54]">
-                                Arsip transaksi masuk yang pernah dicatat. Pembatalan tidak menghapus catatan melainkan mengubah statusnya menjadi Dibatalkan beserta alasan resmi.
-                            </p>
+                <Card className="overflow-hidden">
+                    <div className="flex flex-col gap-3 border-b border-[#DED6C8] bg-[#EFE9DE]/55 p-5 lg:flex-row lg:items-center lg:justify-between lg:p-6">
+                        <div className="flex items-center gap-2">
+                            <History className="size-4 text-[#1D3B2A]" aria-hidden="true" />
+                            <h2 className="atelier-h2">
+                                Riwayat Pembayaran Terakhir
+                            </h2>
                         </div>
 
                         <div
@@ -534,10 +564,10 @@ export default function PaymentsIndex({
                                         disabled={isLoading}
                                         onClick={() => visitPayments(search, chip.key)}
                                         className={cn(
-                                            'inline-flex min-h-[44px] items-center rounded-full border px-4 py-2 text-xs font-bold transition-colors',
+                                            'inline-flex min-h-[44px] items-center rounded-[8px] border px-4 py-2 text-sm font-semibold transition-colors',
                                             selected
-                                                ? 'border-[#143326] bg-[#143326] text-white'
-                                                : 'border-[#858E87] bg-white text-[#1E2420] hover:bg-[#F1EDE6]',
+                                                ? 'border-[#1D3B2A] bg-[#1D3B2A] text-[#FFFDF9]'
+                                                : 'border-[#7D776C] bg-[#FFFDF9] text-[#1C211E] hover:bg-[#EFE9DE]',
                                         )}
                                     >
                                         {chip.label}
@@ -547,24 +577,24 @@ export default function PaymentsIndex({
                         </div>
                     </div>
 
-                    <div className="p-4 sm:p-0">
+                    <div className="p-4 lg:p-0">
                         <ResponsiveDataList
                             items={paymentHistory.data}
                             columns={historyColumns}
                             keyExtractor={(item) => item.id}
                             tableAriaLabel="Riwayat transaksi pembayaran"
                             rowClassName={(item) =>
-                                item.status === 'VOIDED' ? 'bg-[#FBF9F6]/70' : undefined
+                                item.status === 'VOIDED' ? 'bg-[#EFE9DE]/35' : undefined
                             }
                             emptyState={
-                                <div className="px-6 py-10 text-center text-sm text-[#525B54]">
+                                <div className="px-6 py-10 text-center text-[15px] text-[#545852]">
                                     Belum ada riwayat pembayaran pada filter yang dipilih.
                                 </div>
                             }
                             renderMobileCard={(item) => {
                                 const isPosted = item.status === 'POSTED';
                                 return (
-                                    <div className="rounded-[10px] border border-[#E3DED4] bg-white p-4">
+                                    <div className="atelier-sheet p-4">
                                         <div className="flex flex-wrap items-center justify-between gap-2">
                                             <Link
                                                 href={`/ui-orders/${item.order_id}`}
@@ -578,31 +608,31 @@ export default function PaymentsIndex({
                                         </div>
 
                                         <div className="mt-1 flex items-baseline justify-between gap-2">
-                                            <p className="font-bold text-[#1E2420]">
+                                            <p className="text-base font-bold text-[#1C211E]">
                                                 {item.customer_name}
                                             </p>
                                             <span
                                                 className={cn(
                                                     'text-base font-bold tabular-nums',
                                                     isPosted
-                                                        ? 'text-[#1E2420]'
-                                                        : 'text-[#525B54] line-through',
+                                                        ? 'text-[#1C211E]'
+                                                        : 'text-[#545852] line-through',
                                                 )}
                                             >
                                                 {formatRupiah(item.amount)}
                                             </span>
                                         </div>
 
-                                        <p className="mt-1 text-xs text-[#525B54] tabular-nums">
+                                        <p className="mt-1 text-[13px] text-[#545852] tabular-nums">
                                             {item.payment_date} · {item.method_label}
                                             {item.reference ? ` · Ref: ${item.reference}` : ''}
                                         </p>
-                                        <p className="mt-0.5 text-xs text-[#525B54]">
+                                        <p className="mt-0.5 text-[13px] text-[#545852]">
                                             Dicatat oleh {item.recorded_by}
                                         </p>
 
                                         {!isPosted && item.void_reason && (
-                                            <div className="mt-2 rounded-md border border-[#E3DED4] bg-[#F1EDE6] p-2.5 text-xs text-[#1E2420]">
+                                            <div className="mt-2.5 rounded-[8px] border border-[#DED6C8] bg-[#EFE9DE] p-3 text-[13px] text-[#1C211E]">
                                                 <span className="font-bold">Alasan pembatalan:</span>{' '}
                                                 {item.void_reason}
                                                 {item.voided_at ? ` (${item.voided_at})` : ''}
@@ -610,7 +640,7 @@ export default function PaymentsIndex({
                                         )}
 
                                         <div className="mt-3">
-                                            <Button asChild variant="secondary" size="sm" className="w-full">
+                                            <Button asChild variant="secondary" className="w-full">
                                                 <Link href={`/ui-orders/${item.order_id}`}>
                                                     Lihat Detail Pesanan
                                                 </Link>
@@ -622,13 +652,17 @@ export default function PaymentsIndex({
                         />
                     </div>
 
-                    <Pagination
-                        links={paymentHistory.links}
-                        from={paymentHistory.from}
-                        to={paymentHistory.to}
-                        total={paymentHistory.total}
-                        itemLabel="riwayat pembayaran"
-                    />
+                    {paymentHistory.total > 0 && (
+                        <div className="border-t border-[#DED6C8] bg-[#EFE9DE]/45 px-5 py-4">
+                            <Pagination
+                                links={paymentHistory.links}
+                                from={paymentHistory.from}
+                                to={paymentHistory.to}
+                                total={paymentHistory.total}
+                                itemLabel="riwayat pembayaran"
+                            />
+                        </div>
+                    )}
                 </Card>
             )}
 

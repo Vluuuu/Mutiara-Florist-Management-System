@@ -52,6 +52,7 @@ export function DeliveryConfirmModal({
                         variant="secondary"
                         disabled={isSubmitting}
                         onClick={onClose}
+                        className="w-full sm:w-auto sm:min-w-[120px]"
                     >
                         Batal
                     </Button>
@@ -60,29 +61,30 @@ export function DeliveryConfirmModal({
                         variant="primary"
                         disabled={isSubmitting}
                         onClick={onConfirm}
+                        className="w-full sm:w-auto sm:min-w-[164px]"
                     >
                         {isSubmitting ? 'Menyimpan status...' : 'Ya, Tandai Terkirim'}
                     </Button>
                 </>
             }
         >
-            <div className="space-y-3 rounded-md border border-[#E3DED4] bg-[#FAF8F4] p-4 text-sm text-[#1E2420]">
+            <div className="space-y-3 rounded-[8px] border border-[#DED6C8] bg-[#EFE9DE]/70 p-4 text-sm text-[#1C211E]">
                 <div>
-                    <p className="font-[var(--font-mono)] text-xs font-semibold text-[#525B54] tabular-nums">
+                    <p className="font-[var(--font-mono)] text-[13px] font-semibold text-[#545852] tabular-nums">
                         {target.orderNumber}
                     </p>
-                    <p className="mt-1 font-bold text-[#1E2420]">{target.flowerType}</p>
+                    <p className="mt-1 text-base font-bold text-[#1C211E]">{target.flowerType}</p>
                 </div>
-                <div className="text-[13px] text-[#525B54]">
+                <div className="text-sm text-[#545852]">
                     <p>
-                        Penerima: <strong className="text-[#1E2420]">{target.recipient}</strong>
+                        Penerima: <strong className="text-[#1C211E]">{target.recipient}</strong>
                     </p>
-                    <p className="mt-0.5">{target.deliveryLocation}</p>
+                    <p className="mt-1">{target.deliveryLocation}</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 pt-1">
                     <Badge tone={currentMeta.tone}>{currentMeta.label}</Badge>
-                    <span aria-hidden="true" className="text-xs font-bold text-[#525B54]">
-                        ke
+                    <span aria-hidden="true" className="text-sm font-semibold text-[#545852]">
+                        menjadi
                     </span>
                     <Badge tone={nextMeta.tone}>{nextMeta.label}</Badge>
                 </div>

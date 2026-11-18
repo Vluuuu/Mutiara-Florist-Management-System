@@ -42,15 +42,15 @@ export const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputPro
         return (
             <div
                 className={cn(
-                    'flex min-h-[44px] items-stretch overflow-hidden rounded-md border-[1.5px] transition-colors focus-within:outline-[3px] focus-within:outline-offset-2 focus-within:outline-[#143326]',
-                    disabled ? 'bg-[#F1EDE6] opacity-80' : 'bg-white',
-                    invalid ? 'border-[#991B1B] bg-[#FFF9F9]' : 'border-[#858E87]',
+                    'flex min-h-[44px] items-stretch overflow-hidden rounded-[8px] border-[1.5px] transition-colors focus-within:outline-[3px] focus-within:outline-offset-2 focus-within:outline-[#1D3B2A]',
+                    disabled ? 'bg-[#EFE9DE] opacity-85' : 'bg-[#FFFDF9]',
+                    invalid ? 'border-[#8A2619] bg-[#FCF0EC]/60' : 'border-[#7D776C]',
                     className,
                 )}
             >
                 <span
                     aria-hidden="true"
-                    className="grid shrink-0 place-items-center border-r border-[#E3DED4] bg-[#F1EDE6] px-3 text-sm font-bold text-[#525B54]"
+                    className="grid shrink-0 place-items-center border-r border-[#DED6C8] bg-[#EFE9DE] px-3 text-sm font-bold text-[#545852]"
                 >
                     Rp
                 </span>
@@ -68,7 +68,7 @@ export const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputPro
                     required={required}
                     aria-invalid={invalid ? true : undefined}
                     aria-describedby={describedBy}
-                    className="tabular-nums min-h-[44px] w-full min-w-0 border-0 bg-transparent px-3 py-2 text-[15px] font-semibold text-[#1E2420] placeholder:font-normal placeholder:text-[#525B54]/75 focus:outline-none"
+                    className="tabular-nums min-h-[44px] w-full min-w-0 border-0 bg-transparent px-3 py-2 text-[15px] font-semibold text-[#1C211E] placeholder:font-normal placeholder:text-[#60645E] focus:outline-none"
                 />
             </div>
         );

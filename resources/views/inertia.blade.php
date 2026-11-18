@@ -9,7 +9,7 @@
     @vite(['resources/css/app.css', 'resources/js/inertia.tsx'])
     <x-inertia::head />
 </head>
-<body class="min-h-screen bg-[#FBF9F6] text-[#1E2420] antialiased">
+<body class="min-h-screen bg-[var(--bg-canvas)] text-[var(--text-primary)] antialiased">
     <x-inertia::app />
 </body>
 </html>

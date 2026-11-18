@@ -105,7 +105,7 @@ export function Modal({
     if (!open) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#143326]/55 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#182920]/60 p-3 sm:p-4">
             <div
                 aria-hidden="true"
                 className="absolute inset-0"
@@ -121,17 +121,17 @@ export function Modal({
                 aria-describedby={description ? descId : undefined}
                 tabIndex={-1}
                 className={cn(
-                    'relative z-10 max-h-[90vh] w-full overflow-y-auto rounded-xl border border-[#E3DED4] bg-white p-5',
+                    'relative z-10 max-h-[88dvh] w-full overflow-y-auto overscroll-contain rounded-[8px] border border-[#DED6C8] bg-[#FFFDF9] p-4 sm:p-6 shadow-[0_16px_40px_rgba(24,41,32,0.18)]',
                     maxWidthClass,
                 )}
             >
                 <div className="mb-4 flex items-start justify-between gap-3">
-                    <div>
-                        <h2 id={titleId} className="text-base font-bold text-[#1E2420]">
+                    <div className="min-w-0">
+                        <h2 id={titleId} className="atelier-h2">
                             {title}
                         </h2>
                         {description && (
-                            <p id={descId} className="mt-1 text-sm text-[#525B54]">
+                            <p id={descId} className="mt-1 text-sm text-[#545852]">
                                 {description}
                             </p>
                         )}
@@ -143,6 +143,7 @@ export function Modal({
                         aria-label="Tutup dialog"
                         disabled={isSubmitting}
                         onClick={onClose}
+                        className="shrink-0"
                     >
                         <X className="size-4" aria-hidden="true" />
                         <span>Tutup</span>
@@ -152,7 +153,7 @@ export function Modal({
                 <div>{children}</div>
 
                 {footer && (
-                    <div className="mt-5 flex flex-wrap justify-end gap-2.5 border-t border-[#E3DED4] pt-4">
+                    <div className="mt-5 flex flex-wrap justify-end gap-2.5 border-t border-[#DED6C8] pt-4">
                         {footer}
                     </div>
                 )}
