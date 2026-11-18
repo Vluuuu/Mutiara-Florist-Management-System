@@ -374,11 +374,15 @@ class ReportService
 
     /**
      * Builds grouped trend series for Harian / Mingguan / Bulanan / Tahunan visualizations.
+     *
+     * Every series mode strictly aggregates only activity within [$from, $to].
+     * Daily mode keeps a 92-day performance cap and explicitly signals truncation.
      */
     protected function buildChartSeries(string $granularity, string $from, string $to, array $dailyTrends): array
     {
         $fromDate = Carbon::parse($from, 'Asia/Jakarta')->startOfDay();
         $toDate = Carbon::parse($to, 'Asia/Jakarta')->startOfDay();
+        $totalPeriodDays = (int) $fromDate->diffInDays($toDate) + 1;
 
         if ($granularity === 'daily') {
             $points = array_map(function (array $day): array {
@@ -394,47 +398,55 @@ class ReportService
                 ];
             }, $dailyTrends);
 
+            $coveredDays = count($dailyTrends);
+            $isTruncated = $totalPeriodDays > $coveredDays;
             $first = $dailyTrends[0]['date'] ?? $from;
-            $last = $dailyTrends[count($dailyTrends) - 1]['date'] ?? $to;
+            $last = $dailyTrends[$coveredDays - 1]['date'] ?? $to;
+            $firstFmt = Carbon::parse($first, 'Asia/Jakarta')->format('d/m/Y');
+            $lastFmt = Carbon::parse($last, 'Asia/Jakarta')->format('d/m/Y');
+
+            $notice = $isTruncated
+                ? "Grafik harian menampilkan {$coveredDays} hari terakhir ({$firstFmt} - {$lastFmt}) dari total {$totalPeriodDays} hari periode demi menjaga keterbacaan. Pilih Mingguan atau Bulanan untuk melihat seluruh periode; ringkasan angka tetap menghitung seluruh periode."
+                : null;
 
             return [
                 'granularity' => 'daily',
-                'range_label' => 'Per Hari ('.Carbon::parse($first)->format('d/m/Y').' - '.Carbon::parse($last)->format('d/m/Y').')',
+                'range_label' => "Per Hari ({$firstFmt} - {$lastFmt})",
+                'is_truncated' => $isTruncated,
+                'total_period_days' => $totalPeriodDays,
+                'covered_days' => $coveredDays,
+                'notice' => $notice,
                 'points' => $points,
             ];
         }
 
-        if ($granularity === 'weekly') {
-            $spanDays = $fromDate->diffInDays($toDate) + 1;
-            $start = $spanDays >= 15
-                ? $fromDate->copy()->startOfWeek(Carbon::MONDAY)
-                : $toDate->copy()->subWeeks(7)->startOfWeek(Carbon::MONDAY);
-            $end = $toDate->copy()->endOfWeek(Carbon::SUNDAY);
+        $raw = $this->fetchDailyActivityMap($fromDate->format('Y-m-d'), $toDate->format('Y-m-d').' 23:59:59');
 
-            $raw = $this->fetchDailyActivityMap($start->format('Y-m-d'), $toDate->format('Y-m-d').' 23:59:59');
+        if ($granularity === 'weekly') {
             $buckets = [];
-            $cursor = $start->copy();
+            $cursor = $fromDate->copy();
             while ($cursor->lte($toDate)) {
-                $wkEnd = $cursor->copy()->endOfWeek(Carbon::SUNDAY);
-                if ($wkEnd->gt($toDate)) {
-                    $wkEnd = $toDate->copy();
-                }
+                $fullWeekStart = $cursor->copy()->startOfWeek(Carbon::MONDAY)->startOfDay();
+                $fullWeekEnd = $cursor->copy()->endOfWeek(Carbon::SUNDAY)->startOfDay();
+                $wkEnd = $fullWeekEnd->gt($toDate) ? $toDate->copy() : $fullWeekEnd->copy();
+                $isPartial = $cursor->gt($fullWeekStart) || $wkEnd->lt($fullWeekEnd);
+
                 $key = $cursor->format('o-\WW');
                 $buckets[$key] = [
                     'key' => $key,
                     'label' => $cursor->format('d/m'),
-                    'full_label' => $cursor->format('d/m/Y').' - '.$wkEnd->format('d/m/Y'),
+                    'full_label' => $cursor->format('d/m/Y').' - '.$wkEnd->format('d/m/Y').($isPartial ? ' (parsial)' : ''),
                     'orders_count' => 0,
                     'billed' => 0,
                     'cash_in' => 0,
                     'cash_out' => 0,
                     'cash_diff' => 0,
                 ];
-                $cursor->addWeek();
+                $cursor = $wkEnd->copy()->addDay()->startOfDay();
             }
 
             foreach ($raw as $dateStr => $row) {
-                $d = Carbon::parse($dateStr, 'Asia/Jakarta');
+                $d = Carbon::parse($dateStr, 'Asia/Jakarta')->startOfDay();
                 $key = $d->format('o-\WW');
                 if (! isset($buckets[$key])) {
                     continue;
@@ -448,28 +460,37 @@ class ReportService
 
             return [
                 'granularity' => 'weekly',
-                'range_label' => 'Per Minggu ('.$start->format('d/m/Y').' - '.$toDate->format('d/m/Y').')',
+                'range_label' => 'Per Minggu ('.$fromDate->format('d/m/Y').' - '.$toDate->format('d/m/Y').')',
+                'is_truncated' => false,
+                'total_period_days' => $totalPeriodDays,
+                'covered_days' => $totalPeriodDays,
+                'notice' => null,
                 'points' => array_values($buckets),
             ];
         }
 
         if ($granularity === 'monthly') {
-            $sameMonth = $fromDate->format('Y-m') === $toDate->format('Y-m');
-            $start = $sameMonth
-                ? $toDate->copy()->startOfMonth()->subMonths(11)
-                : $fromDate->copy()->startOfMonth();
-
-            $raw = $this->fetchDailyActivityMap($start->format('Y-m-d'), $toDate->format('Y-m-d').' 23:59:59');
             $buckets = [];
-            $cursor = $start->copy();
+            $cursor = $fromDate->copy()->startOfMonth();
             $endMonth = $toDate->copy()->startOfMonth();
 
             while ($cursor->lte($endMonth)) {
+                $monthStart = $cursor->copy();
+                $monthEnd = $cursor->copy()->endOfMonth()->startOfDay();
+                $activeStart = $monthStart->lt($fromDate) ? $fromDate->copy() : $monthStart->copy();
+                $activeEnd = $monthEnd->gt($toDate) ? $toDate->copy() : $monthEnd->copy();
+                $isPartial = $activeStart->gt($monthStart) || $activeEnd->lt($monthEnd);
+
                 $key = $cursor->format('Y-m');
+                $monthName = $cursor->locale('id')->translatedFormat('F Y');
+                $fullLabel = $isPartial
+                    ? "{$monthName} ({$activeStart->format('d/m')} - {$activeEnd->format('d/m')})"
+                    : $monthName;
+
                 $buckets[$key] = [
                     'key' => $key,
                     'label' => $cursor->locale('id')->translatedFormat('M y'),
-                    'full_label' => $cursor->locale('id')->translatedFormat('F Y'),
+                    'full_label' => $fullLabel,
                     'orders_count' => 0,
                     'billed' => 0,
                     'cash_in' => 0,
@@ -493,24 +514,36 @@ class ReportService
 
             return [
                 'granularity' => 'monthly',
-                'range_label' => 'Per Bulan ('.$start->locale('id')->translatedFormat('M Y').' - '.$toDate->locale('id')->translatedFormat('M Y').')',
+                'range_label' => 'Per Bulan ('.$fromDate->format('d/m/Y').' - '.$toDate->format('d/m/Y').')',
+                'is_truncated' => false,
+                'total_period_days' => $totalPeriodDays,
+                'covered_days' => $totalPeriodDays,
+                'notice' => null,
                 'points' => array_values($buckets),
             ];
         }
 
-        // yearly: all recorded years up to end year (minimum 1 year)
-        $earliest = $this->findEarliestRecordDate($toDate);
-        $startYear = min((int) $earliest->format('Y'), (int) $fromDate->format('Y'));
-        $endYear = max((int) $toDate->format('Y'), (int) Carbon::now('Asia/Jakarta')->format('Y'));
+        // yearly: strictly years covered by [$fromDate, $toDate] (partial edge years noted)
+        $startYear = (int) $fromDate->format('Y');
+        $endYear = (int) $toDate->format('Y');
 
-        $raw = $this->fetchDailyActivityMap($startYear.'-01-01', $endYear.'-12-31 23:59:59');
         $buckets = [];
         for ($yr = $startYear; $yr <= $endYear; $yr++) {
+            $yearStart = Carbon::createFromDate($yr, 1, 1, 'Asia/Jakarta')->startOfDay();
+            $yearEnd = Carbon::createFromDate($yr, 12, 31, 'Asia/Jakarta')->startOfDay();
+            $activeStart = $yearStart->lt($fromDate) ? $fromDate->copy() : $yearStart->copy();
+            $activeEnd = $yearEnd->gt($toDate) ? $toDate->copy() : $yearEnd->copy();
+            $isPartial = $activeStart->gt($yearStart) || $activeEnd->lt($yearEnd);
+
             $key = (string) $yr;
+            $fullLabel = $isPartial
+                ? "Tahun {$key} ({$activeStart->format('d/m')} - {$activeEnd->format('d/m')})"
+                : "Tahun {$key}";
+
             $buckets[$key] = [
                 'key' => $key,
                 'label' => $key,
-                'full_label' => 'Tahun '.$key,
+                'full_label' => $fullLabel,
                 'orders_count' => 0,
                 'billed' => 0,
                 'cash_in' => 0,
@@ -533,7 +566,11 @@ class ReportService
 
         return [
             'granularity' => 'yearly',
-            'range_label' => "Per Tahun ({$startYear} - {$endYear})",
+            'range_label' => 'Per Tahun ('.$fromDate->format('d/m/Y').' - '.$toDate->format('d/m/Y').')',
+            'is_truncated' => false,
+            'total_period_days' => $totalPeriodDays,
+            'covered_days' => $totalPeriodDays,
+            'notice' => null,
             'points' => array_values($buckets),
         ];
     }

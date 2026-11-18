@@ -412,6 +412,10 @@ export type ReportChartPoint = {
 export type ReportChartSeries = {
     granularity: ReportGranularity;
     range_label: string;
+    is_truncated?: boolean;
+    total_period_days?: number;
+    covered_days?: number;
+    notice?: string | null;
     points: ReportChartPoint[];
 };
 

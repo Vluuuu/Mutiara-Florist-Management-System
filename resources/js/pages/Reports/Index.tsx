@@ -144,6 +144,7 @@ export default function ReportsIndex({ report }: ReportsIndexProps) {
     const seriesPoints = chart_series?.points ?? fallbackPoints;
     const seriesRangeLabel =
         chart_series?.range_label ?? `Per Hari (${period.from} - ${period.to})`;
+    const seriesNotice = chart_series?.notice ?? null;
 
     const activePointsCount = useMemo(
         () =>
@@ -445,6 +446,7 @@ export default function ReportsIndex({ report }: ReportsIndexProps) {
                 points={seriesPoints}
                 granularity={activeGranularity}
                 rangeLabel={seriesRangeLabel}
+                notice={seriesNotice}
                 isLoading={isLoading}
                 onGranularityChange={handleSelectGranularity}
             />

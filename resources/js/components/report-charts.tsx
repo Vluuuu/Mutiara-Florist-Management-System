@@ -15,6 +15,7 @@ type FinancialTrendChartProps = {
     points: ReportChartPoint[];
     granularity: ReportGranularity;
     rangeLabel: string;
+    notice?: string | null;
     isLoading?: boolean;
     onGranularityChange: (g: ReportGranularity) => void;
 };
@@ -69,6 +70,7 @@ export function FinancialTrendChart({
     points,
     granularity,
     rangeLabel,
+    notice = null,
     isLoading = false,
     onGranularityChange,
 }: FinancialTrendChartProps) {
@@ -215,6 +217,16 @@ export function FinancialTrendChart({
                     </div>
                 </div>
             </div>
+
+            {notice && (
+                <div
+                    role="status"
+                    data-testid="daily-truncation-notice"
+                    className="border-b border-[#DED6C8] bg-[#EFE9DE]/55 px-4 py-2.5 text-[12px] leading-relaxed text-[#545852] sm:px-5 lg:px-6"
+                >
+                    {notice}
+                </div>
+            )}
 
             <div className="bg-[#FFFDF9] p-5 sm:p-6">
                 {activePoints.length === 0 ? (
