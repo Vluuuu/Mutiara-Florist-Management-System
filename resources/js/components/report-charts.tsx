@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { formatAmount, formatRupiah } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type {
@@ -77,6 +77,7 @@ export function FinancialTrendChart({
     const [mode, setMode] = useState<TrendMode>('cashflow');
     const [activeIndex, setActiveIndex] = useState<number | null>(null);
     const [showFullCalendar, setShowFullCalendar] = useState(false);
+    const periodGroupRefs = useRef<Array<SVGGElement | null>>([]);
 
     const activePoints = useMemo(() => points.filter(hasActivity), [points]);
     const isSparse = points.length >= 6 && activePoints.length > 0 && activePoints.length <= 4;
@@ -262,7 +263,11 @@ export function FinancialTrendChart({
                             </div>
 
                             {selectedPoint && (
-                                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] tabular-nums">
+                                <div
+                                    aria-live="polite"
+                                    aria-atomic="true"
+                                    className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] tabular-nums"
+                                >
                                     <span className="font-bold text-[#1C211E]">
                                         {selectedPoint.full_label}
                                     </span>
@@ -360,12 +365,50 @@ export function FinancialTrendChart({
                                     const hlW = Math.min(Math.max(4, slotW - 4), totalPairW + 24);
                                     const hlX = centerX - hlW / 2;
 
+                                    const pointAriaLabel =
+                                        mode === 'cashflow'
+                                            ? `${pt.full_label}: ${formatAmount(pt.orders_count)} pesanan, Kas Masuk ${formatRupiah(pt.cash_in)}, Kas Keluar ${formatRupiah(pt.cash_out)}`
+                                            : `${pt.full_label}: ${formatAmount(pt.orders_count)} pesanan, Nilai Pesanan ${formatRupiah(pt.billed)}, Kas Masuk ${formatRupiah(pt.cash_in)}`;
+
                                     return (
                                         <g
                                             key={pt.key}
+                                            ref={(el) => {
+                                                periodGroupRefs.current[idx] = el;
+                                            }}
+                                            tabIndex={0}
+                                            role="button"
+                                            aria-pressed={isSelected}
+                                            aria-label={pointAriaLabel}
                                             onMouseEnter={() => setActiveIndex(idx)}
+                                            onFocus={() => setActiveIndex(idx)}
                                             onClick={() => setActiveIndex(idx)}
-                                            className="cursor-pointer"
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' || e.key === ' ') {
+                                                    e.preventDefault();
+                                                    setActiveIndex(idx);
+                                                } else if (e.key === 'ArrowRight') {
+                                                    e.preventDefault();
+                                                    const nextIdx = Math.min(idx + 1, visiblePoints.length - 1);
+                                                    setActiveIndex(nextIdx);
+                                                    periodGroupRefs.current[nextIdx]?.focus();
+                                                } else if (e.key === 'ArrowLeft') {
+                                                    e.preventDefault();
+                                                    const prevIdx = Math.max(idx - 1, 0);
+                                                    setActiveIndex(prevIdx);
+                                                    periodGroupRefs.current[prevIdx]?.focus();
+                                                } else if (e.key === 'Home') {
+                                                    e.preventDefault();
+                                                    setActiveIndex(0);
+                                                    periodGroupRefs.current[0]?.focus();
+                                                } else if (e.key === 'End') {
+                                                    e.preventDefault();
+                                                    const lastIdx = visiblePoints.length - 1;
+                                                    setActiveIndex(lastIdx);
+                                                    periodGroupRefs.current[lastIdx]?.focus();
+                                                }
+                                            }}
+                                            className="cursor-pointer focus-visible:outline-2 focus-visible:outline-[#1D3B2A]"
                                         >
                                             {isSelected && (
                                                 <rect

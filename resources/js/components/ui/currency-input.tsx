@@ -12,6 +12,8 @@ type CurrencyInputProps = {
     invalid?: boolean;
     required?: boolean;
     describedBy?: string;
+    enterKeyHint?: React.InputHTMLAttributes<HTMLInputElement>['enterKeyHint'];
+    'data-modal-initial'?: string;
     className?: string;
 };
 
@@ -27,6 +29,8 @@ export const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputPro
             invalid = false,
             required = false,
             describedBy,
+            enterKeyHint,
+            'data-modal-initial': dataModalInitial,
             className,
         },
         ref,
@@ -60,7 +64,9 @@ export const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputPro
                     name={name}
                     type="text"
                     inputMode="numeric"
+                    enterKeyHint={enterKeyHint}
                     autoComplete="off"
+                    data-modal-initial={dataModalInitial}
                     value={disabled && displayValue === '' ? '0' : displayValue}
                     onChange={handleInput}
                     placeholder={placeholder}

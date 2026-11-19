@@ -129,6 +129,8 @@ export default function AppLayout({ title: _title, children }: AppLayoutProps) {
                                         <input
                                             id="topbar-global-search"
                                             type="search"
+                                            enterKeyHint="search"
+                                            spellCheck={false}
                                             value={globalQuery}
                                             onChange={(e) => setGlobalQuery(e.target.value)}
                                             placeholder="Cari no. nota atau pelanggan..."
@@ -197,6 +199,8 @@ export default function AppLayout({ title: _title, children }: AppLayoutProps) {
                                 <input
                                     id="mobile-global-search"
                                     type="search"
+                                    enterKeyHint="search"
+                                    spellCheck={false}
                                     autoFocus
                                     value={globalQuery}
                                     onChange={(e) => setGlobalQuery(e.target.value)}
@@ -263,7 +267,7 @@ export default function AppLayout({ title: _title, children }: AppLayoutProps) {
             {/* Mobile 4-Destination Bottom Navigation (< 768px) */}
             <nav
                 aria-label="Navigasi utama mobile"
-                className="fixed inset-x-0 bottom-0 z-30 grid h-[calc(62px+env(safe-area-inset-bottom))] grid-cols-4 border-t border-[#DED6C8] bg-[#FFFDF9] pb-[env(safe-area-inset-bottom)] md:hidden"
+                className="fixed inset-x-0 bottom-0 z-30 grid h-[calc(62px+env(safe-area-inset-bottom))] grid-cols-4 border-t border-[#DED6C8] bg-[#FFFDF9] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left,0px)] pr-[env(safe-area-inset-right,0px)] md:hidden"
             >
                 {bottomDestinations.map((dest) => {
                     const isActive = isNavItemActive(url, dest.href, dest.exact);

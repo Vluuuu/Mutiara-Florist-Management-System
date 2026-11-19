@@ -1,7 +1,23 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+
+let activeModalCount = 0;
+
+function setAppRootInert(isInert: boolean) {
+    if (typeof document === 'undefined') return;
+    const appRoot = document.getElementById('app') as (HTMLElement & { inert?: boolean }) | null;
+    if (!appRoot) return;
+    if (isInert) {
+        appRoot.inert = true;
+        appRoot.setAttribute('aria-hidden', 'true');
+    } else {
+        appRoot.inert = false;
+        appRoot.removeAttribute('aria-hidden');
+    }
+}
 
 type ModalProps = {
     open: boolean;
@@ -44,6 +60,11 @@ export function Modal({
 
         previousFocusRef.current =
             document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+        activeModalCount += 1;
+        if (activeModalCount === 1) {
+            setAppRootInert(true);
+        }
 
         const container = dialogRef.current;
         const focusTimer = window.setTimeout(() => {
@@ -95,6 +116,10 @@ export function Modal({
         return () => {
             window.clearTimeout(focusTimer);
             document.removeEventListener('keydown', handleKeyDown);
+            activeModalCount = Math.max(0, activeModalCount - 1);
+            if (activeModalCount === 0) {
+                setAppRootInert(false);
+            }
             const prev = previousFocusRef.current;
             if (prev && typeof prev.focus === 'function') {
                 prev.focus();
@@ -104,11 +129,11 @@ export function Modal({
 
     if (!open) return null;
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#182920]/60 p-3 sm:p-4">
+    const modalNode = (
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden overscroll-contain bg-[#182920]/60 p-3 sm:p-4">
             <div
                 aria-hidden="true"
-                className="absolute inset-0"
+                className="absolute inset-0 overflow-hidden overscroll-contain"
                 onClick={() => {
                     if (!isSubmitting) onClose();
                 }}
@@ -160,4 +185,10 @@ export function Modal({
             </div>
         </div>
     );
+
+    if (typeof document !== 'undefined') {
+        return createPortal(modalNode, document.body);
+    }
+
+    return modalNode;
 }
