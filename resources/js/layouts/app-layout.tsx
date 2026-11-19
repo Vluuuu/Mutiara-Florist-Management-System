@@ -330,7 +330,6 @@ export default function AppLayout({ title: _title, children }: AppLayoutProps) {
                             variant="urgent"
                             className="w-full"
                             onClick={() => {
-                                setMenuDrawerOpen(false);
                                 setLogoutModalOpen(true);
                             }}
                         >
