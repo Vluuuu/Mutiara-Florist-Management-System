@@ -60,12 +60,12 @@ export default function CustomersShow({ customer, orders = [] }: CustomerShowPro
             header: 'Rangkaian & Tanggal',
             render: (ord) => (
                 <div>
-                    <p className="font-semibold text-[#1E2420]">
+                    <p className="font-semibold text-[#1C211E]">
                         {ord.first_flower ?? `${formatAmount(ord.items_count)} item bunga`}
                     </p>
-                    <p className="mt-0.5 text-xs text-[#525B54] tabular-nums">
+                    <p className="mt-0.5 text-[13px] text-[#545852] tabular-nums">
                         Nota {ord.order_date ?? '-'}
-                        {ord.earliest_delivery_date ? ` | Kirim ${ord.earliest_delivery_date}` : ''}
+                        {ord.earliest_delivery_date ? ` · Kirim ${ord.earliest_delivery_date}` : ''}
                     </p>
                 </div>
             ),
@@ -110,32 +110,29 @@ export default function CustomersShow({ customer, orders = [] }: CustomerShowPro
         <AppLayout title="Detail Pelanggan">
             <Head title={`Pelanggan: ${customer.name}`} />
 
-            <div className="mb-6">
+            <div className="mb-7 border-b border-[#DED6C8] pb-5">
                 <Link
                     href="/ui-customers"
-                    className="inline-flex min-h-[44px] items-center gap-1.5 text-sm font-semibold text-[#143326] hover:underline"
+                    className="inline-flex min-h-[44px] items-center gap-1.5 text-sm font-semibold text-[#1D3B2A] hover:underline"
                 >
                     <ArrowLeft className="size-4" aria-hidden="true" />
                     Semua pelanggan
                 </Link>
 
-                <div className="mt-2 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+                <div className="mt-2 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div className="min-w-0">
-                        <p className="text-xs font-bold uppercase tracking-[0.06em] text-[#525B54]">
-                            Profil Pelanggan
-                        </p>
-                        <h1 className="mt-1 break-words font-[var(--font-display)] text-[clamp(20px,2.2vw,25px)] font-semibold leading-tight tracking-[-0.015em] text-[#1E2420]">
+                        <h1 className="atelier-h1 break-words">
                             {customer.name}
                         </h1>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                        <Button asChild variant="secondary">
+                    <div className="flex flex-wrap items-center gap-2.5">
+                        <Button asChild variant="secondary" className="min-w-[156px]">
                             <Link href={`/ui-customers/${customer.id}/edit`}>
                                 <Edit3 className="size-4" aria-hidden="true" />
                                 Edit pelanggan
                             </Link>
                         </Button>
-                        <Button asChild variant="primary">
+                        <Button asChild variant="primary" className="min-w-[156px]">
                             <Link href={`/ui-orders/create?customer_id=${customer.id}`}>
                                 <Plus className="size-4" aria-hidden="true" />
                                 Buat Pesanan
@@ -145,54 +142,54 @@ export default function CustomersShow({ customer, orders = [] }: CustomerShowPro
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(290px,1fr)] lg:items-start">
-                <div className="space-y-5">
-                    <Card className="border-[#E3DED4] p-5">
-                        <h2 className="text-base font-bold text-[#1E2420]">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(290px,1fr)] lg:items-start">
+                <div className="space-y-6">
+                    <Card className="p-5 sm:p-6">
+                        <h2 className="atelier-h2">
                             Informasi pelanggan
                         </h2>
-                        <dl className="mt-4 divide-y divide-[#E3DED4]">
+                        <dl className="mt-4 divide-y divide-[#DED6C8]">
                             <div className="grid gap-1 py-3.5 sm:grid-cols-[170px_1fr]">
-                                <dt className="flex items-center gap-2 text-sm text-[#525B54]">
+                                <dt className="flex items-center gap-2 text-sm text-[#545852]">
                                     <User className="size-4 shrink-0" aria-hidden="true" />
                                     Nama
                                 </dt>
-                                <dd className="break-words text-sm font-semibold text-[#1E2420]">
+                                <dd className="break-words text-[15px] font-semibold text-[#1C211E]">
                                     {customer.name}
                                 </dd>
                             </div>
                             <div className="grid gap-1 py-3.5 sm:grid-cols-[170px_1fr]">
-                                <dt className="flex items-center gap-2 text-sm text-[#525B54]">
+                                <dt className="flex items-center gap-2 text-sm text-[#545852]">
                                     <Phone className="size-4 shrink-0" aria-hidden="true" />
                                     Telepon
                                 </dt>
-                                <dd className="break-words font-[var(--font-mono)] text-sm text-[#1E2420] tabular-nums">
+                                <dd className="break-words font-[var(--font-mono)] text-[15px] text-[#1C211E] tabular-nums">
                                     {customer.phone || (
-                                        <span className="font-sans italic text-[#525B54]">
+                                        <span className="font-sans italic text-[#545852]">
                                             Belum diisi
                                         </span>
                                     )}
                                 </dd>
                             </div>
                             <div className="grid gap-1 py-3.5 sm:grid-cols-[170px_1fr]">
-                                <dt className="flex items-center gap-2 text-sm text-[#525B54]">
+                                <dt className="flex items-center gap-2 text-sm text-[#545852]">
                                     <FileText className="size-4 shrink-0" aria-hidden="true" />
                                     Catatan
                                 </dt>
-                                <dd className="whitespace-pre-wrap break-words text-sm text-[#1E2420]">
+                                <dd className="whitespace-pre-wrap break-words text-[15px] text-[#1C211E]">
                                     {customer.notes || (
-                                        <span className="italic text-[#525B54]">
+                                        <span className="italic text-[#545852]">
                                             Tidak ada catatan
                                         </span>
                                     )}
                                 </dd>
                             </div>
                             <div className="grid gap-1 py-3.5 sm:grid-cols-[170px_1fr]">
-                                <dt className="flex items-center gap-2 text-sm text-[#525B54]">
+                                <dt className="flex items-center gap-2 text-sm text-[#545852]">
                                     <Calendar className="size-4 shrink-0" aria-hidden="true" />
                                     Tanggal ditambahkan
                                 </dt>
-                                <dd className="text-sm text-[#1E2420] tabular-nums">
+                                <dd className="text-[15px] text-[#1C211E] tabular-nums">
                                     {customer.created_at
                                         ? formatDateTimeWib(customer.created_at)
                                         : '-'}
@@ -202,17 +199,12 @@ export default function CustomersShow({ customer, orders = [] }: CustomerShowPro
                     </Card>
 
                     {/* Riwayat Pesanan Pelanggan */}
-                    <Card className="overflow-hidden border-[#E3DED4]">
-                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#E3DED4] p-4 sm:px-5">
-                            <div>
-                                <h2 className="text-base font-bold text-[#1E2420]">
-                                    Riwayat Pesanan Pelanggan
-                                </h2>
-                                <p className="mt-0.5 text-[13px] text-[#525B54]">
-                                    Daftar nota pesanan yang terhubung dengan profil ini.
-                                </p>
-                            </div>
-                            <Button asChild variant="secondary" size="sm">
+                    <Card className="overflow-hidden">
+                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#DED6C8] bg-[#EFE9DE]/45 px-5 py-4">
+                            <h2 className="atelier-h2">
+                                Riwayat Pesanan Pelanggan
+                            </h2>
+                            <Button asChild variant="secondary" size="sm" className="min-w-[124px]">
                                 <Link href={`/ui-orders/create?customer_id=${customer.id}`}>
                                     + Pesan lagi
                                 </Link>
@@ -230,7 +222,7 @@ export default function CustomersShow({ customer, orders = [] }: CustomerShowPro
                                     const pMeta = getPaymentBadgeMeta(ord.payment_status);
 
                                     return (
-                                        <article className="flex flex-col gap-3 rounded-lg border border-[#E3DED4] bg-white p-3.5">
+                                        <article className="atelier-sheet flex flex-col gap-3 p-3.5">
                                             <div className="flex flex-wrap items-center justify-between gap-2">
                                                 <OrderCodeBadge orderNumber={ord.order_number} />
                                                 <div className="flex flex-wrap items-center gap-1.5">
@@ -239,26 +231,26 @@ export default function CustomersShow({ customer, orders = [] }: CustomerShowPro
                                                 </div>
                                             </div>
                                             <div>
-                                                <p className="text-[15px] font-bold text-[#1E2420]">
+                                                <p className="text-[15px] font-bold text-[#1C211E]">
                                                     {ord.first_flower ?? `${formatAmount(ord.items_count)} item bunga`}
                                                 </p>
-                                                <p className="mt-0.5 text-[13px] text-[#525B54] tabular-nums">
+                                                <p className="mt-0.5 text-[13px] text-[#545852] tabular-nums">
                                                     Nota {ord.order_date ?? '-'}
                                                     {ord.earliest_delivery_date ? ` | Kirim ${ord.earliest_delivery_date}` : ''}
                                                 </p>
                                             </div>
-                                            <div className="flex items-center justify-between gap-2 border-t border-[#E3DED4] pt-2.5">
+                                            <div className="flex items-center justify-between gap-2 border-t border-[#DED6C8] pt-3">
                                                 <div className="tabular-nums">
-                                                    <p className="text-sm font-bold text-[#1E2420]">
+                                                    <p className="text-base font-bold text-[#1C211E]">
                                                         {formatRupiah(ord.total_amount)}
                                                     </p>
                                                     {ord.outstanding > 0 && (
-                                                        <p className="text-xs font-semibold text-[#8C3B4A]">
+                                                        <p className="text-[13px] font-semibold text-[#9A3B22]">
                                                             Sisa {formatRupiah(ord.outstanding)}
                                                         </p>
                                                     )}
                                                 </div>
-                                                <Button asChild variant="secondary" size="sm">
+                                                <Button asChild variant="secondary" className="min-w-[120px]">
                                                     <Link href={`/ui-orders/${ord.id}`}>Detail Nota</Link>
                                                 </Button>
                                             </div>
@@ -268,13 +260,13 @@ export default function CustomersShow({ customer, orders = [] }: CustomerShowPro
                                 emptyState={
                                     <div className="px-6 py-10 text-center">
                                         <ShoppingBag
-                                            className="mx-auto mb-2 size-8 text-[#525B54]/60"
+                                            className="mx-auto mb-2 size-8 text-[#545852]"
                                             aria-hidden="true"
                                         />
-                                        <p className="text-sm font-bold text-[#1E2420]">
+                                        <p className="text-sm font-bold text-[#1C211E]">
                                             Belum ada pesanan tercatat
                                         </p>
-                                        <p className="mt-1 text-[13px] text-[#525B54]">
+                                        <p className="mt-1 text-[13px] text-[#545852]">
                                             Mulai catat pesanan pertama langsung dari profil pelanggan ini.
                                         </p>
                                         <div className="mt-4">
@@ -292,43 +284,35 @@ export default function CustomersShow({ customer, orders = [] }: CustomerShowPro
                 </div>
 
                 <aside className="space-y-5">
-                    <Card className="border-[#E3DED4] p-5">
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-sm font-semibold text-[#525B54]">Total pesanan</h2>
-                            <ShoppingBag className="size-5 text-[#143326]" aria-hidden="true" />
-                        </div>
-                        <p className="mt-2 text-3xl font-bold text-[#143326] tabular-nums">
+                    <Card className="bg-[#EFE9DE]/70 p-5">
+                        <h2 className="text-sm font-semibold text-[#545852]">Total pesanan</h2>
+                        <p className="mt-2 text-3xl font-bold text-[#1D3B2A] tabular-nums">
                             {formatAmount(customer.orders_count)}
-                        </p>
-                        <p className="mt-2 text-[13px] text-[#525B54]">
-                            {customer.orders_count > 0
-                                ? 'Pilih baris pesanan untuk melihat progres bunga dan catatan pembayaran.'
-                                : 'Siap menerima pesanan pertama.'}
                         </p>
                     </Card>
 
-                    <Card className="border-[#E3DED4] p-5">
+                    <Card className="p-5">
                         <div className="flex items-center gap-2">
-                            <Archive className="size-4 text-[#525B54]" aria-hidden="true" />
-                            <h2 className="text-sm font-bold text-[#1E2420]">Arsip pelanggan</h2>
+                            <Archive className="size-4 text-[#545852]" aria-hidden="true" />
+                            <h2 className="text-sm font-bold text-[#1C211E]">Arsip pelanggan</h2>
                         </div>
 
                         {customer.orders_count > 0 ? (
-                            <div className="mt-3 rounded-md border border-[#92400E]/30 bg-[#FEF3C7] p-3.5 text-xs leading-relaxed text-[#92400E]">
+                            <div className="mt-3 rounded-[8px] border border-[#DFC393] bg-[#FAF1E1] p-4 text-[13px] leading-relaxed text-[#6E3D09]">
                                 <p className="font-bold">Tidak dapat diarsipkan</p>
                                 <p className="mt-1">
-                                    Pelanggan ini memiliki {formatAmount(customer.orders_count)} riwayat pesanan tercatat. Demi integritas audit pesanan dan tagihan, data tidak dapat diarsipkan.
+                                    Pelanggan ini memiliki {formatAmount(customer.orders_count)} riwayat pesanan tercatat.
                                 </p>
                             </div>
                         ) : (
                             <>
-                                <p className="mt-2 text-sm leading-relaxed text-[#525B54]">
-                                    Arsip menyembunyikan pelanggan dari daftar dan pencarian. Data tidak dihapus permanen.
+                                <p className="mt-2 text-sm leading-relaxed text-[#545852]">
+                                    Arsip menyembunyikan pelanggan dari daftar aktif tanpa menghapus data audit.
                                 </p>
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    className="mt-4 w-full border-[#991B1B]/40 text-[#991B1B] hover:bg-[#FEE2E2]"
+                                    className="mt-4 w-full border-[#E5B5AC] text-[#8A2619] hover:bg-[#FAE5E1]"
                                     onClick={() => setConfirmModalOpen(true)}
                                 >
                                     <Archive className="size-4" aria-hidden="true" />
@@ -367,7 +351,7 @@ export default function CustomersShow({ customer, orders = [] }: CustomerShowPro
                     </>
                 }
             >
-                <p className="text-sm text-[#525B54]">
+                <p className="text-sm text-[#545852]">
                     Pelanggan yang tidak memiliki pesanan dapat diarsipkan dengan aman. Anda tidak akan melihatnya lagi di daftar aktif.
                 </p>
             </Modal>

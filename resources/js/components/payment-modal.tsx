@@ -196,17 +196,17 @@ export function PaymentModal({
                 {hasIdempotencyConflict && (
                     <div
                         role="alert"
-                        className="space-y-3 rounded-md border border-[#8C3B4A]/50 bg-[#FDF2F4] p-3.5 text-xs text-[#8C3B4A]"
+                        className="space-y-3 rounded-[8px] border border-[#E2B3AA] bg-[#FCECE9] p-4 text-sm text-[#8A2619]"
                     >
                         <div className="space-y-1">
-                            <p className="text-sm font-bold text-[#8C3B4A]">
+                            <p className="text-sm font-bold text-[#8A2619]">
                                 Pembayaran mungkin sudah tersimpan (sesi ini dikunci)
                             </p>
-                            <p className="font-medium text-[#1E2420]">
+                            <p className="font-medium text-[#1C211E]">
                                 {activeErrors.idempotency_key}
                             </p>
-                            <p className="text-[#1E2420]">
-                                Untuk mencegah pembayaran ganda, pengiriman ulang dari dialog ini diblokir. Periksa riwayat pembayaran pada detail nota terlebih dahulu, lalu buka sesi pencatatan baru jika memang belum tercatat.
+                            <p className="text-[13px] text-[#1C211E]">
+                                Periksa riwayat pembayaran pada detail nota terlebih dahulu agar tidak tercatat ganda.
                             </p>
                         </div>
                         <div className="flex flex-wrap gap-2">
@@ -235,7 +235,7 @@ export function PaymentModal({
                 {(localError || serverErrorEntries.length > 0) && (
                     <div
                         role="alert"
-                        className="rounded-md border border-[#991B1B]/40 bg-[#FEE2E2] p-3 text-xs font-medium text-[#991B1B]"
+                        className="rounded-[8px] border border-[#E2B3AA] bg-[#FCECE9] p-3.5 text-sm font-medium text-[#8A2619]"
                     >
                         <p className="font-bold">Pembayaran belum tersimpan:</p>
                         <ul className="mt-1 list-inside list-disc space-y-0.5">
@@ -251,7 +251,7 @@ export function PaymentModal({
                     id="payment-modal-amount"
                     label="Nominal diterima (Rp)"
                     required
-                    hint="Diisi otomatis untuk pelunasan penuh. Ubah angka jika mencatat DP atau cicilan."
+                    hint="Otomatis terisi penuh. Ubah jika menerima DP atau cicilan."
                     error={activeErrors.amount}
                 >
                     <CurrencyInput
@@ -355,12 +355,13 @@ export function PaymentModal({
                     />
                 </FormField>
 
-                <div className="flex flex-col-reverse gap-2 border-t border-[#E3DED4] pt-4 sm:flex-row sm:justify-end">
+                <div className="flex flex-col-reverse gap-2.5 border-t border-[#DED6C8] pt-4 sm:flex-row sm:justify-end">
                     <Button
                         type="button"
                         variant="secondary"
                         disabled={isSubmitting}
                         onClick={onClose}
+                        className="w-full sm:w-auto sm:min-w-[124px]"
                     >
                         {hasIdempotencyConflict ? 'Tutup Dialog' : 'Batal'}
                     </Button>
@@ -368,11 +369,12 @@ export function PaymentModal({
                         type="submit"
                         variant="primary"
                         disabled={isSubmitting || amountInvalid || hasIdempotencyConflict}
+                        className="w-full sm:w-auto sm:min-w-[172px]"
                     >
                         {hasIdempotencyConflict
-                            ? 'Submit Diblokir (Periksa Nota)'
+                            ? 'Submit Diblokir'
                             : isSubmitting
-                              ? 'Memproses pembayaran...'
+                              ? 'Menyimpan...'
                               : 'Simpan Pembayaran'}
                     </Button>
                 </div>

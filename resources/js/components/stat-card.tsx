@@ -6,7 +6,8 @@ type StatCardProps = {
     label: string;
     value: string;
     hint: string;
-    icon: LucideIcon;
+    icon?: LucideIcon;
+    index?: string;
     emphasis?: boolean;
     tone?: 'default' | 'paid' | 'urgent';
 };
@@ -15,35 +16,30 @@ export function StatCard({
     label,
     value,
     hint,
-    icon: Icon,
     emphasis = false,
     tone = 'default',
 }: StatCardProps) {
     return (
-        <Card className={cn('p-4 sm:p-5', emphasis ? 'bg-[#F1EDE6]' : 'bg-white')}>
-            <div className="flex items-start justify-between gap-3">
-                <p className="text-[13px] font-semibold text-[#525B54]">{label}</p>
-                <span
-                    className={cn(
-                        'flex size-8 shrink-0 items-center justify-center rounded-md',
-                        emphasis ? 'bg-[#143326] text-white' : 'bg-[#E6EFEA] text-[#143326]',
-                    )}
-                    aria-hidden="true"
-                >
-                    <Icon className="size-4" />
-                </span>
-            </div>
+        <Card
+            className={cn(
+                'p-5',
+                emphasis ? 'bg-[#EFE9DE]' : 'bg-[#FFFDF9]',
+            )}
+        >
+            <p className="text-[13px] font-semibold text-[#545852]">
+                {label}
+            </p>
             <p
                 className={cn(
-                    'tabular-nums mt-3 break-words text-xl font-bold tracking-tight sm:text-2xl',
-                    tone === 'paid' && 'text-[#166534]',
-                    tone === 'urgent' && 'text-[#8C3B4A]',
-                    tone === 'default' && 'text-[#1E2420]',
+                    'tabular-nums mt-1.5 break-words text-2xl font-bold tracking-tight sm:text-[26px]',
+                    tone === 'paid' && 'text-[#164B2A]',
+                    tone === 'urgent' && 'text-[#9A3B22]',
+                    tone === 'default' && 'text-[#1C211E]',
                 )}
             >
                 {value}
             </p>
-            <p className="mt-2 text-xs text-[#525B54]">{hint}</p>
+            <p className="mt-1.5 text-xs text-[#545852]">{hint}</p>
         </Card>
     );
 }

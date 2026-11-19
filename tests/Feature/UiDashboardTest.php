@@ -201,4 +201,103 @@ class UiDashboardTest extends TestCase
             ->assertOk()
             ->assertSee('Dashboard');
     }
+
+    public function test_react_dashboard_provides_today_stats_separate_from_cumulative_stats(): void
+    {
+        $yesterday = now('Asia/Jakarta')->subDay()->toDateString();
+        $today = now('Asia/Jakarta')->toDateString();
+
+        $oldOrderId = DB::table('orders')->insertGetId([
+            'order_number' => 'UI-OLD-0001',
+            'customer_id' => $this->customerId,
+            'created_by' => $this->userId,
+            'order_date' => $yesterday,
+            'status' => 'NEW',
+            'total_amount' => 700000,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $todayOrderId = DB::table('orders')->insertGetId([
+            'order_number' => 'UI-TODAY-0001',
+            'customer_id' => $this->customerId,
+            'created_by' => $this->userId,
+            'order_date' => $today,
+            'status' => 'READY',
+            'total_amount' => 500000,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('order_items')->insert([
+            [
+                'order_id' => $oldOrderId,
+                'flower_type' => 'Buket Lama',
+                'recipient' => 'Penerima Lama',
+                'sender_name' => 'Pengirim',
+                'delivery_date' => $yesterday,
+                'delivery_location' => 'Jakarta',
+                'quantity' => 1,
+                'unit_price' => 700000,
+                'shipping_mode' => 'INCLUDED',
+                'shipping_fee' => 0,
+                'fulfillment_status' => 'NEW',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'order_id' => $todayOrderId,
+                'flower_type' => 'Buket Hari Ini',
+                'recipient' => 'Penerima Hari Ini',
+                'sender_name' => 'Pengirim',
+                'delivery_date' => $today,
+                'delivery_location' => 'Jakarta',
+                'quantity' => 1,
+                'unit_price' => 500000,
+                'shipping_mode' => 'INCLUDED',
+                'shipping_fee' => 0,
+                'fulfillment_status' => 'READY',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
+
+        DB::table('payments')->insert([
+            'order_id' => $oldOrderId,
+            'recorded_by' => $this->userId,
+            'payment_date' => $yesterday,
+            'amount' => 200000,
+            'method' => 'TRANSFER',
+            'idempotency_key' => (string) Str::uuid(),
+            'status' => 'POSTED',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->insertPayment($todayOrderId, 300000, 'POSTED');
+        $this->insertPayment($todayOrderId, 100000, 'VOIDED');
+        $this->insertExpense(45000, 'POSTED', 'Kurir');
+        $this->insertExpense(90000, 'VOIDED', 'Kurir');
+
+        $this->actingAs(User::find($this->userId))
+            ->get('/ui-dashboard')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('todayStats.today_iso', $today)
+                ->where('todayStats.orders_count', 1)
+                ->where('todayStats.orders_billed', 500000)
+                ->where('todayStats.deliveries_total_today', 1)
+                ->where('todayStats.deliveries_pending_today', 1)
+                ->where('todayStats.deliveries_overdue', 1)
+                ->where('todayStats.deliveries_ready', 1)
+                ->where('todayStats.cash_in', 300000)
+                ->where('todayStats.cash_in_count', 1)
+                ->where('todayStats.cash_out', 45000)
+                ->where('todayStats.open_receivables_count', 2)
+                ->where('stats.orders', 2)
+                ->where('stats.billed', 1200000)
+                ->where('stats.received', 500000)
+                ->where('stats.outstanding', 700000)
+                ->etc());
+    }
 }

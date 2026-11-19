@@ -121,7 +121,7 @@ export function SearchableSelect({
         <div ref={wrapperRef} onKeyDown={handleWrapperKeyDown} className="relative">
             <div className="relative flex items-center">
                 <Search
-                    className="pointer-events-none absolute left-3 size-4 text-[#525B54]"
+                    className="pointer-events-none absolute left-3 size-4 text-[#545852]"
                     aria-hidden="true"
                 />
                 <input
@@ -157,9 +157,9 @@ export function SearchableSelect({
                     }}
                     onKeyDown={handleKeyDown}
                     className={cn(
-                        'min-h-[44px] w-full rounded-md border-[1.5px] py-2 pl-9 text-[15px] text-[#1E2420] placeholder:text-[#525B54]/75 focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[#143326] disabled:bg-[#F1EDE6]',
+                        'min-h-[44px] w-full rounded-[8px] border-[1.5px] py-2 pl-9 text-[15px] text-[#1C211E] placeholder:text-[#60645E] focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[#1D3B2A] disabled:bg-[#EFE9DE] disabled:text-[#545852]',
                         query && !disabled ? 'pr-[92px]' : 'pr-12',
-                        invalid ? 'border-[#991B1B] bg-[#FFF9F9]' : 'border-[#858E87] bg-white',
+                        invalid ? 'border-[#8A2619] bg-[#FCF0EC]/60' : 'border-[#7D776C] bg-[#FFFDF9]',
                     )}
                 />
                 <div className="absolute inset-y-0 right-0 flex items-center">
@@ -173,7 +173,7 @@ export function SearchableSelect({
                                 setOpen(true);
                                 inputRef.current?.focus();
                             }}
-                            className="inline-flex size-11 items-center justify-center rounded text-[#525B54] hover:bg-[#F1EDE6] hover:text-[#1E2420]"
+                            className="inline-flex size-11 items-center justify-center rounded-[8px] text-[#545852] hover:bg-[#EFE9DE] hover:text-[#1C211E]"
                         >
                             <X className="size-4" aria-hidden="true" />
                         </button>
@@ -183,7 +183,7 @@ export function SearchableSelect({
                         aria-label={open ? 'Tutup daftar' : 'Buka daftar'}
                         disabled={disabled}
                         onClick={() => setOpen((prev) => !prev)}
-                        className="inline-flex size-11 items-center justify-center rounded text-[#525B54] hover:bg-[#F1EDE6] hover:text-[#1E2420]"
+                        className="inline-flex size-11 items-center justify-center rounded-[8px] text-[#545852] hover:bg-[#EFE9DE] hover:text-[#1C211E]"
                     >
                         <ChevronDown className="size-4" aria-hidden="true" />
                     </button>
@@ -191,14 +191,14 @@ export function SearchableSelect({
             </div>
 
             {open && (
-                <div className="absolute left-0 right-0 top-[calc(100%+4px)] z-30 rounded-md border-[1.5px] border-[#858E87] bg-white p-1.5 shadow-sm">
+                <div className="absolute left-0 right-0 top-[calc(100%+4px)] z-30 rounded-[8px] border-[1.5px] border-[#7D776C] bg-[#FFFDF9] p-1.5 shadow-[0_8px_24px_rgba(24,41,32,0.12)]">
                     <div
                         id={listboxId}
                         role="listbox"
-                        className="max-h-60 space-y-0.5 overflow-y-auto"
+                        className="max-h-[40dvh] space-y-0.5 overflow-y-auto overscroll-contain sm:max-h-60"
                     >
                         {filtered.length === 0 ? (
-                            <p className="px-3 py-3 text-sm text-[#525B54]">{emptyText}</p>
+                            <p className="px-3 py-3 text-sm text-[#545852]">{emptyText}</p>
                         ) : (
                             filtered.map((opt, idx) => {
                                 const isSelected = String(opt.value) === String(value ?? '');
@@ -212,15 +212,15 @@ export function SearchableSelect({
                                         aria-selected={isSelected}
                                         onClick={() => selectOption(opt)}
                                         className={cn(
-                                            'flex min-h-[44px] w-full flex-col justify-center rounded px-3 py-2 text-left text-sm transition-colors',
+                                            'flex min-h-[44px] w-full flex-col justify-center rounded-[6px] px-3 py-2 text-left text-[15px] transition-colors',
                                             isActive || isSelected
-                                                ? 'bg-[#E6EFEA] font-semibold text-[#143326]'
-                                                : 'text-[#1E2420] hover:bg-[#F1EDE6]',
+                                                ? 'bg-[#EFE9DE] font-semibold text-[#182920]'
+                                                : 'text-[#1C211E] hover:bg-[#F7F3EC]',
                                         )}
                                     >
                                         <span>{opt.label}</span>
                                         {opt.description && (
-                                            <span className="text-xs font-normal text-[#525B54]">
+                                            <span className="text-[13px] font-normal text-[#545852]">
                                                 {opt.description}
                                             </span>
                                         )}
@@ -230,7 +230,7 @@ export function SearchableSelect({
                         )}
                     </div>
                     {footerAction && (
-                        <div className="mt-1 border-t border-[#E3DED4] pt-1.5">{footerAction}</div>
+                        <div className="mt-1 border-t border-[#DED6C8] pt-1.5">{footerAction}</div>
                     )}
                 </div>
             )}

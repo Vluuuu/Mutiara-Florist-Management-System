@@ -71,8 +71,8 @@ export function SidebarContent({ onNavigate, onRequestLogout }: SidebarNavProps)
     const userName = props.auth?.user?.name ?? 'Operator Toko';
 
     const renderGroup = (groupLabel: string, items: NavItemConfig[]) => (
-        <div className="mb-5">
-            <p className="px-3 pb-1.5 text-[11px] font-bold uppercase tracking-[0.06em] text-[#C6D7CE]">
+        <div className="mb-6">
+            <p className="px-3 pb-2 text-xs font-semibold text-[#B8C6BD]">
                 {groupLabel}
             </p>
             <ul className="space-y-1">
@@ -86,14 +86,20 @@ export function SidebarContent({ onNavigate, onRequestLogout }: SidebarNavProps)
                                 onClick={onNavigate}
                                 aria-current={isActive ? 'page' : undefined}
                                 className={cn(
-                                    'flex min-h-[44px] items-center gap-2.5 rounded-md px-3 py-2.5 text-sm transition-colors focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[#E6EFEA]',
+                                    'flex min-h-[44px] items-center gap-3 rounded-[8px] px-3 py-2.5 text-[15px] transition-colors focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[#F2ECE1]',
                                     isActive
-                                        ? 'bg-[#E6EFEA] font-bold text-[#143326]'
-                                        : 'font-medium text-[#F6F4EF] hover:bg-[#1D4534]',
+                                        ? 'bg-[#F2ECE1] font-bold text-[#182920]'
+                                        : 'font-medium text-[#F5F1E8] hover:bg-[#233B2E]',
                                 )}
                             >
                                 <item.icon className="size-[18px] shrink-0" aria-hidden="true" />
                                 <span>{item.label}</span>
+                                {isActive && (
+                                    <span
+                                        aria-hidden="true"
+                                        className="ml-auto size-2 shrink-0 rounded-full bg-[#9A3B22]"
+                                    />
+                                )}
                             </Link>
                         </li>
                     );
@@ -103,38 +109,32 @@ export function SidebarContent({ onNavigate, onRequestLogout }: SidebarNavProps)
     );
 
     return (
-        <div className="flex h-full flex-col justify-between bg-[#143326] px-3.5 py-5 text-[#F6F4EF]">
+        <div className="flex h-full flex-col justify-between border-r border-[#122018] bg-[#182920] px-4 py-5 text-[#F5F1E8]">
             <div>
-                <div className="mb-4 flex items-center gap-3 border-b border-white/15 px-2 pb-4">
-                    <span
-                        aria-hidden="true"
-                        className="grid size-[34px] shrink-0 place-items-center rounded-md bg-[#E6EFEA] font-[var(--font-display)] text-[17px] font-semibold text-[#143326]"
-                    >
-                        M
-                    </span>
-                    <div className="min-w-0">
-                        <p className="truncate text-base font-bold leading-tight text-[#F6F4EF]">
-                            Mutiara Florist
-                        </p>
-                        <p className="truncate text-xs text-[#C6D7CE]">Manajemen Pesanan &amp; Kas</p>
-                    </div>
+                <div className="mb-6 border-b border-[#F5F1E8]/15 px-2.5 pb-4">
+                    <p className="text-[20px] font-bold tracking-[-0.015em] text-[#F5F1E8]">
+                        Mutiara Florist
+                    </p>
+                    <p className="mt-1 text-[13px] text-[#B8C6BD]">
+                        Buku Pesanan &amp; Kas
+                    </p>
                 </div>
 
                 <nav aria-label="Navigasi utama desktop">
                     {renderGroup('Operasional Harian', primaryNavItems)}
-                    {renderGroup('Pelanggan & Biaya', secondaryNavItems)}
+                    {renderGroup('Pelanggan & Buku Kas', secondaryNavItems)}
                 </nav>
             </div>
 
-            <div className="space-y-2 border-t border-white/15 pt-3.5">
-                <div className="px-2.5 py-1">
-                    <p className="truncate text-sm font-semibold text-[#F6F4EF]">{userName}</p>
-                    <p className="text-xs text-[#C6D7CE]">Operator Kasir &amp; Jadwal</p>
+            <div className="space-y-3 border-t border-[#F5F1E8]/15 pt-4">
+                <div className="px-2.5">
+                    <p className="break-words text-sm font-semibold text-[#F5F1E8]">{userName}</p>
+                    <p className="mt-0.5 text-[13px] text-[#B8C6BD]">Kasir &amp; Jadwal</p>
                 </div>
                 <button
                     type="button"
                     onClick={onRequestLogout}
-                    className="flex min-h-[44px] w-full items-center gap-2 rounded-md border border-white/25 px-3 py-2 text-left text-sm font-semibold text-[#F6F4EF] transition-colors hover:bg-[#1D4534] focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[#E6EFEA]"
+                    className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-[8px] border border-[#6D8377] px-3 py-2 text-sm font-semibold text-[#F5F1E8] transition-colors hover:bg-[#233B2E] focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[#F2ECE1]"
                 >
                     <LogOut className="size-[18px] shrink-0" aria-hidden="true" />
                     <span>Keluar Akun</span>
@@ -146,7 +146,7 @@ export function SidebarContent({ onNavigate, onRequestLogout }: SidebarNavProps)
 
 export function AppSidebar() {
     return (
-        <aside className="hidden w-[248px] shrink-0 lg:block">
+        <aside className="hidden w-[256px] shrink-0 lg:block">
             <SidebarContent />
         </aside>
     );

@@ -170,12 +170,12 @@ export default function ExpenseCategoriesIndex({
                     <p
                         className={cn(
                             'font-bold',
-                            cat.is_active ? 'text-[#1E2420]' : 'text-[#525B54]',
+                            cat.is_active ? 'text-[#1C211E]' : 'text-[#545852]',
                         )}
                     >
                         {cat.name}
                     </p>
-                    <p className="mt-0.5 text-xs text-[#525B54] tabular-nums">
+                    <p className="mt-0.5 text-[13px] text-[#545852] tabular-nums">
                         Dipakai pada {formatAmount(cat.expenses_count ?? 0)} transaksi
                     </p>
                 </div>
@@ -197,13 +197,13 @@ export default function ExpenseCategoriesIndex({
             align: 'right',
             cellClassName: 'whitespace-nowrap',
             render: (cat) => (
-                <div className="inline-flex items-center justify-end gap-2">
+                <div className="inline-flex items-center justify-end gap-2.5">
                     <Button
                         type="button"
                         variant="secondary"
-                        size="sm"
                         aria-label={`Ubah nama kategori ${cat.name}`}
                         onClick={() => openRenameModal(cat)}
+                        className="min-w-[124px]"
                     >
                         <Edit2 className="size-4" aria-hidden="true" />
                         Ubah Nama
@@ -211,17 +211,17 @@ export default function ExpenseCategoriesIndex({
                     <Button
                         type="button"
                         variant="outline"
-                        size="sm"
                         aria-label={
                             cat.is_active
                                 ? `Nonaktifkan kategori ${cat.name}`
                                 : `Aktifkan kembali kategori ${cat.name}`
                         }
-                        className={
+                        className={cn(
+                            'min-w-[132px]',
                             cat.is_active
-                                ? 'border-[#8C3B4A]/40 text-[#8C3B4A] hover:bg-[#FDF2F4]'
-                                : 'border-[#143326]/40 text-[#143326] hover:bg-[#E6EFEA]'
-                        }
+                                ? 'border-[#E2B3AA] text-[#9A3B22] hover:bg-[#FCF0EC]'
+                                : 'border-[#B8D0C0] text-[#1D3B2A] hover:bg-[#EEF5F0]',
+                        )}
                         onClick={() => openToggleModal(cat)}
                     >
                         {cat.is_active ? (
@@ -245,24 +245,21 @@ export default function ExpenseCategoriesIndex({
         <AppLayout title="Kategori Biaya">
             <Head title="Kategori Biaya" />
 
-            <div className="mb-5">
-                <h1 className="font-[var(--font-display)] text-[clamp(20px,2.2vw,25px)] font-semibold leading-tight tracking-[-0.015em] text-[#1E2420]">
+            <div className="mb-7 border-b border-[#DED6C8] pb-5">
+                <h1 className="atelier-h1">
                     Kategori Biaya
                 </h1>
-                <p className="mt-1 text-sm text-[#525B54]">
-                    Kelompokkan pengeluaran operasional agar laporan keuangan mudah dibaca. Kategori yang sudah dipakai tidak dihapus agar riwayat tetap utuh.
-                </p>
             </div>
 
             <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1.55fr)_minmax(290px,1fr)]">
                 {/* Category List Card */}
-                <Card className="overflow-hidden border-[#E3DED4]">
-                    <div className="flex flex-col gap-3 border-b border-[#E3DED4] bg-[#FAF8F4]/70 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                <Card className="overflow-hidden">
+                    <div className="flex flex-col gap-3 border-b border-[#DED6C8] bg-[#EFE9DE]/55 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
                         <div>
-                            <h2 className="text-base font-bold text-[#1E2420]">
+                            <h2 className="atelier-h2">
                                 Daftar Kategori ({formatAmount(categories.length)})
                             </h2>
-                            <p className="mt-0.5 text-xs text-[#525B54] tabular-nums">
+                            <p className="mt-0.5 text-[13px] text-[#545852] tabular-nums">
                                 {formatAmount(activeCount)} aktif · {formatAmount(inactiveCount)} nonaktif
                             </p>
                         </div>
@@ -287,10 +284,10 @@ export default function ExpenseCategoriesIndex({
                                         aria-pressed={selected}
                                         onClick={() => setStatusFilter(chip.key)}
                                         className={cn(
-                                            'inline-flex min-h-[44px] items-center rounded-full border px-3.5 py-1.5 text-xs font-bold transition-colors',
+                                            'inline-flex min-h-[44px] items-center rounded-[8px] border px-4 py-2 text-sm font-semibold transition-colors',
                                             selected
-                                                ? 'border-[#143326] bg-[#143326] text-white'
-                                                : 'border-[#858E87] bg-white text-[#1E2420] hover:bg-[#F1EDE6]',
+                                                ? 'border-[#1D3B2A] bg-[#1D3B2A] text-[#FFFDF9]'
+                                                : 'border-[#7D776C] bg-[#FFFDF9] text-[#1C211E] hover:bg-[#EFE9DE]',
                                         )}
                                     >
                                         {chip.label}
@@ -304,13 +301,13 @@ export default function ExpenseCategoriesIndex({
                         <div
                             role="status"
                             aria-live="polite"
-                            className="border-b border-[#E3DED4] bg-[#F1EDE6] px-4 py-2 text-xs font-semibold text-[#143326]"
+                            className="border-b border-[#DED6C8] bg-[#EFE9DE] px-5 py-2.5 text-sm font-semibold text-[#1D3B2A]"
                         >
                             Memperbarui daftar kategori...
                         </div>
                     )}
 
-                    <div className="p-4 sm:p-0">
+                    <div className="p-4 lg:p-0">
                         <ResponsiveDataList
                             items={filteredCategories}
                             columns={columns}
@@ -318,17 +315,17 @@ export default function ExpenseCategoriesIndex({
                             tableAriaLabel="Daftar kategori biaya"
                             emptyState={
                                 <div className="px-6 py-12 text-center">
-                                    <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-[#F1EDE6] text-[#143326]">
+                                    <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-[8px] border border-[#DED6C8] bg-[#EFE9DE] text-[#1D3B2A]">
                                         <FolderOpen className="size-6" aria-hidden="true" />
                                     </div>
-                                    <h3 className="text-base font-bold text-[#1E2420]">
+                                    <h3 className="atelier-h2">
                                         {statusFilter === 'all'
                                             ? 'Belum ada kategori pengeluaran'
                                             : 'Tidak ada kategori pada filter ini'}
                                     </h3>
-                                    <p className="mx-auto mt-1 max-w-sm text-sm text-[#525B54]">
+                                    <p className="mx-auto mt-1.5 max-w-sm text-[15px] text-[#545852]">
                                         {statusFilter === 'all'
-                                            ? 'Tambahkan kategori baru melalui panel di samping agar pencatatan pengeluaran lebih rapi.'
+                                            ? 'Tambahkan kategori baru melalui formulir di samping.'
                                             : 'Pilih tab Semua untuk melihat seluruh kategori yang tersedia.'}
                                     </p>
                                     {statusFilter !== 'all' && (
@@ -337,6 +334,7 @@ export default function ExpenseCategoriesIndex({
                                                 type="button"
                                                 variant="secondary"
                                                 onClick={() => setStatusFilter('all')}
+                                                className="min-w-[180px]"
                                             >
                                                 Tampilkan Semua Kategori
                                             </Button>
@@ -345,18 +343,18 @@ export default function ExpenseCategoriesIndex({
                                 </div>
                             }
                             renderMobileCard={(cat) => (
-                                <div className="rounded-[10px] border border-[#E3DED4] bg-white p-4">
+                                <div className="atelier-sheet p-4">
                                     <div className="flex items-start justify-between gap-2">
                                         <div>
                                             <p
                                                 className={cn(
                                                     'text-base font-bold',
-                                                    cat.is_active ? 'text-[#1E2420]' : 'text-[#525B54]',
+                                                    cat.is_active ? 'text-[#1C211E]' : 'text-[#545852]',
                                                 )}
                                             >
                                                 {cat.name}
                                             </p>
-                                            <p className="mt-0.5 text-xs text-[#525B54] tabular-nums">
+                                            <p className="mt-0.5 text-[13px] text-[#545852] tabular-nums">
                                                 Dipakai pada {formatAmount(cat.expenses_count ?? 0)} transaksi
                                             </p>
                                         </div>
@@ -365,11 +363,10 @@ export default function ExpenseCategoriesIndex({
                                         </Badge>
                                     </div>
 
-                                    <div className="mt-3 grid grid-cols-2 gap-2 border-t border-[#E3DED4] pt-3">
+                                    <div className="mt-3 grid grid-cols-2 gap-2.5 border-t border-[#DED6C8] pt-3">
                                         <Button
                                             type="button"
                                             variant="secondary"
-                                            size="sm"
                                             aria-label={`Ubah nama kategori ${cat.name}`}
                                             onClick={() => openRenameModal(cat)}
                                         >
@@ -379,7 +376,6 @@ export default function ExpenseCategoriesIndex({
                                         <Button
                                             type="button"
                                             variant="outline"
-                                            size="sm"
                                             aria-label={
                                                 cat.is_active
                                                     ? `Nonaktifkan kategori ${cat.name}`
@@ -387,8 +383,8 @@ export default function ExpenseCategoriesIndex({
                                             }
                                             className={
                                                 cat.is_active
-                                                    ? 'border-[#8C3B4A]/40 text-[#8C3B4A] hover:bg-[#FDF2F4]'
-                                                    : 'border-[#143326]/40 text-[#143326] hover:bg-[#E6EFEA]'
+                                                    ? 'border-[#E2B3AA] text-[#9A3B22] hover:bg-[#FCF0EC]'
+                                                    : 'border-[#B8D0C0] text-[#1D3B2A] hover:bg-[#EEF5F0]'
                                             }
                                             onClick={() => openToggleModal(cat)}
                                         >
@@ -412,21 +408,18 @@ export default function ExpenseCategoriesIndex({
                 </Card>
 
                 {/* Add Category Panel */}
-                <div className="space-y-4 lg:sticky lg:top-6">
-                    <Card className="border-[#E3DED4] p-4 sm:p-5">
-                        <h2 className="text-base font-bold text-[#1E2420]">
+                <div className="space-y-4 lg:sticky lg:top-20">
+                    <Card className="p-5 sm:p-6">
+                        <h2 className="atelier-h2">
                             Tambah Kategori Baru
                         </h2>
-                        <p className="mt-1 text-xs text-[#525B54]">
-                            Kategori baru langsung aktif dan dapat dipilih saat mencatat pengeluaran.
-                        </p>
 
                         <form onSubmit={handleCreate} noValidate className="mt-4 space-y-4">
                             <FormField
                                 id="create_name"
                                 label="Nama kategori"
                                 required
-                                hint="Minimal 2 karakter, maksimal 100 karakter."
+                                hint="Minimal 2 karakter."
                                 error={createErrors.name}
                             >
                                 <Input
@@ -460,10 +453,10 @@ export default function ExpenseCategoriesIndex({
                         </form>
                     </Card>
 
-                    <div className="flex items-start gap-2.5 rounded-[10px] border border-[#E3DED4] bg-[#F1EDE6] p-4 text-xs text-[#1E2420]">
-                        <Info className="mt-0.5 size-4 shrink-0 text-[#143326]" aria-hidden="true" />
+                    <div className="flex items-start gap-2.5 rounded-[8px] border border-[#DED6C8] bg-[#EFE9DE] p-4 text-[13px] leading-relaxed text-[#1C211E]">
+                        <Info className="mt-0.5 size-4 shrink-0 text-[#1D3B2A]" aria-hidden="true" />
                         <p>
-                            Untuk menjaga integritas riwayat pembukuan, kategori tidak dihapus permanen. Nonaktifkan kategori lama agar tidak muncul di daftar pilihan transaksi baru.
+                            Kategori yang sudah dipakai tidak dihapus permanen agar riwayat pembukuan tetap utuh.
                         </p>
                     </div>
                 </div>
@@ -507,7 +500,7 @@ export default function ExpenseCategoriesIndex({
                         />
                     </FormField>
 
-                    <div className="flex flex-col-reverse gap-2 border-t border-[#E3DED4] pt-4 sm:flex-row sm:justify-end">
+                    <div className="flex flex-col-reverse gap-2 border-t border-[#DED6C8] pt-4 sm:flex-row sm:justify-end">
                         <Button
                             type="button"
                             variant="secondary"
@@ -544,20 +537,20 @@ export default function ExpenseCategoriesIndex({
                         {toggleError && (
                             <div
                                 role="alert"
-                                className="flex items-start gap-2 rounded-md border border-[#991B1B]/40 bg-[#FEE2E2] p-3 text-xs font-medium text-[#991B1B]"
+                                className="flex items-start gap-2 rounded-[6px] border border-[#E5B5AC] bg-[#FAE5E1] p-3 text-xs font-medium text-[#8A2619]"
                             >
                                 <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
                                 <span>{toggleError}</span>
                             </div>
                         )}
 
-                        <p className="text-sm text-[#1E2420]">
+                        <p className="text-sm text-[#1C211E]">
                             {toggleTarget.is_active
                                 ? `Kategori "${toggleTarget.name}" tidak akan muncul pada pilihan input pengeluaran baru. Seluruh ${formatAmount(toggleTarget.expenses_count ?? 0)} catatan transaksi lama tetap tersimpan rapi.`
                                 : `Kategori "${toggleTarget.name}" akan muncul kembali sebagai pilihan aktif pada formulir pencatatan pengeluaran.`}
                         </p>
 
-                        <div className="flex flex-col-reverse gap-2 border-t border-[#E3DED4] pt-4 sm:flex-row sm:justify-end">
+                        <div className="flex flex-col-reverse gap-2 border-t border-[#DED6C8] pt-4 sm:flex-row sm:justify-end">
                             <Button
                                 type="button"
                                 variant="secondary"

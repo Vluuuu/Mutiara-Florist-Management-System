@@ -293,4 +293,249 @@ class UiReportTest extends TestCase
         $zip->close();
         @unlink($tempFile);
     }
+
+    public function test_reports_support_weekly_monthly_yearly_chart_series_and_expense_breakdown(): void
+    {
+        $customer = Customer::create(['name' => 'Pelanggan Grafik']);
+        $catFlowers = $this->createCategory('Bunga Segar');
+        $catCourier = $this->createCategory('Ongkos Kurir');
+
+        // Out-of-range 2025 activity MUST be excluded from 2026-01-01..2026-02-28 charts in ALL modes
+        $order2025 = $this->createOrder($customer->id, '2025-12-10', 800000, 'COMPLETED', 'ORD-20251210-001');
+        $this->createPayment($order2025, '2025-12-10', 800000, 'POSTED');
+        $this->createExpense($catFlowers, '2025-12-10', 250000, 'Stok mawar tahun lalu', 'POSTED');
+
+        // Same-week out-of-range day immediately before period.from (2025-12-31 is Wednesday of 2026-W01)
+        $orderPrevWeek = $this->createOrder($customer->id, '2025-12-31', 700000, 'COMPLETED', 'ORD-20251231-001');
+        $this->createPayment($orderPrevWeek, '2025-12-31', 700000, 'POSTED');
+        $this->createExpense($catCourier, '2025-12-31', 90000, 'Kurir malam tahun baru', 'POSTED');
+
+        $orderJan = $this->createOrder($customer->id, '2026-01-15', 500000, 'COMPLETED', 'ORD-20260115-001');
+        $this->createPayment($orderJan, '2026-01-16', 500000, 'POSTED');
+        $this->createExpense($catFlowers, '2026-01-15', 150000, 'Bunga Januari', 'POSTED');
+        $this->createExpense($catCourier, '2026-01-16', 50000, 'Kurir Januari', 'POSTED');
+        $this->createExpense($catCourier, '2026-01-16', 99999, 'Kurir Void', 'VOIDED', 'Batal karena salah nominal input');
+
+        foreach (['daily', 'weekly', 'monthly', 'yearly'] as $granularity) {
+            $resp = $this->actingAs($this->admin)
+                ->get(route('ui-reports.index', [
+                    'preset' => 'custom',
+                    'from' => '2026-01-01',
+                    'to' => '2026-02-28',
+                    'granularity' => $granularity,
+                ]))
+                ->assertOk();
+
+            $rep = $resp->viewData('page')['props']['report'];
+            $this->assertSame($granularity, $rep['chart_series']['granularity']);
+            $this->assertFalse($rep['chart_series']['is_truncated']);
+            $this->assertNull($rep['chart_series']['notice']);
+            $this->assertNotEmpty($rep['chart_series']['points']);
+            $this->assertChartSeriesMatchesSummary($rep);
+
+            if ($granularity === 'weekly') {
+                $firstWeek = $rep['chart_series']['points'][0];
+                $lastWeek = $rep['chart_series']['points'][count($rep['chart_series']['points']) - 1];
+                $this->assertStringContainsString('01/01/2026 - 04/01/2026', $firstWeek['full_label']);
+                $this->assertStringContainsString('(parsial)', $firstWeek['full_label']);
+                $this->assertStringContainsString('23/02/2026 - 28/02/2026', $lastWeek['full_label']);
+                $this->assertStringContainsString('(parsial)', $lastWeek['full_label']);
+                $this->assertSame(0, $firstWeek['cash_in']);
+            }
+
+            if ($granularity === 'yearly') {
+                $byYear = collect($rep['chart_series']['points'])->keyBy('key');
+                $this->assertSame(['2026'], collect($rep['chart_series']['points'])->pluck('key')->all());
+                $this->assertFalse($byYear->has('2025'));
+                $this->assertSame(1, $byYear['2026']['orders_count']);
+                $this->assertSame(500000, $byYear['2026']['billed']);
+                $this->assertSame(500000, $byYear['2026']['cash_in']);
+                $this->assertSame(200000, $byYear['2026']['cash_out']);
+                $this->assertStringContainsString('Tahun 2026 (01/01 - 28/02)', $byYear['2026']['full_label']);
+            }
+
+            if ($granularity === 'monthly') {
+                $byMonth = collect($rep['chart_series']['points'])->keyBy('key');
+                $this->assertSame(['2026-01', '2026-02'], $byMonth->keys()->all());
+                $this->assertSame(500000, $byMonth['2026-01']['cash_in']);
+                $this->assertSame(200000, $byMonth['2026-01']['cash_out']);
+                $this->assertSame(300000, $byMonth['2026-01']['cash_diff']);
+                $this->assertSame(0, $byMonth['2026-02']['cash_in']);
+            }
+        }
+
+        // Verify expense breakdown sums only POSTED expenses inside period
+        $repBreakdown = $this->actingAs($this->admin)
+            ->get(route('ui-reports.index', [
+                'preset' => 'custom',
+                'from' => '2026-01-01',
+                'to' => '2026-02-28',
+            ]))
+            ->assertOk()
+            ->viewData('page')['props']['report']['expense_breakdown'];
+
+        $this->assertCount(2, $repBreakdown);
+        $this->assertSame('Bunga Segar', $repBreakdown[0]['category']);
+        $this->assertSame(150000, $repBreakdown[0]['amount']);
+        $this->assertSame(75, $repBreakdown[0]['percent']);
+        $this->assertSame('Ongkos Kurir', $repBreakdown[1]['category']);
+        $this->assertSame(50000, $repBreakdown[1]['amount']);
+    }
+
+    public function test_chart_series_strictly_matches_summary_across_all_presets_and_granularities(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-05-15 10:00:00', 'Asia/Jakarta'));
+
+        try {
+            $customer = Customer::create(['name' => 'Pelanggan Regresi Periode']);
+            $catOps = $this->createCategory('Operasional');
+
+            // 1. Cross-year past out-of-range (Nov 2025) + cross-month out-of-range (late Mar 2026)
+            $ordNov = $this->createOrder($customer->id, '2025-11-20', 950000, 'COMPLETED', 'ORD-20251120-001');
+            $this->createPayment($ordNov, '2025-11-21', 950000, 'POSTED');
+            $this->createExpense($catOps, '2025-11-22', 120000, 'Biaya Nov 2025', 'POSTED');
+
+            // Same calendar week as Apr 1 (2026-03-30 is Monday, inside 2026-W14 before last_month Apr 1)
+            $ordMar = $this->createOrder($customer->id, '2026-03-30', 410000, 'COMPLETED', 'ORD-20260330-001');
+            $this->createPayment($ordMar, '2026-03-30', 410000, 'POSTED');
+            $this->createExpense($catOps, '2026-03-30', 50000, 'Biaya Mar 30', 'POSTED');
+
+            // 2. Inside January 2026 (caught by summary & this_year, excluded when >92d daily truncates)
+            $ordJan = $this->createOrder($customer->id, '2026-01-10', 600000, 'COMPLETED', 'ORD-20260110-001');
+            $this->createPayment($ordJan, '2026-01-11', 350000, 'POSTED');
+            $this->createExpense($catOps, '2026-01-12', 80000, 'Biaya Jan', 'POSTED');
+
+            // 3. Inside April 2026 (covers last_month, 30d partial start, and same-week Apr 29 before May 1)
+            $ordAprMid = $this->createOrder($customer->id, '2026-04-18', 450000, 'READY', 'ORD-20260418-001');
+            $this->createPayment($ordAprMid, '2026-04-19', 200000, 'POSTED');
+            $this->createExpense($catOps, '2026-04-20', 75000, 'Biaya Apr 20', 'POSTED');
+
+            // Same calendar week as May 1 (2026-04-29 is Wednesday of 2026-W18)
+            $ordAprEnd = $this->createOrder($customer->id, '2026-04-29', 300000, 'PROCESSING', 'ORD-20260429-001');
+            $this->createPayment($ordAprEnd, '2026-04-29', 300000, 'POSTED');
+            $this->createExpense($catOps, '2026-04-29', 40000, 'Biaya Apr 29', 'POSTED');
+
+            // 4. Inside May 2026: May 10 (7d), May 12 (same week as May 15), and May 15 (today)
+            $ordMay10 = $this->createOrder($customer->id, '2026-05-10', 520000, 'COMPLETED', 'ORD-20260510-001');
+            $this->createPayment($ordMay10, '2026-05-11', 520000, 'POSTED');
+            $this->createExpense($catOps, '2026-05-11', 60000, 'Biaya May 11', 'POSTED');
+
+            $ordMay12 = $this->createOrder($customer->id, '2026-05-12', 280000, 'NEW', 'ORD-20260512-001');
+            $this->createPayment($ordMay12, '2026-05-12', 140000, 'POSTED');
+
+            $ordMay15 = $this->createOrder($customer->id, '2026-05-15', 750000, 'COMPLETED', 'ORD-20260515-001');
+            $this->createPayment($ordMay15, '2026-05-15', 750000, 'POSTED');
+            $this->createPayment($ordMay15, '2026-05-15', 999000, 'VOIDED', 'Dobel input hari ini');
+            $this->createExpense($catOps, '2026-05-15', 95000, 'Biaya Hari Ini', 'POSTED');
+            $this->createExpense($catOps, '2026-05-15', 888000, 'Biaya Void', 'VOIDED', 'Batal pengeluaran');
+
+            // 5. Future out-of-range (next month & next year)
+            $ordJun = $this->createOrder($customer->id, '2026-06-05', 330000, 'NEW', 'ORD-20260605-001');
+            $this->createPayment($ordJun, '2026-06-05', 330000, 'POSTED');
+            $ord2027 = $this->createOrder($customer->id, '2027-01-05', 440000, 'NEW', 'ORD-20270105-001');
+            $this->createPayment($ord2027, '2027-01-05', 440000, 'POSTED');
+
+            $untruncatedPresets = [
+                ['preset' => 'today'],
+                ['preset' => '7d'],
+                ['preset' => '30d'],
+                ['preset' => 'this_month'],
+                ['preset' => 'last_month'],
+                ['preset' => 'custom', 'from' => '2026-04-10', 'to' => '2026-05-15'], // custom cross-month (36d)
+                ['preset' => 'custom', 'from' => '2025-11-15', 'to' => '2026-02-10'], // custom cross-year (88d)
+                ['preset' => 'custom', 'from' => '2026-02-01', 'to' => '2026-02-14'], // completely empty period
+            ];
+
+            foreach ($untruncatedPresets as $query) {
+                foreach (['daily', 'weekly', 'monthly', 'yearly'] as $granularity) {
+                    $rep = $this->actingAs($this->admin)
+                        ->get(route('ui-reports.index', array_merge($query, ['granularity' => $granularity])))
+                        ->assertOk()
+                        ->viewData('page')['props']['report'];
+
+                    $series = $rep['chart_series'];
+                    $this->assertFalse($series['is_truncated'], "Unexpected truncation for {$query['preset']} {$granularity}");
+                    $this->assertNull($series['notice']);
+                    $this->assertChartSeriesMatchesSummary($rep);
+
+                    if ($query['preset'] === 'today') {
+                        $this->assertCount(1, $series['points'], 'Today filter must only produce 1 bucket per granularity');
+                        $this->assertSame(750000, $series['points'][0]['cash_in']);
+                        $this->assertSame(95000, $series['points'][0]['cash_out']);
+                    }
+
+                    if ($query['preset'] === 'last_month' && $granularity === 'monthly') {
+                        $this->assertSame(['2026-04'], collect($series['points'])->pluck('key')->all());
+                    }
+
+                    if (($query['from'] ?? null) === '2025-11-15' && $granularity === 'yearly') {
+                        $byYear = collect($series['points'])->keyBy('key');
+                        $this->assertSame(['2025', '2026'], collect($series['points'])->pluck('key')->all());
+                        $this->assertStringContainsString('Tahun 2025 (15/11 - 31/12)', $byYear['2025']['full_label']);
+                        $this->assertStringContainsString('Tahun 2026 (01/01 - 10/02)', $byYear['2026']['full_label']);
+                    }
+                }
+            }
+
+            // Test >92 days (`this_year` Jan 1 .. May 15 = 135 days):
+            // - weekly, monthly, yearly MUST match full summary strictly
+            // - daily keeps 92-day cap as an explicit, user-visible exception
+            foreach (['weekly', 'monthly', 'yearly'] as $granularity) {
+                $rep = $this->actingAs($this->admin)
+                    ->get(route('ui-reports.index', ['preset' => 'this_year', 'granularity' => $granularity]))
+                    ->assertOk()
+                    ->viewData('page')['props']['report'];
+
+                $this->assertFalse($rep['chart_series']['is_truncated']);
+                $this->assertNull($rep['chart_series']['notice']);
+                $this->assertChartSeriesMatchesSummary($rep);
+
+                if ($granularity === 'yearly') {
+                    $keys = collect($rep['chart_series']['points'])->pluck('key')->all();
+                    $this->assertSame(['2026'], $keys);
+                }
+            }
+
+            $repDailyTruncated = $this->actingAs($this->admin)
+                ->get(route('ui-reports.index', ['preset' => 'this_year', 'granularity' => 'daily']))
+                ->assertOk()
+                ->viewData('page')['props']['report'];
+
+            $dailySeries = $repDailyTruncated['chart_series'];
+            $this->assertTrue($dailySeries['is_truncated']);
+            $this->assertSame(135, $dailySeries['total_period_days']);
+            $this->assertSame(92, $dailySeries['covered_days']);
+            $this->assertCount(92, $dailySeries['points']);
+            $this->assertNotNull($dailySeries['notice']);
+            $this->assertStringContainsString('92 hari terakhir', $dailySeries['notice']);
+            $this->assertStringContainsString('135 hari', $dailySeries['notice']);
+
+            // Summary includes Jan 10 order (600k billed / 350k cash_in / 80k cash_out),
+            // whereas the 92-day daily window starts Feb 13 and explicitly excludes Jan 10.
+            $dailySumCashIn = collect($dailySeries['points'])->sum('cash_in');
+            $this->assertSame(
+                $repDailyTruncated['summary']['cash_in'] - 350000,
+                $dailySumCashIn,
+                '92-day daily truncation exception must strictly equal full summary minus pre-cutoff activity'
+            );
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
+    /**
+     * Verifies chart bucket totals strictly match report KPI summary figures.
+     *
+     * @param  array<string, mixed>  $report
+     */
+    protected function assertChartSeriesMatchesSummary(array $report): void
+    {
+        $points = collect($report['chart_series']['points'] ?? []);
+        $summary = $report['summary'];
+
+        $this->assertSame((int) $summary['orders_count'], (int) $points->sum('orders_count'));
+        $this->assertSame((int) $summary['total_billed'], (int) $points->sum('billed'));
+        $this->assertSame((int) $summary['cash_in'], (int) $points->sum('cash_in'));
+        $this->assertSame((int) $summary['cash_out'], (int) $points->sum('cash_out'));
+    }
 }

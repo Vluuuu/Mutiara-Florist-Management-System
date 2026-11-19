@@ -31,25 +31,22 @@ export default function CustomersEdit({ customer }: CustomerEditProps) {
         <AppLayout title="Edit Pelanggan">
             <Head title={`Edit ${customer.name}`} />
 
-            <div className="mb-5">
+            <div className="mb-6 border-b border-[#DED6C8] pb-4">
                 <Link
                     href={`/ui-customers/${customer.id}`}
-                    className="inline-flex min-h-[44px] items-center gap-1.5 text-sm font-semibold text-[#143326] hover:underline"
+                    className="inline-flex min-h-[44px] items-center gap-1.5 text-sm font-semibold text-[#1D3B2A] hover:underline"
                 >
                     <ArrowLeft className="size-4" aria-hidden="true" />
                     Detail pelanggan
                 </Link>
                 <div className="mt-2">
-                    <h1 className="break-words font-[var(--font-display)] text-[clamp(20px,2.2vw,25px)] font-semibold leading-tight tracking-[-0.015em] text-[#1E2420]">
+                    <h1 className="atelier-h1 break-words">
                         Edit: {customer.name}
                     </h1>
-                    <p className="mt-1 text-sm text-[#525B54]">
-                        Perubahan akan tercatat pada riwayat audit sistem.
-                    </p>
                 </div>
             </div>
 
-            <Card className="max-w-2xl border-[#E3DED4] p-5 sm:p-6">
+            <Card className="max-w-2xl p-5 sm:p-6">
                 <form noValidate onSubmit={handleSubmit} className="space-y-5">
                     <FormField id="name" label="Nama pelanggan" required error={errors.name}>
                         <Input
@@ -98,12 +95,12 @@ export default function CustomersEdit({ customer }: CustomerEditProps) {
                         />
                     </FormField>
 
-                    <div className="flex flex-wrap items-center gap-3 border-t border-[#E3DED4] pt-5">
-                        <Button type="submit" variant="primary" disabled={processing}>
+                    <div className="flex flex-wrap items-center gap-3 border-t border-[#DED6C8] pt-5">
+                        <Button type="submit" variant="primary" disabled={processing} className="min-w-[168px]">
                             <Save className="size-4" aria-hidden="true" />
                             {processing ? 'Menyimpan...' : 'Simpan perubahan'}
                         </Button>
-                        <Button asChild variant="secondary">
+                        <Button asChild variant="secondary" className="min-w-[120px]">
                             <Link href={`/ui-customers/${customer.id}`}>Batal</Link>
                         </Button>
                     </div>

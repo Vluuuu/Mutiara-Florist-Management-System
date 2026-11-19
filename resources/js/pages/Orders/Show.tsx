@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { DeliveryConfirmModal, type DeliveryConfirmTarget } from '@/components/delivery-confirm-modal';
+import { LedgerSummaryStrip } from '@/components/ledger-summary-strip';
 import { OrderCodeBadge } from '@/components/order-code-badge';
 import { PaymentModal } from '@/components/payment-modal';
 import { Badge, getFulfillmentBadgeMeta, getPaymentBadgeMeta } from '@/components/ui/badge';
@@ -37,7 +38,7 @@ type OrdersShowProps = {
 const STEPPER_ORDER: Array<{ key: FulfillmentStatus; label: string }> = [
     { key: 'NEW', label: 'Baru' },
     { key: 'PROCESSING', label: 'Diproses' },
-    { key: 'READY', label: 'Siap kirim' },
+    { key: 'READY', label: 'Siap Kirim' },
     { key: 'DELIVERED', label: 'Terkirim' },
 ];
 
@@ -216,24 +217,22 @@ export default function OrdersShow({ order, todayIso: serverTodayIso }: OrdersSh
         <AppLayout title={`Pesanan ${order.order_number}`}>
             <Head title={`Pesanan ${order.order_number}`} />
 
-            <div className="mb-5">
+            <div className="mb-7 border-b border-[#DED6C8] pb-5">
                 <Link
                     href="/ui-orders"
-                    className="inline-flex min-h-[44px] items-center gap-1.5 text-sm font-semibold text-[#143326] hover:underline"
+                    className="inline-flex min-h-[44px] items-center gap-1.5 text-sm font-semibold text-[#1D3B2A] hover:underline"
                 >
                     <ArrowLeft className="size-4" aria-hidden="true" />
                     Kembali ke daftar pesanan
                 </Link>
 
-                <div className="mt-2 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+                <div className="mt-2 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                     <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
                             <Badge tone={orderStatusMeta.tone}>{orderStatusMeta.label}</Badge>
-                            <Badge tone={paymentStatusMeta.tone}>
-                                {order.payment_status_label || paymentStatusMeta.label}
-                            </Badge>
+                            <Badge tone={paymentStatusMeta.tone}>{paymentStatusMeta.label}</Badge>
                         </div>
-                        <h1 className="mt-2 break-all font-[var(--font-display)] text-[clamp(20px,2.2vw,25px)] font-semibold leading-tight tracking-[-0.015em] text-[#1E2420]">
+                        <h1 className="atelier-h1 mt-2.5">
                             Nota{' '}
                             <OrderCodeBadge
                                 orderNumber={order.order_number}
@@ -242,15 +241,15 @@ export default function OrdersShow({ order, todayIso: serverTodayIso }: OrdersSh
                                 className="inline-flex align-middle"
                             />
                         </h1>
-                        <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-[#525B54]">
+                        <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[15px] text-[#545852]">
                             <Link
                                 href={`/ui-customers/${order.customer.id}`}
-                                className="inline-flex min-h-[44px] items-center font-bold text-[#143326] hover:underline"
+                                className="inline-flex min-h-[44px] items-center font-bold text-[#1D3B2A] hover:underline"
                             >
                                 {order.customer.name}
                             </Link>
                             {order.customer.phone && (
-                                <span className="inline-flex items-center gap-1 font-[var(--font-mono)] text-[13px] tabular-nums">
+                                <span className="inline-flex items-center gap-1 font-[var(--font-mono)] text-sm tabular-nums">
                                     <Phone className="size-3.5" aria-hidden="true" />
                                     {order.customer.phone}
                                 </span>
@@ -261,8 +260,8 @@ export default function OrdersShow({ order, todayIso: serverTodayIso }: OrdersSh
                         </p>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2">
-                        <Button asChild variant="secondary">
+                    <div className="grid w-full grid-cols-2 gap-2.5 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
+                        <Button asChild variant="secondary" className="w-full sm:w-auto sm:min-w-[152px]">
                             <Link href={`/ui-orders/${order.id}/edit`}>
                                 <Edit3 className="size-4" aria-hidden="true" />
                                 Edit Pesanan
@@ -272,18 +271,22 @@ export default function OrdersShow({ order, todayIso: serverTodayIso }: OrdersSh
                             type="button"
                             variant="secondary"
                             onClick={handleCopyWhatsappSummary}
+                            className="w-full sm:w-auto sm:min-w-[168px]"
                         >
                             <Copy className="size-4" aria-hidden="true" />
-                            Salin Ringkasan WA
+                            <span>
+                                Salin <span className="hidden sm:inline">Ringkasan </span>WA
+                            </span>
                         </Button>
                         {order.outstanding > 0 && (
                             <Button
                                 type="button"
                                 variant="primary"
                                 onClick={() => setPaymentModalOpen(true)}
+                                className="col-span-2 w-full sm:col-span-1 sm:w-auto sm:min-w-[172px]"
                             >
                                 <Wallet className="size-4" aria-hidden="true" />
-                                + Catat Pembayaran
+                                Catat Pembayaran
                             </Button>
                         )}
                     </div>
@@ -293,7 +296,7 @@ export default function OrdersShow({ order, todayIso: serverTodayIso }: OrdersSh
             {stepError && (
                 <div
                     role="alert"
-                    className="mb-4 flex items-start gap-2.5 rounded-md border border-[#991B1B]/40 bg-[#FEE2E2] p-3.5 text-sm font-medium text-[#991B1B]"
+                    className="mb-5 flex items-start gap-2.5 rounded-[8px] border border-[#E2B3AA] bg-[#FCECE9] p-4 text-sm font-medium text-[#8A2619]"
                 >
                     <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
                     <span>{stepError}</span>
@@ -303,10 +306,10 @@ export default function OrdersShow({ order, todayIso: serverTodayIso }: OrdersSh
             {waPreviewVisible && (
                 <div
                     role="status"
-                    className="mb-5 rounded-lg border border-[#143326]/30 bg-[#E6EFEA] p-4"
+                    className="mb-6 rounded-[8px] border border-[#B8D0C0] bg-[#EEF5F0] p-4"
                 >
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-sm font-bold text-[#143326]">{waCopyStatus}</p>
+                        <p className="text-sm font-bold text-[#164B2A]">{waCopyStatus}</p>
                         <Button
                             type="button"
                             variant="secondary"
@@ -316,99 +319,57 @@ export default function OrdersShow({ order, todayIso: serverTodayIso }: OrdersSh
                             Tutup Pratinjau
                         </Button>
                     </div>
-                    <pre className="mt-2.5 overflow-x-auto whitespace-pre-wrap break-words rounded-md border border-[#E3DED4] bg-white p-3 font-[var(--font-sans)] text-xs leading-relaxed text-[#1E2420]">
+                    <pre className="mt-3 overflow-x-auto whitespace-pre-wrap break-words rounded-[8px] border border-[#DED6C8] bg-[#FFFDF9] p-3.5 font-[var(--font-sans)] text-[13px] leading-relaxed text-[#1C211E]">
                         {waCopiedText}
                     </pre>
                 </div>
             )}
 
-            {/* 4 Kartu Ringkasan Tagihan */}
-            <section
-                aria-label="Ringkasan tagihan pesanan"
-                className="mb-5 grid grid-cols-2 gap-2.5 lg:grid-cols-4 lg:gap-3"
-            >
-                <div className="rounded-[10px] border border-[#E3DED4] bg-white p-3.5 md:px-4">
-                    <p className="text-xs font-semibold text-[#525B54] md:text-[13px]">
-                        Total Tagihan
-                    </p>
-                    <p className="mt-1 text-[19px] font-bold text-[#1E2420] tabular-nums md:text-[22px]">
-                        {formatRupiah(order.total_amount)}
-                    </p>
-                    <p className="mt-1 text-xs text-[#525B54] tabular-nums">
-                        Bunga {formatRupiah(order.flower_total)} | Ongkir{' '}
-                        {formatRupiah(order.shipping_total)}
-                    </p>
-                </div>
-
-                <div className="rounded-[10px] border border-[#E3DED4] bg-white p-3.5 md:px-4">
-                    <p className="text-xs font-semibold text-[#525B54] md:text-[13px]">
-                        Sudah Diterima
-                    </p>
-                    <p className="mt-1 text-[19px] font-bold text-[#166534] tabular-nums md:text-[22px]">
-                        {formatRupiah(order.received)}
-                    </p>
-                    <p className="mt-1 text-xs text-[#525B54]">Hanya catatan sah (tercatat)</p>
-                </div>
-
-                <div className="rounded-[10px] border border-[#E3DED4] bg-white p-3.5 md:px-4">
-                    <p className="text-xs font-semibold text-[#525B54] md:text-[13px]">
-                        Sisa Tagihan
-                    </p>
-                    <p
-                        className={cn(
-                            'mt-1 text-[19px] font-bold tabular-nums md:text-[22px]',
-                            order.outstanding > 0 ? 'text-[#8C3B4A]' : 'text-[#166534]',
-                        )}
-                    >
-                        {formatRupiah(order.outstanding)}
-                    </p>
-                    <p className="mt-1 text-xs text-[#525B54]">
-                        {order.outstanding > 0 ? 'Belum dilunasi' : 'Sudah lunas'}
-                    </p>
-                </div>
-
-                <div className="rounded-[10px] border border-[#E3DED4] bg-[#F1EDE6] p-3.5 md:px-4">
-                    <p className="text-xs font-semibold text-[#525B54] md:text-[13px]">
-                        Status Nota
-                    </p>
-                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                        <Badge tone={paymentStatusMeta.tone}>
-                            {order.payment_status_label || paymentStatusMeta.label}
-                        </Badge>
-                        <Badge tone={orderStatusMeta.tone}>{orderStatusMeta.label}</Badge>
-                    </div>
-                    <p className="mt-1.5 text-xs text-[#525B54] tabular-nums">
-                        {formatAmount(order.items.length)} item bunga
-                    </p>
-                </div>
-            </section>
+            <LedgerSummaryStrip
+                ariaLabel="Ringkasan tagihan pesanan"
+                columns={3}
+                className="mb-7"
+                items={[
+                    {
+                        label: 'Total Tagihan',
+                        value: formatRupiah(order.total_amount),
+                        hint: `Bunga ${formatRupiah(order.flower_total)} · Ongkir ${formatRupiah(order.shipping_total)}`,
+                    },
+                    {
+                        label: 'Sudah Diterima',
+                        value: formatRupiah(order.received),
+                        hint: `${formatAmount(order.items.length)} item bunga`,
+                    },
+                    {
+                        label: 'Sisa Tagihan',
+                        value: formatRupiah(order.outstanding),
+                        hint: order.outstanding > 0 ? 'Belum dilunasi' : 'Sudah lunas',
+                        tone: order.outstanding > 0 ? 'urgent' : 'default',
+                    },
+                ]}
+            />
 
             {order.notes && (
-                <Card className="mb-5 border-[#E3DED4] bg-[#FAF8F4] p-4">
-                    <p className="text-xs font-bold uppercase tracking-wider text-[#525B54]">
+                <Card className="mb-6 bg-[#EFE9DE]/60 p-5">
+                    <p className="text-sm font-bold text-[#545852]">
                         Catatan Pesanan
                     </p>
-                    <p className="mt-1 whitespace-pre-wrap break-words text-sm text-[#1E2420]">
+                    <p className="mt-1 whitespace-pre-wrap break-words text-[15px] text-[#1C211E]">
                         {order.notes}
                     </p>
                 </Card>
             )}
 
-            <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(310px,1fr)] lg:items-start">
-                {/* Kolom Kiri: Daftar Rangkaian & Stepper Pengerjaan */}
-                <Card className="border-[#E3DED4] p-4 sm:p-5">
-                    <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-                        <div>
-                            <h2 className="text-base font-bold text-[#1E2420]">
-                                Daftar Rangkaian &amp; Status Kerja
-                            </h2>
-                            <p className="mt-0.5 text-[13px] text-[#525B54]">
-                                Status tiap bunga maju bertahap: Baru, Diproses, Siap kirim, lalu Terkirim.
-                            </p>
-                        </div>
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.65fr)_minmax(320px,1fr)] lg:items-start">
+                {/* Kolom Kiri: Daftar Rangkaian & Progres Pengerjaan */}
+                <Card className="overflow-hidden">
+                    <div className="border-b border-[#DED6C8] bg-[#EFE9DE]/45 px-5 py-4">
+                        <h2 className="atelier-h2">
+                            Daftar Rangkaian &amp; Status Kerja
+                        </h2>
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="divide-y divide-[#DED6C8]">
                         {order.items.map((item) => {
                             const statusMeta = getFulfillmentBadgeMeta(item.fulfillment_status);
                             const nextCfg =
@@ -431,111 +392,112 @@ export default function OrdersShow({ order, todayIso: serverTodayIso }: OrdersSh
                                 <article
                                     key={item.id}
                                     className={cn(
-                                        'rounded-lg border p-4',
-                                        isOverdue
-                                            ? 'border-[#E5B9C2] bg-[#FDF2F4]'
-                                            : 'border-[#E3DED4] bg-white',
+                                        'bg-[#FFFDF9] p-4 sm:p-5',
+                                        isOverdue && 'border-l-[3px] border-l-[#9A3B22]',
                                     )}
                                 >
-                                    <div className="flex flex-wrap items-start justify-between gap-3">
+                                    <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
                                         <div className="min-w-0 flex-1">
-                                            <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
+                                            <div className="mb-2 flex flex-wrap items-center gap-2">
                                                 <Badge tone={statusMeta.tone}>{statusMeta.label}</Badge>
                                                 {isOverdue && (
                                                     <Badge tone="danger">
                                                         Terlambat ({formatDateWib(item.delivery_date)})
                                                     </Badge>
                                                 )}
-                                                <span className="text-xs font-medium text-[#525B54] tabular-nums">
-                                                    Kirim {formatDateWib(item.delivery_date)} | {shipText}
+                                                <span className="text-[13px] font-medium text-[#545852] tabular-nums">
+                                                    Kirim {formatDateWib(item.delivery_date)} · {shipText}
                                                 </span>
                                             </div>
-                                            <h3 className="text-[15px] font-bold text-[#1E2420]">
+                                            <h3 className="text-base font-bold text-[#1C211E]">
                                                 {item.item_number}. {item.flower_type}{' '}
-                                                <span className="font-semibold text-[#525B54] tabular-nums">
+                                                <span className="font-semibold text-[#545852] tabular-nums">
                                                     ({formatAmount(item.quantity)} buah)
                                                 </span>
                                             </h3>
-                                            <p className="mt-1 text-[13px] text-[#525B54]">
+                                            <p className="mt-1.5 text-sm text-[#545852]">
                                                 Penerima:{' '}
-                                                <strong className="text-[#1E2420]">
+                                                <strong className="text-[#1C211E]">
                                                     {item.recipient}
                                                 </strong>
-                                                {' | '}Pengirim kartu:{' '}
-                                                <strong className="text-[#1E2420]">
+                                                {' · '}Pengirim kartu:{' '}
+                                                <strong className="text-[#1C211E]">
                                                     {item.sender_name}
                                                 </strong>
                                             </p>
-                                            <p className="mt-1 flex items-start gap-1.5 text-[13px] text-[#525B54]">
+                                            <p className="mt-1 flex items-start gap-1.5 text-sm text-[#545852]">
                                                 <MapPin
-                                                    className="mt-0.5 size-3.5 shrink-0"
+                                                    className="mt-0.5 size-4 shrink-0"
                                                     aria-hidden="true"
                                                 />
                                                 <span>{item.delivery_location}</span>
                                             </p>
                                             {item.notes && (
-                                                <p className="mt-1 text-[13px] text-[#525B54]">
+                                                <p className="mt-1.5 text-sm text-[#545852]">
                                                     Catatan: {item.notes}
                                                 </p>
                                             )}
                                         </div>
 
-                                        <div className="text-right tabular-nums">
-                                            <p className="text-base font-bold text-[#1E2420]">
+                                        <div className="text-left tabular-nums sm:text-right">
+                                            <p className="text-lg font-bold text-[#1C211E]">
                                                 {formatRupiah(itemTotal)}
                                             </p>
-                                            <p className="text-xs text-[#525B54]">
+                                            <p className="text-[13px] text-[#545852]">
                                                 {formatAmount(item.quantity)} x{' '}
                                                 {formatRupiah(item.unit_price)}
                                             </p>
                                         </div>
                                     </div>
 
-                                    <div className="mt-3.5 flex flex-col gap-3 border-t border-[#E3DED4] pt-3 sm:flex-row sm:items-center sm:justify-between">
-                                        <div
-                                            className="flex flex-wrap items-center gap-1.5"
+                                    <div className="mt-4 flex flex-col gap-3 border-t border-dashed border-[#DED6C8] pt-3.5 sm:flex-row sm:items-center sm:justify-between">
+                                        <ol
+                                            className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm"
                                             aria-label={`Tahap pengerjaan item ${item.item_number}`}
                                         >
                                             {STEPPER_ORDER.map((step, idx) => {
                                                 const isDone = idx < currentStepIdx;
                                                 const isCurrent = idx === currentStepIdx;
                                                 return (
-                                                    <span
+                                                    <li
                                                         key={step.key}
+                                                        aria-current={isCurrent ? 'step' : undefined}
                                                         className={cn(
-                                                            'rounded px-2 py-1 text-xs font-semibold',
-                                                            isCurrent &&
-                                                                'bg-[#143326] text-white',
-                                                            isDone &&
-                                                                'bg-[#DCFCE7] text-[#166534]',
-                                                            !isDone &&
-                                                                !isCurrent &&
-                                                                'bg-[#F1EDE6] text-[#525B54]',
+                                                            'inline-flex items-center gap-1.5',
+                                                            isCurrent && 'border-b-2 border-[#1D3B2A] pb-0.5 font-bold text-[#1D3B2A]',
+                                                            isDone && 'font-semibold text-[#164B2A]',
+                                                            !isDone && !isCurrent && 'font-medium text-[#545852]',
                                                         )}
                                                     >
-                                                        {step.label}
-                                                    </span>
+                                                        <span>{idx + 1}.</span>
+                                                        <span>{step.label}</span>
+                                                        {idx < STEPPER_ORDER.length - 1 && (
+                                                            <span aria-hidden="true" className="ml-1.5 text-[#7D776C]">
+                                                                /
+                                                            </span>
+                                                        )}
+                                                    </li>
                                                 );
                                             })}
-                                        </div>
+                                        </ol>
 
                                         <div className="shrink-0">
                                             {nextCfg.nextStatus ? (
                                                 <Button
                                                     type="button"
                                                     variant={isOverdue ? 'urgent' : 'primary'}
-                                                    size="sm"
                                                     disabled={submittingItemId !== null}
                                                     onClick={() =>
                                                         handleStepClick(item, nextCfg.nextStatus!)
                                                     }
+                                                    className="w-full sm:w-auto sm:min-w-[168px]"
                                                 >
                                                     {isBusy ? 'Memproses...' : nextCfg.label}
                                                 </Button>
                                             ) : (
-                                                <span className="inline-flex min-h-[44px] items-center gap-1.5 rounded-md border border-[#166534]/30 bg-[#DCFCE7] px-3 py-2 text-xs font-bold text-[#166534]">
+                                                <span className="inline-flex min-h-[44px] items-center gap-1.5 px-2 text-sm font-bold text-[#164B2A]">
                                                     <CheckCircle2
-                                                        className="size-4"
+                                                        className="size-4 shrink-0"
                                                         aria-hidden="true"
                                                     />
                                                     Sudah Terkirim
@@ -551,55 +513,51 @@ export default function OrdersShow({ order, todayIso: serverTodayIso }: OrdersSh
 
                 {/* Kolom Kanan: Riwayat Pembayaran & Audit */}
                 <aside className="space-y-5">
-                    <Card className="border-[#E3DED4] p-4 sm:p-5">
-                        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                            <div>
-                                <h2 className="text-base font-bold text-[#1E2420]">
-                                    Riwayat Pembayaran &amp; Audit
-                                </h2>
-                                <p className="mt-0.5 text-xs text-[#525B54]">
-                                    Pembatalan hanya mengoreksi pencatatan dan bukan pengembalian uang.
-                                </p>
-                            </div>
+                    <Card className="overflow-hidden">
+                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#DED6C8] bg-[#EFE9DE]/45 px-5 py-4">
+                            <h2 className="atelier-h2">
+                                Riwayat Pembayaran
+                            </h2>
                             {order.outstanding > 0 && (
                                 <Button
                                     type="button"
-                                    variant="primary"
+                                    variant="urgent"
                                     size="sm"
                                     onClick={() => setPaymentModalOpen(true)}
+                                    className="min-w-[120px]"
                                 >
-                                    + Catat Bayar
+                                    Catat Bayar
                                 </Button>
                             )}
                         </div>
 
                         {order.payments.length === 0 ? (
-                            <div className="rounded-lg border border-dashed border-[#858E87] bg-[#F1EDE6]/60 px-4 py-7 text-center">
+                            <div className="bg-[#EFE9DE]/35 px-5 py-9 text-center">
                                 <Wallet
-                                    className="mx-auto mb-2 size-7 text-[#525B54]"
+                                    className="mx-auto mb-2 size-7 text-[#545852]"
                                     aria-hidden="true"
                                 />
-                                <p className="text-sm font-bold text-[#1E2420]">
+                                <p className="text-[15px] font-bold text-[#1C211E]">
                                     Belum ada pembayaran tercatat
                                 </p>
-                                <p className="mt-1 text-xs text-[#525B54]">
-                                    Pesanan tetap bisa dirangkai dan dikirim sambil menunggu pelunasan.
+                                <p className="mt-1 text-sm text-[#545852]">
+                                    Pesanan tetap bisa dirangkai sambil menunggu pelunasan.
                                 </p>
                                 {order.outstanding > 0 && (
                                     <div className="mt-4">
                                         <Button
                                             type="button"
-                                            variant="primary"
-                                            size="sm"
+                                            variant="urgent"
                                             onClick={() => setPaymentModalOpen(true)}
+                                            className="min-w-[168px]"
                                         >
-                                            + Catat Pembayaran
+                                            Catat Pembayaran
                                         </Button>
                                     </div>
                                 )}
                             </div>
                         ) : (
-                            <div className="space-y-3">
+                            <div className="divide-y divide-[#DED6C8]">
                                 {order.payments.map((payment) => {
                                     const isPosted = payment.status === 'POSTED';
                                     const badgeMeta = getPaymentBadgeMeta(payment.status);
@@ -607,38 +565,38 @@ export default function OrdersShow({ order, todayIso: serverTodayIso }: OrdersSh
                                     return (
                                         <div
                                             key={payment.id}
-                                            className="rounded-lg border border-[#E3DED4] bg-white p-3.5"
+                                            className="bg-[#FFFDF9] p-5"
                                         >
                                             <div className="flex items-center justify-between gap-2">
                                                 <Badge tone={badgeMeta.tone}>{badgeMeta.label}</Badge>
-                                                <span className="text-xs font-medium text-[#525B54] tabular-nums">
+                                                <span className="text-[13px] font-medium text-[#545852] tabular-nums">
                                                     {formatDateWib(payment.payment_date)}
                                                 </span>
                                             </div>
 
                                             <p
                                                 className={cn(
-                                                    'mt-2 text-lg font-bold tabular-nums',
+                                                    'mt-2.5 text-lg font-bold tabular-nums',
                                                     isPosted
-                                                        ? 'text-[#1E2420]'
-                                                        : 'text-[#525B54] line-through',
+                                                        ? 'text-[#1C211E]'
+                                                        : 'text-[#545852] line-through',
                                                 )}
                                             >
                                                 {formatRupiah(payment.amount)}
                                             </p>
 
-                                            <p className="mt-0.5 text-[13px] text-[#525B54]">
+                                            <p className="mt-0.5 text-sm text-[#545852]">
                                                 {payment.method_label}
-                                                {payment.reference ? ` | Ref: ${payment.reference}` : ''}
+                                                {payment.reference ? ` · Ref: ${payment.reference}` : ''}
                                             </p>
 
                                             {payment.notes && (
-                                                <p className="mt-1 whitespace-pre-wrap break-words text-xs text-[#525B54]">
+                                                <p className="mt-1 whitespace-pre-wrap break-words text-[13px] text-[#545852]">
                                                     Catatan: {payment.notes}
                                                 </p>
                                             )}
 
-                                            <p className="mt-1.5 text-xs text-[#525B54]">
+                                            <p className="mt-1.5 text-[13px] text-[#545852]">
                                                 Dicatat oleh {payment.recorded_by}
                                             </p>
 
@@ -647,16 +605,15 @@ export default function OrdersShow({ order, todayIso: serverTodayIso }: OrdersSh
                                                     <Button
                                                         type="button"
                                                         variant="outline"
-                                                        size="sm"
-                                                        className="border-[#991B1B]/40 text-[#991B1B] hover:bg-[#FEE2E2]"
+                                                        className="w-full border-[#E2B3AA] text-[#8A2619] hover:bg-[#FCECE9] sm:w-auto sm:min-w-[160px]"
                                                         onClick={() => handleOpenVoidModal(payment)}
                                                     >
                                                         Batalkan Catatan
                                                     </Button>
                                                 </div>
                                             ) : (
-                                                <div className="mt-2.5 rounded-md bg-[#F1EDE6] p-2.5 text-xs text-[#525B54]">
-                                                    <p className="font-semibold text-[#1E2420]">
+                                                <div className="mt-3 rounded-[8px] border border-[#DED6C8] bg-[#EFE9DE] p-3 text-[13px] text-[#545852]">
+                                                    <p className="font-semibold text-[#1C211E]">
                                                         Alasan: {payment.void_reason}
                                                     </p>
                                                     {payment.voided_at && (
@@ -719,9 +676,9 @@ export default function OrdersShow({ order, todayIso: serverTodayIso }: OrdersSh
             >
                 {voidTarget && (
                     <form onSubmit={handleVoidSubmit} noValidate className="space-y-4">
-                        <div className="rounded-md border border-[#92400E]/30 bg-[#FEF3C7] p-3 text-xs leading-relaxed text-[#92400E]">
-                            <strong>Perhatian Audit:</strong> Pembatalan ini menandai kesalahan entri agar riwayat kas akurat, dan{' '}
-                            <strong>bukan pengembalian uang (refund)</strong> kepada pelanggan. Baris riwayat tetap tersimpan.
+                        <div className="rounded-[8px] border border-[#DFC393] bg-[#FAF1E1] p-3.5 text-[13px] leading-relaxed text-[#6E3D09]">
+                            <strong>Perhatian Audit:</strong> Pembatalan menandai kesalahan entri agar riwayat kas akurat, dan{' '}
+                            <strong>bukan pengembalian uang (refund)</strong> kepada pelanggan.
                         </div>
 
                         <FormField
@@ -746,12 +703,13 @@ export default function OrdersShow({ order, todayIso: serverTodayIso }: OrdersSh
                             />
                         </FormField>
 
-                        <div className="flex flex-col-reverse gap-2 border-t border-[#E3DED4] pt-4 sm:flex-row sm:justify-end">
+                        <div className="flex flex-col-reverse gap-2.5 border-t border-[#DED6C8] pt-4 sm:flex-row sm:justify-end">
                             <Button
                                 type="button"
                                 variant="secondary"
                                 disabled={isSavingVoid}
                                 onClick={() => setVoidTarget(null)}
+                                className="w-full sm:w-auto sm:min-w-[120px]"
                             >
                                 Batal
                             </Button>
@@ -759,6 +717,7 @@ export default function OrdersShow({ order, todayIso: serverTodayIso }: OrdersSh
                                 type="submit"
                                 variant="danger"
                                 disabled={isSavingVoid || voidReasonLen < 10}
+                                className="w-full sm:w-auto sm:min-w-[180px]"
                             >
                                 {isSavingVoid ? 'Memproses...' : 'Ya, Batalkan Catatan'}
                             </Button>

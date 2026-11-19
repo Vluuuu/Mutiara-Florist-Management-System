@@ -23,11 +23,13 @@ class UiReportController extends Controller
         $preset = $request->query('preset', '30d');
         $from = $request->query('from');
         $to = $request->query('to');
+        $granularity = $request->query('granularity');
 
         $report = $this->reportService->getFinancialReport(
             is_string($preset) ? $preset : '30d',
             is_string($from) ? $from : null,
-            is_string($to) ? $to : null
+            is_string($to) ? $to : null,
+            is_string($granularity) ? $granularity : null
         );
 
         return Inertia::render('Reports/Index', [

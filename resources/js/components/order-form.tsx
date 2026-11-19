@@ -39,7 +39,7 @@ const MAX_ITEMS = 20;
 const FULFILLMENT_STEPS: Array<{ value: FulfillmentStatus; label: string }> = [
     { value: 'NEW', label: 'Baru' },
     { value: 'PROCESSING', label: 'Diproses' },
-    { value: 'READY', label: 'Siap kirim' },
+    { value: 'READY', label: 'Siap Kirim' },
     { value: 'DELIVERED', label: 'Terkirim' },
 ];
 
@@ -222,9 +222,17 @@ export function OrderForm({
 
     const handleAddItem = () => {
         if (items.length >= MAX_ITEMS) return;
+        const nextIndex = items.length;
         const newItemDate = mode === 'edit' ? defaultDate : orderDate || defaultDate;
         setItems((prev) => [...prev, createBlankItem(newItemDate)]);
         clearFieldErrors('items');
+        window.setTimeout(() => {
+            const el = document.getElementById(`item-${nextIndex}-flower_type`);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                el.focus({ preventScroll: true });
+            }
+        }, 50);
     };
 
     const handleDuplicateItem = (index: number) => {
@@ -442,24 +450,21 @@ export function OrderForm({
     const backHref = mode === 'edit' && order ? `/ui-orders/${order.id}` : '/ui-orders';
 
     return (
-        <div className="pb-24 lg:pb-0">
-            <div className="mb-5">
+        <div className="pb-28 lg:pb-0">
+            <div className="mb-6 border-b border-[#DED6C8] pb-4">
                 <Link
                     href={backHref}
-                    className="inline-flex min-h-[44px] items-center gap-1.5 text-sm font-semibold text-[#143326] hover:underline"
+                    className="inline-flex min-h-[44px] items-center gap-1.5 text-sm font-semibold text-[#1D3B2A] hover:underline"
                 >
                     <ArrowLeft className="size-4" aria-hidden="true" />
                     {mode === 'edit' ? 'Kembali ke detail pesanan' : 'Kembali ke daftar pesanan'}
                 </Link>
                 <div className="mt-2">
-                    <h1 className="font-[var(--font-display)] text-[clamp(20px,2.2vw,25px)] font-semibold leading-tight tracking-[-0.015em] text-[#1E2420]">
+                    <h1 className="atelier-h1">
                         {mode === 'edit' && order
                             ? `Edit Pesanan ${order.order_number}`
                             : 'Buat Pesanan Baru'}
                     </h1>
-                    <p className="mt-1 text-sm text-[#525B54]">
-                        Seluruh rincian dihitung ulang oleh server saat disimpan; nominal memakai Rupiah bulat.
-                    </p>
                 </div>
             </div>
 
@@ -469,12 +474,12 @@ export function OrderForm({
                     ref={errorSummaryRef}
                     role="alert"
                     tabIndex={-1}
-                    className="mb-5 rounded-md border-2 border-[#991B1B] bg-[#FEF2F2] p-4 text-sm text-[#991B1B] focus:outline-none"
+                    className="mb-6 rounded-[8px] border-2 border-[#8A2619] bg-[#FCECE9] p-4 text-sm text-[#8A2619] focus:outline-none"
                 >
                     <div className="flex items-start gap-2.5">
                         <AlertCircle className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
                         <div>
-                            <h2 className="text-base font-bold text-[#991B1B]">
+                            <h2 className="text-base font-bold text-[#8A2619]">
                                 Ada bagian yang perlu dilengkapi sebelum menyimpan
                             </h2>
                             <ul className="mt-2 list-inside list-disc space-y-1">
@@ -495,7 +500,7 @@ export function OrderForm({
                                                         el.focus({ preventScroll: true });
                                                     }
                                                 }}
-                                                className="font-semibold underline underline-offset-2 hover:text-[#7F1D1D]"
+                                                className="font-semibold underline underline-offset-2 hover:text-[#6E1D12]"
                                             >
                                                 {msg}
                                             </a>
@@ -511,10 +516,10 @@ export function OrderForm({
             {hasPayments && order && (
                 <div
                     className={cn(
-                        'mb-5 flex items-start gap-3 rounded-md border p-4 text-sm',
+                        'mb-6 flex items-start gap-3 rounded-[8px] border p-4 text-sm',
                         belowReceived
-                            ? 'border-[#991B1B] bg-[#FEE2E2] text-[#991B1B]'
-                            : 'border-[#92400E]/30 bg-[#FEF3C7] text-[#92400E]',
+                            ? 'border-[#8A2619] bg-[#FCECE9] text-[#8A2619]'
+                            : 'border-[#DFC393] bg-[#FAF1E1] text-[#6E3D09]',
                     )}
                 >
                     <AlertTriangle className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
@@ -522,7 +527,7 @@ export function OrderForm({
                         <p className="font-bold">
                             Pesanan sudah menerima pembayaran {formatRupiah(order.received)}
                         </p>
-                        <p className="mt-1 text-[13px]">
+                        <p className="mt-1 text-sm">
                             {belowReceived
                                 ? `Total tagihan baru (${formatRupiah(grandTotal)}) tidak boleh kurang dari pembayaran yang sudah diterima.`
                                 : 'Mengubah harga, ongkir, atau jumlah item mewajibkan pengisian Alasan Perubahan di bawah.'}
@@ -532,23 +537,23 @@ export function OrderForm({
             )}
 
             <form id="order-main-form" onSubmit={handleSubmit} noValidate>
-                <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(310px,1fr)] lg:items-start">
-                    <div className="space-y-5">
+                <div className="grid grid-cols-1 gap-7 lg:grid-cols-[minmax(0,1.65fr)_minmax(320px,1fr)] lg:items-start">
+                    <div className="space-y-7">
                         {/* Seksi 1: Header Nota & Pelanggan */}
-                        <Card className="border-[#E3DED4] p-4 sm:p-5">
-                            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-                                <h2 className="text-base font-bold text-[#1E2420]">
-                                    1. Informasi Pemesan &amp; Nota
+                        <Card className="p-5 sm:p-6">
+                            <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-[#DED6C8] pb-4">
+                                <h2 className="atelier-h2">
+                                    1. Data Pemesan &amp; Tanggal Nota
                                 </h2>
                                 {!(hasPayments && mode === 'edit') && (
                                     <Button
                                         type="button"
                                         variant="secondary"
-                                        size="sm"
                                         onClick={openQuickModal}
+                                        className="min-w-[164px] shrink-0"
                                     >
                                         <UserPlus className="size-4" aria-hidden="true" />
-                                        + Pelanggan Baru
+                                        Pelanggan Baru
                                     </Button>
                                 )}
                             </div>
@@ -556,21 +561,21 @@ export function OrderForm({
                             {quickSuccessMessage && (
                                 <div
                                     role="status"
-                                    className="mb-4 rounded-md border border-[#166534]/30 bg-[#DCFCE7] px-3 py-2 text-xs font-semibold text-[#166534]"
+                                    className="mb-4 rounded-[8px] border border-[#B8D0C0] bg-[#EEF5F0] px-4 py-3 text-sm font-semibold text-[#164B2A]"
                                 >
                                     {quickSuccessMessage}
                                 </div>
                             )}
 
-                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                                 <FormField
                                     id="customer_id"
                                     label="Pelanggan"
                                     required
                                     hint={
                                         hasPayments && mode === 'edit'
-                                            ? 'Pelanggan tidak dapat diganti setelah pesanan menerima pembayaran.'
-                                            : 'Ketik nama atau nomor HP untuk mencari. Menambah pelanggan baru tidak menghapus draf bunga.'
+                                            ? 'Pelanggan terkunci karena sudah ada pembayaran.'
+                                            : undefined
                                     }
                                     error={activeErrors.customer_id}
                                 >
@@ -582,8 +587,8 @@ export function OrderForm({
                                             setCustomerId(val === null ? null : Number(val));
                                             clearFieldErrors('customer_id');
                                         }}
-                                        placeholder="Pilih atau cari nama/telepon pelanggan..."
-                                        emptyText="Pelanggan tidak cocok. Gunakan + Pelanggan Baru."
+                                        placeholder="Pilih atau cari pelanggan..."
+                                        emptyText="Pelanggan tidak ditemukan. Klik tombol Pelanggan Baru."
                                         invalid={Boolean(activeErrors.customer_id)}
                                         disabled={hasPayments && mode === 'edit'}
                                         describedBy={
@@ -597,11 +602,11 @@ export function OrderForm({
                                                     type="button"
                                                     variant="ghost"
                                                     size="sm"
-                                                    className="w-full justify-start text-[#143326]"
+                                                    className="w-full justify-start text-[#1D3B2A]"
                                                     onClick={openQuickModal}
                                                 >
                                                     <UserPlus className="size-4" aria-hidden="true" />
-                                                    + Tambah Pelanggan Baru
+                                                    Tambah Pelanggan Baru
                                                 </Button>
                                             ) : undefined
                                         }
@@ -629,7 +634,7 @@ export function OrderForm({
                                 </FormField>
                             </div>
 
-                            <div className="mt-4">
+                            <div className="mt-5">
                                 <FormField
                                     id="notes"
                                     label="Catatan Pesanan (opsional)"
@@ -652,7 +657,7 @@ export function OrderForm({
                             </div>
 
                             {mode === 'edit' && (
-                                <div className="mt-4">
+                                <div className="mt-5">
                                     <FormField
                                         id="change_reason"
                                         label={
@@ -663,8 +668,8 @@ export function OrderForm({
                                         required={hasPayments && financialChanged}
                                         hint={
                                             hasPayments && financialChanged
-                                                ? 'Wajib diisi karena nilai, ongkir, atau jumlah item berubah pada pesanan yang sudah menerima pembayaran.'
-                                                : 'Isi alasan perubahan jika melakukan penyesuaian harga atau daftar bunga.'
+                                                ? 'Wajib diisi karena nilai, ongkir, atau jumlah item berubah.'
+                                                : undefined
                                         }
                                         error={activeErrors.change_reason}
                                     >
@@ -687,42 +692,27 @@ export function OrderForm({
                             )}
                         </Card>
 
-                        {/* Seksi 2: Daftar Item Bunga (1..20) */}
-                        <Card className="border-[#E3DED4] p-4 sm:p-5">
-                            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-                                <div>
-                                    <h2
-                                        id="sec-order-items"
-                                        className="text-base font-bold text-[#1E2420]"
-                                    >
-                                        2. Daftar Rangkaian Bunga ({items.length}/{MAX_ITEMS})
-                                    </h2>
-                                    <p className="mt-0.5 text-[13px] text-[#525B54]">
-                                        Setiap baris dapat memiliki penerima, ucapan, jadwal kirim, dan ongkir berbeda.
-                                    </p>
-                                </div>
-                                <Button
-                                    type="button"
-                                    variant="secondary"
-                                    size="sm"
-                                    disabled={items.length >= MAX_ITEMS}
-                                    onClick={handleAddItem}
+                        {/* Seksi 2: Daftar Rangkaian Bunga - Tiap Rangkaian Kartu Terpisah + Tombol Panjang di Bawah */}
+                        <div className="space-y-5">
+                            <div className="flex items-center justify-between gap-2 px-0.5">
+                                <h2
+                                    id="sec-order-items"
+                                    className="atelier-h2"
                                 >
-                                    <Plus className="size-4" aria-hidden="true" />
-                                    Tambah Item Lain
-                                </Button>
+                                    2. Daftar Rangkaian Bunga ({items.length})
+                                </h2>
                             </div>
 
                             {activeErrors?.items && (
                                 <div
                                     role="alert"
-                                    className="mb-4 rounded-md border border-[#991B1B]/40 bg-[#FEE2E2] p-3 text-xs font-semibold text-[#991B1B]"
+                                    className="rounded-[8px] border border-[#E2B3AA] bg-[#FCECE9] p-4 text-sm font-semibold text-[#8A2619]"
                                 >
                                     {activeErrors.items}
                                 </div>
                             )}
 
-                            <div className="space-y-4">
+                            <div className="space-y-5">
                                 {items.map((item, idx) => {
                                     const itemStatusLocked = Boolean(
                                         item.id && item._initialStatus && item._initialStatus !== 'NEW',
@@ -739,54 +729,52 @@ export function OrderForm({
                                     );
 
                                     return (
-                                        <section
+                                        <Card
                                             key={item._key}
-                                            aria-label={`Rangkaian bunga ${idx + 1}`}
-                                            className="rounded-lg border border-[#E3DED4] bg-[#FAF8F4]/70 p-4"
+                                            className="p-5 sm:p-6"
                                         >
-                                            <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-[#E3DED4] pb-3">
-                                                <div className="flex flex-wrap items-center gap-2">
-                                                    <h3 className="text-sm font-bold text-[#143326]">
-                                                        Bunga #{idx + 1}
-                                                    </h3>
-                                                    {mode === 'edit' && item.id && (
-                                                        <Badge tone={statusMeta.tone}>
-                                                            {statusMeta.label}
-                                                        </Badge>
-                                                    )}
-                                                    <span className="text-xs font-bold text-[#1E2420] tabular-nums">
-                                                        Subtotal {formatRupiah(lineTotal)}
-                                                    </span>
-                                                </div>
+                                            <section aria-label={`Rangkaian bunga ${idx + 1}`}>
+                                                <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-[#DED6C8] pb-4">
+                                                    <div className="flex flex-wrap items-center gap-2.5">
+                                                        <h3 className="text-lg font-bold text-[#1C211E]">
+                                                            Rangkaian #{idx + 1}
+                                                        </h3>
+                                                        {mode === 'edit' && item.id && (
+                                                            <Badge tone={statusMeta.tone}>
+                                                                {statusMeta.label}
+                                                            </Badge>
+                                                        )}
+                                                        <span className="rounded-[4px] bg-[#EFE9DE] px-3 py-1 text-sm font-bold text-[#1D3B2A] tabular-nums">
+                                                            Subtotal {formatRupiah(lineTotal)}
+                                                        </span>
+                                                    </div>
 
-                                                <div className="flex flex-wrap items-center gap-2">
-                                                    <Button
-                                                        type="button"
-                                                        variant="secondary"
-                                                        size="sm"
-                                                        disabled={items.length >= MAX_ITEMS}
-                                                        onClick={() => handleDuplicateItem(idx)}
-                                                    >
-                                                        <Copy className="size-3.5" aria-hidden="true" />
-                                                        Duplikat Item
-                                                    </Button>
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        disabled={!canDelete}
-                                                        onClick={() => handleRemoveItem(idx)}
-                                                        className={
-                                                            canDelete
-                                                                ? 'text-[#991B1B] hover:bg-[#FEE2E2] hover:text-[#991B1B]'
-                                                                : undefined
-                                                        }
-                                                    >
-                                                        <Trash2 className="size-3.5" aria-hidden="true" />
-                                                        Hapus
-                                                    </Button>
+                                                    <div className="flex flex-wrap items-center gap-2.5">
+                                                        <Button
+                                                            type="button"
+                                                            variant="secondary"
+                                                            disabled={items.length >= MAX_ITEMS}
+                                                            onClick={() => handleDuplicateItem(idx)}
+                                                            className="min-w-[112px]"
+                                                        >
+                                                            <Copy className="size-4" aria-hidden="true" />
+                                                            Duplikat
+                                                        </Button>
+                                                        <Button
+                                                            type="button"
+                                                            variant="secondary"
+                                                            disabled={!canDelete}
+                                                            onClick={() => handleRemoveItem(idx)}
+                                                            className={cn(
+                                                                'min-w-[112px]',
+                                                                canDelete && 'border-[#E2B3AA] text-[#8A2619] hover:bg-[#FCECE9] hover:text-[#8A2619]',
+                                                            )}
+                                                        >
+                                                            <Trash2 className="size-4" aria-hidden="true" />
+                                                            Hapus
+                                                        </Button>
+                                                    </div>
                                                 </div>
-                                            </div>
 
                                             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                                 <FormField
@@ -978,19 +966,19 @@ export function OrderForm({
                                                 </FormField>
                                             </div>
 
-                                            <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                                            <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2">
                                                 <div className="space-y-1.5">
-                                                    <span className="block text-sm font-semibold text-[#1E2420]">
+                                                    <span className="block text-sm font-semibold text-[#1C211E]">
                                                         Skema ongkos kirim
                                                         <span
-                                                            className="ml-0.5 text-[#8C3B4A]"
+                                                            className="ml-0.5 text-[#9A3B22]"
                                                             aria-hidden="true"
                                                         >
                                                             *
                                                         </span>
                                                     </span>
                                                     <div
-                                                        className="grid grid-cols-1 gap-2 sm:grid-cols-2"
+                                                        className="grid grid-cols-1 gap-2.5 sm:grid-cols-2"
                                                         role="group"
                                                         aria-label={`Skema ongkos kirim bunga ${idx + 1}`}
                                                     >
@@ -1007,10 +995,10 @@ export function OrderForm({
                                                                 )
                                                             }
                                                             className={cn(
-                                                                'min-h-[44px] rounded-md border-[1.5px] px-3 py-2 text-left text-xs font-bold transition-colors',
+                                                                'inline-flex min-h-[48px] items-center justify-center rounded-[8px] border-[1.5px] px-3.5 py-2.5 text-center text-sm font-semibold leading-snug transition-colors',
                                                                 item.shipping_mode === 'INCLUDED'
-                                                                    ? 'border-[#143326] bg-[#E6EFEA] text-[#143326]'
-                                                                    : 'border-[#858E87] bg-white text-[#525B54] hover:bg-[#F1EDE6]',
+                                                                    ? 'border-[#1D3B2A] bg-[#EEF5F0] text-[#164B2A]'
+                                                                    : 'border-[#7D776C] bg-[#FFFDF9] text-[#545852] hover:bg-[#EFE9DE]',
                                                             )}
                                                         >
                                                             Sudah termasuk harga bunga
@@ -1028,10 +1016,10 @@ export function OrderForm({
                                                                 )
                                                             }
                                                             className={cn(
-                                                                'min-h-[44px] rounded-md border-[1.5px] px-3 py-2 text-left text-xs font-bold transition-colors',
+                                                                'inline-flex min-h-[48px] items-center justify-center rounded-[8px] border-[1.5px] px-3.5 py-2.5 text-center text-sm font-semibold leading-snug transition-colors',
                                                                 item.shipping_mode === 'SEPARATE'
-                                                                    ? 'border-[#143326] bg-[#E6EFEA] text-[#143326]'
-                                                                    : 'border-[#858E87] bg-white text-[#525B54] hover:bg-[#F1EDE6]',
+                                                                    ? 'border-[#1D3B2A] bg-[#EEF5F0] text-[#164B2A]'
+                                                                    : 'border-[#7D776C] bg-[#FFFDF9] text-[#545852] hover:bg-[#EFE9DE]',
                                                             )}
                                                         >
                                                             Ditagih terpisah
@@ -1040,7 +1028,7 @@ export function OrderForm({
                                                     {activeErrors?.[`items.${idx}.shipping_mode`] && (
                                                         <p
                                                             role="alert"
-                                                            className="text-[13px] font-semibold text-[#991B1B]"
+                                                            className="text-[13px] font-semibold text-[#8A2619]"
                                                         >
                                                             {activeErrors[`items.${idx}.shipping_mode`]}
                                                         </p>
@@ -1053,8 +1041,8 @@ export function OrderForm({
                                                     required={item.shipping_mode === 'SEPARATE'}
                                                     hint={
                                                         item.shipping_mode === 'INCLUDED'
-                                                            ? 'Dikunci Rp0 karena ongkir sudah termasuk harga bunga.'
-                                                            : 'Wajib lebih dari Rp0 karena ongkir ditagih terpisah.'
+                                                            ? 'Otomatis Rp0 karena sudah termasuk harga bunga.'
+                                                            : 'Isi biaya ongkir (lebih dari Rp0).'
                                                     }
                                                     error={activeErrors?.[`items.${idx}.shipping_fee`]}
                                                 >
@@ -1150,51 +1138,103 @@ export function OrderForm({
                                                     </FormField>
                                                 )}
                                             </div>
-                                        </section>
+                                            </section>
+                                        </Card>
                                     );
                                 })}
                             </div>
-                        </Card>
+
+                            {/* Tombol Tambah Rangkaian Panjang di Bawah & Luar Kartu Item */}
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                size="lg"
+                                disabled={items.length >= MAX_ITEMS}
+                                onClick={handleAddItem}
+                                className="min-h-[54px] w-full justify-center border-2 border-dashed border-[#7D776C] bg-[#FFFDF9] text-[15px] font-bold text-[#1D3B2A] hover:border-[#1D3B2A] hover:bg-[#EFE9DE]"
+                            >
+                                <Plus className="size-5" aria-hidden="true" />
+                                Tambah Rangkaian Bunga ({items.length}/{MAX_ITEMS})
+                            </Button>
+
+                            {/* Ringkasan Mobile/Tablet (< 1024px) agar rincian & Batal tetap mudah dijangkau */}
+                            <Card className="bg-[#FFFDF9] p-5 sm:p-6 lg:hidden">
+                                <h2 className="atelier-h2 mb-4">Ringkasan Tagihan</h2>
+                                <dl className="space-y-3 text-[15px]">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <dt className="text-[#545852]">Subtotal Rangkaian</dt>
+                                        <dd className="font-bold text-[#1C211E] tabular-nums">
+                                            {formatRupiah(productTotal)}
+                                        </dd>
+                                    </div>
+                                    <div className="flex items-center justify-between gap-2">
+                                        <dt className="text-[#545852]">Ongkos Kirim Terpisah</dt>
+                                        <dd className="font-bold text-[#1C211E] tabular-nums">
+                                            {formatRupiah(shippingTotal)}
+                                        </dd>
+                                    </div>
+                                    <div className="flex items-center justify-between gap-2 border-t border-dashed border-[#C5BBA8] pt-3.5">
+                                        <dt className="font-bold text-[#1C211E]">Total Tagihan</dt>
+                                        <dd className="text-2xl font-bold text-[#1D3B2A] tabular-nums">
+                                            {formatRupiah(grandTotal)}
+                                        </dd>
+                                    </div>
+                                </dl>
+                                <div className="mt-5 grid grid-cols-2 gap-3 border-t border-[#DED6C8] pt-4">
+                                    <Button asChild variant="secondary" className="w-full">
+                                        <Link href={backHref}>Batal</Link>
+                                    </Button>
+                                    <Button
+                                        type="submit"
+                                        variant="primary"
+                                        disabled={isSubmitting || belowReceived}
+                                        className="w-full"
+                                    >
+                                        {isSubmitting
+                                            ? 'Menyimpan...'
+                                            : mode === 'edit'
+                                              ? 'Simpan Perubahan'
+                                              : 'Simpan Pesanan'}
+                                    </Button>
+                                </div>
+                            </Card>
+                        </div>
                     </div>
 
-                    {/* Panel Kanan Sticky Desktop (>= 1024px) */}
+                    {/* Panel Kanan Sticky Desktop (>= 1024px) - Ringkasan Tagihan */}
                     <aside
                         aria-labelledby="sec-summary-receipt"
                         className="hidden lg:sticky lg:top-20 lg:block"
                     >
-                        <Card className="border-[#E3DED4] p-5">
+                        <Card className="bg-[#FFFDF9] p-6">
                             <h2
                                 id="sec-summary-receipt"
-                                className="mb-3 text-base font-bold text-[#1E2420]"
+                                className="atelier-h2 mb-4"
                             >
-                                Ringkasan Hitungan Nota
+                                Ringkasan Tagihan
                             </h2>
-                            <dl className="space-y-2.5 text-sm">
+                            <dl className="space-y-3 text-[15px]">
                                 <div className="flex items-center justify-between gap-2">
-                                    <dt className="text-[#525B54]">Subtotal Rangkaian</dt>
-                                    <dd className="font-bold text-[#1E2420] tabular-nums">
+                                    <dt className="text-[#545852]">Subtotal Rangkaian</dt>
+                                    <dd className="font-bold text-[#1C211E] tabular-nums">
                                         {formatRupiah(productTotal)}
                                     </dd>
                                 </div>
                                 <div className="flex items-center justify-between gap-2">
-                                    <dt className="text-[#525B54]">Ongkos Kirim Terpisah</dt>
-                                    <dd className="font-bold text-[#1E2420] tabular-nums">
+                                    <dt className="text-[#545852]">Ongkos Kirim Terpisah</dt>
+                                    <dd className="font-bold text-[#1C211E] tabular-nums">
                                         {formatRupiah(shippingTotal)}
                                     </dd>
                                 </div>
-                                <div className="flex items-center justify-between gap-2 border-t-[1.5px] border-[#E3DED4] pt-3">
-                                    <dt className="font-bold text-[#1E2420]">Perkiraan Total</dt>
-                                    <dd className="text-xl font-bold text-[#143326] tabular-nums">
+                                <div className="flex items-center justify-between gap-2 border-t border-dashed border-[#C5BBA8] pt-3.5">
+                                    <dt className="font-bold text-[#1C211E]">Total Tagihan</dt>
+                                    <dd className="text-2xl font-bold text-[#1D3B2A] tabular-nums">
                                         {formatRupiah(grandTotal)}
                                     </dd>
                                 </div>
                             </dl>
 
-                            <p className="mt-3 text-[13px] text-[#525B54]">
-                                Nominal Rupiah bulat tanpa desimal. Total resmi dikunci server saat Anda menekan simpan.
-                            </p>
-
-                            <div className="mt-5">
+                            <div className="mt-5 space-y-2.5 border-t border-[#DED6C8] pt-4">
                                 <Button
                                     type="submit"
                                     variant="primary"
@@ -1208,31 +1248,12 @@ export function OrderForm({
                                           ? 'Simpan Perubahan'
                                           : 'Simpan Pesanan'}
                                 </Button>
+                                <Button asChild variant="secondary" size="default" className="w-full">
+                                    <Link href={backHref}>Batal</Link>
+                                </Button>
                             </div>
                         </Card>
                     </aside>
-                </div>
-
-                {/* Bilah Simpan Mobile/Tablet (< 1024px) */}
-                <div className="fixed inset-x-0 bottom-[calc(64px+env(safe-area-inset-bottom))] z-20 flex items-center justify-between gap-3 border-t border-[#E3DED4] bg-white px-4 py-3 md:bottom-0 lg:hidden">
-                    <div className="min-w-0">
-                        <p className="text-xs font-semibold text-[#525B54]">Perkiraan Total Tagihan</p>
-                        <p className="truncate text-lg font-bold text-[#143326] tabular-nums">
-                            {formatRupiah(grandTotal)}
-                        </p>
-                    </div>
-                    <Button
-                        type="submit"
-                        variant="primary"
-                        disabled={isSubmitting || belowReceived}
-                        className="shrink-0"
-                    >
-                        {isSubmitting
-                            ? 'Menyimpan...'
-                            : mode === 'edit'
-                              ? 'Simpan Perubahan'
-                              : 'Simpan Pesanan'}
-                    </Button>
                 </div>
             </form>
 
@@ -1242,13 +1263,13 @@ export function OrderForm({
                 onClose={() => setQuickModalOpen(false)}
                 isSubmitting={isSavingQuickCustomer}
                 title="Tambah Pelanggan Baru"
-                description="Pelanggan baru akan langsung dipilih pada pesanan ini tanpa menghapus draf bunga."
+                description="Pelanggan baru langsung dipilih pada pesanan ini."
             >
                 <form onSubmit={handleQuickCustomerSubmit} noValidate className="space-y-4">
                     {quickErrors.form && (
                         <div
                             role="alert"
-                            className="rounded-md border border-[#991B1B]/40 bg-[#FEE2E2] p-3 text-xs font-semibold text-[#991B1B]"
+                            className="rounded-[8px] border border-[#E2B3AA] bg-[#FCECE9] p-3 text-sm font-semibold text-[#8A2619]"
                         >
                             {quickErrors.form}
                         </div>
@@ -1305,12 +1326,13 @@ export function OrderForm({
                         />
                     </FormField>
 
-                    <div className="flex flex-col-reverse gap-2 border-t border-[#E3DED4] pt-4 sm:flex-row sm:justify-end">
+                    <div className="flex flex-col-reverse gap-2.5 border-t border-[#DED6C8] pt-4 sm:flex-row sm:justify-end">
                         <Button
                             type="button"
                             variant="secondary"
                             disabled={isSavingQuickCustomer}
                             onClick={() => setQuickModalOpen(false)}
+                            className="w-full sm:w-auto sm:min-w-[120px]"
                         >
                             Batal
                         </Button>
@@ -1318,6 +1340,7 @@ export function OrderForm({
                             type="submit"
                             variant="primary"
                             disabled={isSavingQuickCustomer}
+                            className="w-full sm:w-auto sm:min-w-[144px]"
                         >
                             {isSavingQuickCustomer ? 'Menyimpan...' : 'Simpan & Pilih'}
                         </Button>

@@ -17,7 +17,7 @@ class ReportService
     public function resolvePeriod(?string $preset = '30d', ?string $from = null, ?string $to = null): array
     {
         $now = Carbon::now('Asia/Jakarta');
-        $validPresets = ['today', '7d', '30d', 'this_month', 'last_month', 'custom'];
+        $validPresets = ['today', '7d', '30d', 'this_month', 'last_month', 'this_year', 'all_time', 'custom'];
         $preset = in_array($preset, $validPresets, true) ? $preset : '30d';
 
         if ($preset === 'custom') {
@@ -42,7 +42,7 @@ class ReportService
         } elseif ($preset === '7d') {
             $fromStr = $now->copy()->subDays(6)->format('Y-m-d');
             $toStr = $now->format('Y-m-d');
-            $label = '7 Hari Terakhir ('.$now->copy()->subDays(6)->format('d/m/Y').' – '.$now->format('d/m/Y').')';
+            $label = '7 Hari Terakhir ('.$now->copy()->subDays(6)->format('d/m/Y').' - '.$now->format('d/m/Y').')';
         } elseif ($preset === 'this_month') {
             $fromStr = $now->copy()->startOfMonth()->format('Y-m-d');
             $toStr = $now->copy()->endOfMonth()->format('Y-m-d');
@@ -52,16 +52,25 @@ class ReportService
             $fromStr = $lastMonth->copy()->startOfMonth()->format('Y-m-d');
             $toStr = $lastMonth->copy()->endOfMonth()->format('Y-m-d');
             $label = 'Bulan Lalu ('.$lastMonth->translatedFormat('F Y').')';
+        } elseif ($preset === 'this_year') {
+            $fromStr = $now->copy()->startOfYear()->format('Y-m-d');
+            $toStr = $now->format('Y-m-d');
+            $label = 'Tahun Ini ('.$now->format('Y').')';
+        } elseif ($preset === 'all_time') {
+            $earliest = $this->findEarliestRecordDate($now);
+            $fromStr = $earliest->format('Y-m-d');
+            $toStr = $now->format('Y-m-d');
+            $label = 'Semua Waktu ('.$earliest->format('d/m/Y').' - '.$now->format('d/m/Y').')';
         } elseif ($preset === 'custom') {
             /** @var string $fromStr */
             /** @var string $toStr */
-            $label = 'Kustom ('.Carbon::parse($fromStr)->format('d/m/Y').' – '.Carbon::parse($toStr)->format('d/m/Y').')';
+            $label = 'Kustom ('.Carbon::parse($fromStr)->format('d/m/Y').' - '.Carbon::parse($toStr)->format('d/m/Y').')';
         } else {
             // Default 30d
             $preset = '30d';
             $fromStr = $now->copy()->subDays(29)->format('Y-m-d');
             $toStr = $now->format('Y-m-d');
-            $label = '30 Hari Terakhir ('.$now->copy()->subDays(29)->format('d/m/Y').' – '.$now->format('d/m/Y').')';
+            $label = '30 Hari Terakhir ('.$now->copy()->subDays(29)->format('d/m/Y').' - '.$now->format('d/m/Y').')';
         }
 
         return [
@@ -75,7 +84,7 @@ class ReportService
     /**
      * Gathers all operational and financial metrics for the resolved period.
      */
-    public function getFinancialReport(?string $preset = '30d', ?string $from = null, ?string $to = null): array
+    public function getFinancialReport(?string $preset = '30d', ?string $from = null, ?string $to = null, ?string $granularity = null): array
     {
         $period = $this->resolvePeriod($preset, $from, $to);
         $fromStr = $period['from'];
@@ -191,8 +200,11 @@ class ReportService
             'PAID' => $paidCount,
         ];
 
-        // 6. Daily trend data
+        // 6. Daily trend data (max 92 days) + grouped chart series & expense breakdown
         $dailyTrends = $this->buildDailyTrends($fromStr, $toStr);
+        $resolvedGranularity = $this->resolveGranularity($granularity, $period);
+        $chartSeries = $this->buildChartSeries($resolvedGranularity, $fromStr, $toStr, $dailyTrends);
+        $expenseBreakdown = $this->buildExpenseBreakdown($fromStr, $toEnd, $cashOut);
 
         return [
             'period' => $period,
@@ -209,7 +221,9 @@ class ReportService
             ],
             'fulfillment_breakdown' => $fulfillmentBreakdown,
             'payment_breakdown' => $paymentBreakdown,
+            'expense_breakdown' => $expenseBreakdown,
             'daily_trends' => $dailyTrends,
+            'chart_series' => $chartSeries,
             'notes' => [
                 'cash_diff_label' => 'Selisih Kas',
                 'cash_diff_disclaimer' => 'Selisih kas merupakan penerimaan kas dikurangi pengeluaran kas pada periode ini, BUKAN laba bersih usaha.',
@@ -236,14 +250,76 @@ class ReportService
         $startStr = $startDate->format('Y-m-d');
         $endStr = $endDate->format('Y-m-d').' 23:59:59';
 
+        $dailyMap = $this->fetchDailyActivityMap($startStr, $endStr);
+        $period = CarbonPeriod::create($startDate, $endDate);
+        $trends = [];
+
+        foreach ($period as $date) {
+            $d = $date->format('Y-m-d');
+            $row = $dailyMap[$d] ?? null;
+
+            $trends[] = [
+                'date' => $d,
+                'formatted_date' => $date->format('d/m'),
+                'orders_count' => (int) ($row['orders_count'] ?? 0),
+                'billed' => (int) ($row['billed'] ?? 0),
+                'cash_in' => (int) ($row['cash_in'] ?? 0),
+                'cash_out' => (int) ($row['cash_out'] ?? 0),
+            ];
+        }
+
+        return $trends;
+    }
+
+    protected function resolveGranularity(?string $granularity, array $period): string
+    {
+        $valid = ['daily', 'weekly', 'monthly', 'yearly'];
+        if (is_string($granularity) && in_array($granularity, $valid, true)) {
+            return $granularity;
+        }
+
+        $days = Carbon::parse($period['from'])->diffInDays(Carbon::parse($period['to'])) + 1;
+        if (($period['preset'] ?? '') === 'all_time' && $days > 366) {
+            return 'yearly';
+        }
+        if (($period['preset'] ?? '') === 'this_year' || $days > 92) {
+            return 'monthly';
+        }
+        if ($days > 14) {
+            return 'weekly';
+        }
+
+        return 'daily';
+    }
+
+    /**
+     * Fetches daily order, payment (POSTED), and expense (POSTED) totals indexed by Y-m-d.
+     *
+     * @return array<string, array{orders_count: int, billed: int, cash_in: int, cash_out: int}>
+     */
+    protected function fetchDailyActivityMap(string $startStr, string $endStr): array
+    {
+        $map = [];
+        $ensure = function (string $dateKey) use (&$map): void {
+            if (! isset($map[$dateKey])) {
+                $map[$dateKey] = ['orders_count' => 0, 'billed' => 0, 'cash_in' => 0, 'cash_out' => 0];
+            }
+        };
+
         $ordersDaily = DB::table('orders')
             ->select('order_date')
             ->selectRaw('COUNT(*) as count, SUM(total_amount) as billed')
             ->where('order_date', '>=', $startStr)
             ->where('order_date', '<=', $endStr)
             ->groupBy('order_date')
-            ->get()
-            ->keyBy(fn ($item) => Carbon::parse($item->order_date)->format('Y-m-d'));
+            ->get();
+
+        foreach ($ordersDaily as $row) {
+            $d = Carbon::parse($row->order_date)->format('Y-m-d');
+            $ensure($d);
+            $map[$d]['orders_count'] += (int) $row->count;
+            $map[$d]['billed'] += (int) $row->billed;
+        }
 
         $paymentsDaily = DB::table('payments')
             ->select('payment_date')
@@ -252,8 +328,13 @@ class ReportService
             ->where('payment_date', '>=', $startStr)
             ->where('payment_date', '<=', $endStr)
             ->groupBy('payment_date')
-            ->get()
-            ->keyBy(fn ($item) => Carbon::parse($item->payment_date)->format('Y-m-d'));
+            ->get();
+
+        foreach ($paymentsDaily as $row) {
+            $d = Carbon::parse($row->payment_date)->format('Y-m-d');
+            $ensure($d);
+            $map[$d]['cash_in'] += (int) $row->cash_in;
+        }
 
         $expensesDaily = DB::table('expenses')
             ->select('expense_date')
@@ -262,29 +343,267 @@ class ReportService
             ->where('expense_date', '>=', $startStr)
             ->where('expense_date', '<=', $endStr)
             ->groupBy('expense_date')
-            ->get()
-            ->keyBy(fn ($item) => Carbon::parse($item->expense_date)->format('Y-m-d'));
+            ->get();
 
-        $period = CarbonPeriod::create($startDate, $endDate);
-        $trends = [];
+        foreach ($expensesDaily as $row) {
+            $d = Carbon::parse($row->expense_date)->format('Y-m-d');
+            $ensure($d);
+            $map[$d]['cash_out'] += (int) $row->cash_out;
+        }
 
-        foreach ($period as $date) {
-            $d = $date->format('Y-m-d');
-            $order = $ordersDaily->get($d);
-            $payment = $paymentsDaily->get($d);
-            $expense = $expensesDaily->get($d);
+        return $map;
+    }
 
-            $trends[] = [
-                'date' => $d,
-                'formatted_date' => $date->format('d/m'),
-                'orders_count' => (int) ($order->count ?? 0),
-                'billed' => (int) ($order->billed ?? 0),
-                'cash_in' => (int) ($payment->cash_in ?? 0),
-                'cash_out' => (int) ($expense->cash_out ?? 0),
+    protected function findEarliestRecordDate(Carbon $fallbackNow): Carbon
+    {
+        $candidates = array_filter([
+            DB::table('orders')->min('order_date'),
+            DB::table('payments')->where('status', 'POSTED')->min('payment_date'),
+            DB::table('expenses')->where('status', 'POSTED')->min('expense_date'),
+        ]);
+
+        if (empty($candidates)) {
+            return $fallbackNow->copy()->startOfYear();
+        }
+
+        $dates = array_map(fn ($d) => Carbon::parse($d, 'Asia/Jakarta')->startOfDay(), $candidates);
+        usort($dates, fn (Carbon $a, Carbon $b) => $a->getTimestamp() <=> $b->getTimestamp());
+
+        return $dates[0];
+    }
+
+    /**
+     * Builds grouped trend series for Harian / Mingguan / Bulanan / Tahunan visualizations.
+     *
+     * Every series mode strictly aggregates only activity within [$from, $to].
+     * Daily mode keeps a 92-day performance cap and explicitly signals truncation.
+     */
+    protected function buildChartSeries(string $granularity, string $from, string $to, array $dailyTrends): array
+    {
+        $fromDate = Carbon::parse($from, 'Asia/Jakarta')->startOfDay();
+        $toDate = Carbon::parse($to, 'Asia/Jakarta')->startOfDay();
+        $totalPeriodDays = (int) $fromDate->diffInDays($toDate) + 1;
+
+        if ($granularity === 'daily') {
+            $points = array_map(function (array $day): array {
+                return [
+                    'key' => $day['date'],
+                    'label' => $day['formatted_date'],
+                    'full_label' => Carbon::parse($day['date'])->locale('id')->translatedFormat('d M Y'),
+                    'orders_count' => $day['orders_count'],
+                    'billed' => $day['billed'],
+                    'cash_in' => $day['cash_in'],
+                    'cash_out' => $day['cash_out'],
+                    'cash_diff' => $day['cash_in'] - $day['cash_out'],
+                ];
+            }, $dailyTrends);
+
+            $coveredDays = count($dailyTrends);
+            $isTruncated = $totalPeriodDays > $coveredDays;
+            $first = $dailyTrends[0]['date'] ?? $from;
+            $last = $dailyTrends[$coveredDays - 1]['date'] ?? $to;
+            $firstFmt = Carbon::parse($first, 'Asia/Jakarta')->format('d/m/Y');
+            $lastFmt = Carbon::parse($last, 'Asia/Jakarta')->format('d/m/Y');
+
+            $notice = $isTruncated
+                ? "Grafik harian menampilkan {$coveredDays} hari terakhir ({$firstFmt} - {$lastFmt}) dari total {$totalPeriodDays} hari periode demi menjaga keterbacaan. Pilih Mingguan atau Bulanan untuk melihat seluruh periode; ringkasan angka tetap menghitung seluruh periode."
+                : null;
+
+            return [
+                'granularity' => 'daily',
+                'range_label' => "Per Hari ({$firstFmt} - {$lastFmt})",
+                'is_truncated' => $isTruncated,
+                'total_period_days' => $totalPeriodDays,
+                'covered_days' => $coveredDays,
+                'notice' => $notice,
+                'points' => $points,
             ];
         }
 
-        return $trends;
+        $raw = $this->fetchDailyActivityMap($fromDate->format('Y-m-d'), $toDate->format('Y-m-d').' 23:59:59');
+
+        if ($granularity === 'weekly') {
+            $buckets = [];
+            $cursor = $fromDate->copy();
+            while ($cursor->lte($toDate)) {
+                $fullWeekStart = $cursor->copy()->startOfWeek(Carbon::MONDAY)->startOfDay();
+                $fullWeekEnd = $cursor->copy()->endOfWeek(Carbon::SUNDAY)->startOfDay();
+                $wkEnd = $fullWeekEnd->gt($toDate) ? $toDate->copy() : $fullWeekEnd->copy();
+                $isPartial = $cursor->gt($fullWeekStart) || $wkEnd->lt($fullWeekEnd);
+
+                $key = $cursor->format('o-\WW');
+                $buckets[$key] = [
+                    'key' => $key,
+                    'label' => $cursor->format('d/m'),
+                    'full_label' => $cursor->format('d/m/Y').' - '.$wkEnd->format('d/m/Y').($isPartial ? ' (parsial)' : ''),
+                    'orders_count' => 0,
+                    'billed' => 0,
+                    'cash_in' => 0,
+                    'cash_out' => 0,
+                    'cash_diff' => 0,
+                ];
+                $cursor = $wkEnd->copy()->addDay()->startOfDay();
+            }
+
+            foreach ($raw as $dateStr => $row) {
+                $d = Carbon::parse($dateStr, 'Asia/Jakarta')->startOfDay();
+                $key = $d->format('o-\WW');
+                if (! isset($buckets[$key])) {
+                    continue;
+                }
+                $buckets[$key]['orders_count'] += $row['orders_count'];
+                $buckets[$key]['billed'] += $row['billed'];
+                $buckets[$key]['cash_in'] += $row['cash_in'];
+                $buckets[$key]['cash_out'] += $row['cash_out'];
+                $buckets[$key]['cash_diff'] = $buckets[$key]['cash_in'] - $buckets[$key]['cash_out'];
+            }
+
+            return [
+                'granularity' => 'weekly',
+                'range_label' => 'Per Minggu ('.$fromDate->format('d/m/Y').' - '.$toDate->format('d/m/Y').')',
+                'is_truncated' => false,
+                'total_period_days' => $totalPeriodDays,
+                'covered_days' => $totalPeriodDays,
+                'notice' => null,
+                'points' => array_values($buckets),
+            ];
+        }
+
+        if ($granularity === 'monthly') {
+            $buckets = [];
+            $cursor = $fromDate->copy()->startOfMonth();
+            $endMonth = $toDate->copy()->startOfMonth();
+
+            while ($cursor->lte($endMonth)) {
+                $monthStart = $cursor->copy();
+                $monthEnd = $cursor->copy()->endOfMonth()->startOfDay();
+                $activeStart = $monthStart->lt($fromDate) ? $fromDate->copy() : $monthStart->copy();
+                $activeEnd = $monthEnd->gt($toDate) ? $toDate->copy() : $monthEnd->copy();
+                $isPartial = $activeStart->gt($monthStart) || $activeEnd->lt($monthEnd);
+
+                $key = $cursor->format('Y-m');
+                $monthName = $cursor->locale('id')->translatedFormat('F Y');
+                $fullLabel = $isPartial
+                    ? "{$monthName} ({$activeStart->format('d/m')} - {$activeEnd->format('d/m')})"
+                    : $monthName;
+
+                $buckets[$key] = [
+                    'key' => $key,
+                    'label' => $cursor->locale('id')->translatedFormat('M y'),
+                    'full_label' => $fullLabel,
+                    'orders_count' => 0,
+                    'billed' => 0,
+                    'cash_in' => 0,
+                    'cash_out' => 0,
+                    'cash_diff' => 0,
+                ];
+                $cursor->addMonth();
+            }
+
+            foreach ($raw as $dateStr => $row) {
+                $key = substr($dateStr, 0, 7);
+                if (! isset($buckets[$key])) {
+                    continue;
+                }
+                $buckets[$key]['orders_count'] += $row['orders_count'];
+                $buckets[$key]['billed'] += $row['billed'];
+                $buckets[$key]['cash_in'] += $row['cash_in'];
+                $buckets[$key]['cash_out'] += $row['cash_out'];
+                $buckets[$key]['cash_diff'] = $buckets[$key]['cash_in'] - $buckets[$key]['cash_out'];
+            }
+
+            return [
+                'granularity' => 'monthly',
+                'range_label' => 'Per Bulan ('.$fromDate->format('d/m/Y').' - '.$toDate->format('d/m/Y').')',
+                'is_truncated' => false,
+                'total_period_days' => $totalPeriodDays,
+                'covered_days' => $totalPeriodDays,
+                'notice' => null,
+                'points' => array_values($buckets),
+            ];
+        }
+
+        // yearly: strictly years covered by [$fromDate, $toDate] (partial edge years noted)
+        $startYear = (int) $fromDate->format('Y');
+        $endYear = (int) $toDate->format('Y');
+
+        $buckets = [];
+        for ($yr = $startYear; $yr <= $endYear; $yr++) {
+            $yearStart = Carbon::createFromDate($yr, 1, 1, 'Asia/Jakarta')->startOfDay();
+            $yearEnd = Carbon::createFromDate($yr, 12, 31, 'Asia/Jakarta')->startOfDay();
+            $activeStart = $yearStart->lt($fromDate) ? $fromDate->copy() : $yearStart->copy();
+            $activeEnd = $yearEnd->gt($toDate) ? $toDate->copy() : $yearEnd->copy();
+            $isPartial = $activeStart->gt($yearStart) || $activeEnd->lt($yearEnd);
+
+            $key = (string) $yr;
+            $fullLabel = $isPartial
+                ? "Tahun {$key} ({$activeStart->format('d/m')} - {$activeEnd->format('d/m')})"
+                : "Tahun {$key}";
+
+            $buckets[$key] = [
+                'key' => $key,
+                'label' => $key,
+                'full_label' => $fullLabel,
+                'orders_count' => 0,
+                'billed' => 0,
+                'cash_in' => 0,
+                'cash_out' => 0,
+                'cash_diff' => 0,
+            ];
+        }
+
+        foreach ($raw as $dateStr => $row) {
+            $key = substr($dateStr, 0, 4);
+            if (! isset($buckets[$key])) {
+                continue;
+            }
+            $buckets[$key]['orders_count'] += $row['orders_count'];
+            $buckets[$key]['billed'] += $row['billed'];
+            $buckets[$key]['cash_in'] += $row['cash_in'];
+            $buckets[$key]['cash_out'] += $row['cash_out'];
+            $buckets[$key]['cash_diff'] = $buckets[$key]['cash_in'] - $buckets[$key]['cash_out'];
+        }
+
+        return [
+            'granularity' => 'yearly',
+            'range_label' => 'Per Tahun ('.$fromDate->format('d/m/Y').' - '.$toDate->format('d/m/Y').')',
+            'is_truncated' => false,
+            'total_period_days' => $totalPeriodDays,
+            'covered_days' => $totalPeriodDays,
+            'notice' => null,
+            'points' => array_values($buckets),
+        ];
+    }
+
+    /**
+     * Breakdown of POSTED expenses by category inside the active report window.
+     *
+     * @return array<int, array{category: string, amount: int, count: int, percent: int}>
+     */
+    protected function buildExpenseBreakdown(string $fromStr, string $toEnd, int $totalCashOut): array
+    {
+        $rows = DB::table('expenses')
+            ->leftJoin('expense_categories', 'expense_categories.id', '=', 'expenses.expense_category_id')
+            ->where('expenses.status', 'POSTED')
+            ->where('expenses.expense_date', '>=', $fromStr)
+            ->where('expenses.expense_date', '<=', $toEnd)
+            ->selectRaw("COALESCE(expense_categories.name, 'Lainnya') as category_name")
+            ->selectRaw('SUM(expenses.amount) as total_amount, COUNT(*) as tx_count')
+            ->groupBy('expense_categories.id', 'expense_categories.name')
+            ->orderByDesc('total_amount')
+            ->get();
+
+        return $rows->map(function ($row) use ($totalCashOut): array {
+            $amt = (int) $row->total_amount;
+            $pct = $totalCashOut > 0 ? (int) round(($amt / $totalCashOut) * 100) : 0;
+
+            return [
+                'category' => (string) $row->category_name,
+                'amount' => $amt,
+                'count' => (int) $row->tx_count,
+                'percent' => $pct,
+            ];
+        })->values()->all();
     }
 
     /**

@@ -35,17 +35,17 @@ export function ResponsiveDataList<T>({
 
     return (
         <div>
-            {/* Desktop Table (>= 1024px) */}
+            {/* Desktop Ledger Table (>= 1024px) */}
             <div className="hidden overflow-x-auto lg:block">
-                <table className="w-full border-collapse text-sm" aria-label={tableAriaLabel}>
+                <table className="w-full border-collapse text-[15px]" aria-label={tableAriaLabel}>
                     <thead>
-                        <tr className="border-b-[1.5px] border-[#E3DED4] bg-[#F1EDE6]">
+                        <tr className="border-y border-[#DED6C8] bg-[#EFE9DE]/75">
                             {columns.map((col) => (
                                 <th
                                     key={col.key}
                                     scope="col"
                                     className={cn(
-                                        'px-3 py-2.5 text-xs font-bold uppercase tracking-wider text-[#525B54]',
+                                        'px-4 py-3.5 text-[13px] font-bold tracking-[0.01em] text-[#545852]',
                                         col.align === 'right' ? 'text-right' : 'text-left',
                                         col.headerClassName,
                                     )}
@@ -55,17 +55,17 @@ export function ResponsiveDataList<T>({
                             ))}
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#E3DED4]">
+                    <tbody className="divide-y divide-[#DED6C8]">
                         {items.map((row) => (
                             <tr
                                 key={keyExtractor(row)}
-                                className={cn('align-top transition-colors hover:bg-[#FAF8F4]', rowClassName?.(row))}
+                                className={cn('align-middle transition-colors hover:bg-[#F7F3EC]/85', rowClassName?.(row))}
                             >
                                 {columns.map((col) => (
                                     <td
                                         key={col.key}
                                         className={cn(
-                                            'px-3 py-3 text-[#1E2420]',
+                                            'px-4 py-4 text-[#1C211E]',
                                             col.align === 'right' ? 'tabular-nums text-right' : 'text-left',
                                             col.cellClassName,
                                         )}
@@ -80,7 +80,7 @@ export function ResponsiveDataList<T>({
             </div>
 
             {/* Mobile & Tablet Structured Cards (< 1024px) */}
-            <div className="flex flex-col gap-2.5 lg:hidden">
+            <div className="flex flex-col gap-3.5 lg:hidden">
                 {items.map((row) => (
                     <div key={keyExtractor(row)}>{renderMobileCard(row)}</div>
                 ))}

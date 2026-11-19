@@ -61,10 +61,10 @@ export function OrderCodeBadge({
     const displayText = compact ? formatCompactOrderCode(orderNumber) : orderNumber;
 
     return (
-        <span className={cn('inline-flex items-center gap-1.5', className)}>
+        <span className={cn('inline-flex flex-wrap items-center gap-1.5', className)}>
             <span
                 title={orderNumber}
-                className="font-[var(--font-mono)] tabular-nums text-[13px] font-semibold text-[#1E2420]"
+                className="break-words font-[var(--font-mono)] text-sm font-semibold text-[#1C211E] tabular-nums"
             >
                 {displayText}
             </span>
@@ -73,10 +73,10 @@ export function OrderCodeBadge({
                     type="button"
                     onClick={handleCopy}
                     aria-label={copied ? `Kode nota ${orderNumber} tersalin` : `Salin kode nota ${orderNumber}`}
-                    className="inline-flex size-11 items-center justify-center rounded-md border border-[#E3DED4] bg-white text-[#525B54] transition-colors hover:bg-[#F1EDE6] hover:text-[#1E2420]"
+                    className="inline-flex size-11 shrink-0 items-center justify-center rounded-[8px] border border-[#DED6C8] bg-[#FFFDF9] text-[#545852] transition-colors hover:bg-[#EFE9DE] hover:text-[#1C211E]"
                 >
                     {copied ? (
-                        <Check className="size-4 text-[#166534]" aria-hidden="true" />
+                        <Check className="size-4 text-[#164B2A]" aria-hidden="true" />
                     ) : (
                         <Copy className="size-4" aria-hidden="true" />
                     )}
