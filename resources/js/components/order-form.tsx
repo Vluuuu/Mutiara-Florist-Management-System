@@ -920,6 +920,7 @@ export function OrderForm({
                                                     <Input
                                                         id={`item-${idx}-quantity`}
                                                         type="number"
+                                                        inputMode="numeric"
                                                         min={1}
                                                         max={10000}
                                                         value={item.quantity}
@@ -1285,11 +1286,14 @@ export function OrderForm({
                             id="quick-customer-name"
                             data-modal-initial="true"
                             type="text"
+                            autoComplete="name"
+                            enterKeyHint="next"
                             maxLength={255}
                             value={quickName}
                             onChange={(e) => setQuickName(e.target.value)}
                             placeholder="Contoh: Ibu Dewi Kusuma"
                             invalid={Boolean(quickErrors.name)}
+                            aria-describedby={quickErrors.name ? 'quick-customer-name-error' : undefined}
                             required
                         />
                     </FormField>
@@ -1302,11 +1306,15 @@ export function OrderForm({
                         <Input
                             id="quick-customer-phone"
                             type="tel"
+                            inputMode="tel"
+                            autoComplete="tel"
+                            enterKeyHint="next"
                             maxLength={50}
                             value={quickPhone}
                             onChange={(e) => setQuickPhone(e.target.value)}
                             placeholder="Contoh: 081234567890"
                             invalid={Boolean(quickErrors.phone)}
+                            aria-describedby={quickErrors.phone ? 'quick-customer-phone-error' : undefined}
                         />
                     </FormField>
 
@@ -1323,6 +1331,7 @@ export function OrderForm({
                             onChange={(e) => setQuickNotes(e.target.value)}
                             placeholder="Instruksi khusus atau patokan alamat"
                             invalid={Boolean(quickErrors.notes)}
+                            aria-describedby={quickErrors.notes ? 'quick-customer-notes-error' : undefined}
                         />
                     </FormField>
 

@@ -234,6 +234,7 @@ export function PaymentModal({
 
                 {(localError || serverErrorEntries.length > 0) && (
                     <div
+                        id="payment-modal-error-summary"
                         role="alert"
                         className="rounded-[8px] border border-[#E2B3AA] bg-[#FCECE9] p-3.5 text-sm font-medium text-[#8A2619]"
                     >
@@ -257,6 +258,7 @@ export function PaymentModal({
                     <CurrencyInput
                         id="payment-modal-amount"
                         data-modal-initial="true"
+                        enterKeyHint="next"
                         value={amount}
                         onChange={(val) => {
                             setAmount(val);
@@ -265,7 +267,13 @@ export function PaymentModal({
                         }}
                         placeholder="Contoh: 500.000"
                         invalid={Boolean(activeErrors.amount || localError)}
-                        describedBy={activeErrors.amount ? 'payment-modal-amount-error' : 'payment-modal-amount-hint'}
+                        describedBy={
+                            activeErrors.amount
+                                ? 'payment-modal-amount-error'
+                                : localError
+                                  ? 'payment-modal-error-summary'
+                                  : 'payment-modal-amount-hint'
+                        }
                         required
                     />
                 </FormField>

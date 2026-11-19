@@ -108,6 +108,10 @@ export default function Login(_props: LoginProps) {
                                         required
                                         autoFocus
                                         autoComplete="username"
+                                        autoCorrect="off"
+                                        autoCapitalize="none"
+                                        spellCheck={false}
+                                        enterKeyHint="next"
                                         value={data.email}
                                         onChange={(e) => setData('email', e.target.value)}
                                         placeholder="nama@domain-toko.com"
@@ -135,6 +139,7 @@ export default function Login(_props: LoginProps) {
                                         name="password"
                                         required
                                         autoComplete="current-password"
+                                        enterKeyHint="done"
                                         value={data.password}
                                         onChange={(e) => setData('password', e.target.value)}
                                         aria-invalid={errors.password ? true : undefined}
@@ -142,6 +147,7 @@ export default function Login(_props: LoginProps) {
                                     />
                                     <button
                                         type="button"
+                                        aria-pressed={showPassword}
                                         aria-label={showPassword ? 'Sembunyikan password' : 'Lihat password'}
                                         onClick={() => setShowPassword((prev) => !prev)}
                                         className="absolute right-0 inline-flex size-11 items-center justify-center rounded-[8px] text-[#545852] hover:bg-[#EFE9DE] hover:text-[#1C211E]"

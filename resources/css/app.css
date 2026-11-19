@@ -63,12 +63,25 @@
 }
 
 @layer base {
+    html {
+        color-scheme: light;
+        accent-color: var(--brand-primary);
+        scroll-padding-top: 5rem;
+    }
+
+    @media (max-width: 767px) {
+        html {
+            scroll-padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+        }
+    }
+
     html, body {
         background-color: var(--bg-canvas);
         color: var(--text-primary);
         font-family: var(--font-sans);
         font-size: 16px;
         line-height: 1.55;
+        overflow-wrap: break-word;
         -webkit-font-smoothing: antialiased;
     }
 

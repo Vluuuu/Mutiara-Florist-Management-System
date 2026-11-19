@@ -36,7 +36,12 @@ export function ResponsiveDataList<T>({
     return (
         <div>
             {/* Desktop Ledger Table (>= 1024px) */}
-            <div className="hidden overflow-x-auto lg:block">
+            <div
+                tabIndex={0}
+                role="region"
+                aria-label={tableAriaLabel ?? 'Tabel data'}
+                className="hidden overflow-x-auto rounded-[6px] focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[#1D3B2A] lg:block"
+            >
                 <table className="w-full border-collapse text-[15px]" aria-label={tableAriaLabel}>
                     <thead>
                         <tr className="border-y border-[#DED6C8] bg-[#EFE9DE]/75">

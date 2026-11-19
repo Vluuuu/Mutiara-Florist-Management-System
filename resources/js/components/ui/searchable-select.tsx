@@ -76,6 +76,12 @@ export function SearchableSelect({
         );
     }, [options, query, selectedOption]);
 
+    useEffect(() => {
+        if (!open) return;
+        const activeEl = document.getElementById(`${listboxId}-opt-${activeIndex}`);
+        activeEl?.scrollIntoView({ block: 'nearest' });
+    }, [open, activeIndex, listboxId]);
+
     const selectOption = (opt: SearchableOption) => {
         onChange(opt.value);
         setQuery(opt.label);
@@ -94,12 +100,27 @@ export function SearchableSelect({
         } else if (e.key === 'ArrowUp') {
             e.preventDefault();
             setActiveIndex((prev) => Math.max(prev - 1, 0));
+        } else if (e.key === 'Home' && open && filtered.length > 0) {
+            e.preventDefault();
+            setActiveIndex(0);
+        } else if (e.key === 'End' && open && filtered.length > 0) {
+            e.preventDefault();
+            setActiveIndex(filtered.length - 1);
         } else if (e.key === 'Enter' && open) {
+            if (e.nativeEvent.isComposing || e.keyCode === 229) {
+                return;
+            }
             const target = filtered[activeIndex];
             if (target) {
                 e.preventDefault();
                 selectOption(target);
             }
+        }
+    };
+
+    const handleWrapperBlur = (e: React.FocusEvent<HTMLDivElement>) => {
+        if (open && wrapperRef.current && !wrapperRef.current.contains(e.relatedTarget as Node | null)) {
+            setOpen(false);
         }
     };
 
@@ -118,7 +139,12 @@ export function SearchableSelect({
     };
 
     return (
-        <div ref={wrapperRef} onKeyDown={handleWrapperKeyDown} className="relative">
+        <div
+            ref={wrapperRef}
+            onKeyDown={handleWrapperKeyDown}
+            onBlur={handleWrapperBlur}
+            className="relative"
+        >
             <div className="relative flex items-center">
                 <Search
                     className="pointer-events-none absolute left-3 size-4 text-[#545852]"
@@ -141,6 +167,9 @@ export function SearchableSelect({
                     value={query}
                     placeholder={placeholder}
                     autoComplete="off"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    enterKeyHint="search"
                     onFocus={() => {
                         if (suppressFocusOpenRef.current) {
                             suppressFocusOpenRef.current = false;
