@@ -211,6 +211,50 @@ class StagingMigrationAndAdminCommandTest extends TestCase
         ], 'pgsql_testing');
     }
 
+    public function test_verify_staging_blocks_production_database(): void
+    {
+        config(['database.connections.fake_prod_conn' => [
+            'driver' => 'pgsql',
+            'host' => '127.0.0.1',
+            'port' => 3307,
+            'database' => 'mutiara_florist_prod',
+        ]]);
+
+        $this->artisan('mfms:verify-staging', ['--connection' => 'fake_prod_conn'])
+            ->expectsOutputToContain('PERINGATAN KERAS: Target koneksi adalah database produksi toko (mutiara_florist_prod)')
+            ->assertExitCode(1);
+    }
+
+    public function test_verify_staging_blocks_mismatched_project_ref(): void
+    {
+        config(['database.connections.wrong_ref_verifier' => [
+            'driver' => 'pgsql',
+            'host' => 'aws-1-ap-southeast-2.pooler.supabase.com',
+            'port' => 5432,
+            'database' => 'postgres',
+            'username' => 'postgres.foreign_project_ref',
+        ]]);
+
+        $this->artisan('mfms:verify-staging', [
+            '--connection' => 'wrong_ref_verifier',
+            '--project-ref' => 'rngzdtiqzwklplcxbyye',
+        ])
+            ->expectsOutputToContain('Target koneksi Supabase tidak cocok dengan project ref staging yang diizinkan')
+            ->assertExitCode(1);
+    }
+
+    public function test_verify_staging_verifies_schema_and_relations_on_pgsql_testing(): void
+    {
+        // First ensure tables exist on pgsql_testing
+        $this->artisan('mfms:migrate-staging', ['--connection' => 'pgsql_testing', '--force' => true]);
+
+        $this->artisan('mfms:verify-staging', ['--connection' => 'pgsql_testing'])
+            ->expectsOutputToContain('1. Status Tabel & Kolom:')
+            ->expectsOutputToContain('2. Status Foreign Key Constraints:')
+            ->expectsOutputToContain('SEMUA TABEL DAN RELASI DATABASE STAGING TELAH TERVERIFIKASI 100%')
+            ->assertExitCode(0);
+    }
+
     protected function tearDown(): void
     {
         try {
