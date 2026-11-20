@@ -26,6 +26,8 @@ return Application::configure(basePath: dirname(__DIR__))
             '127.0.0.1',
             'admin.mutiaraflorist.id',
             'staging-admin.mutiaraflorist.id',
+            '^.*\.onrender\.com$',
+            '^.*\.railway\.app$',
         ];
         if ($appHost = parse_url(env('APP_URL', ''), PHP_URL_HOST)) {
             $trustedHosts[] = $appHost;

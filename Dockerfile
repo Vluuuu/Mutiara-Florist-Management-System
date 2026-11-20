@@ -1,5 +1,6 @@
 # ==============================================================================
 # MFMS Production Multi-Stage Dockerfile (Laravel 12 + React/Inertia)
+# Fully hardened for Render Free (512 MB RAM) & Cloudflare Access Zero Trust
 # ==============================================================================
 
 # Stage 1: Build React/TypeScript frontend via Vite
@@ -48,8 +49,9 @@ RUN docker-php-ext-install -j$(nproc) \
     opcache \
     mbstring
 
-# Configure PHP & Nginx
+# Configure PHP runtime & FPM pool tuned for 512 MB memory limit
 COPY docker/php.ini /usr/local/etc/php/conf.d/mfms.ini
+COPY docker/fpm-pool.conf /usr/local/etc/php-fpm.d/zz-mfms.conf
 COPY docker/nginx.conf /etc/nginx/http.d/default.conf
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
@@ -68,10 +70,10 @@ COPY --from=node-builder /app/public/build ./public/build
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache && \
     chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Healthcheck
+# Healthcheck compatible with Render ($PORT=10000) and standard HTTP port
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost/up || exit 1
+    CMD curl -f http://localhost:10000/up || curl -f http://localhost:80/up || exit 1
 
-EXPOSE 80
+EXPOSE 10000 80
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

@@ -3,11 +3,11 @@ set -e
 
 echo "Starting MFMS Production Container..."
 
-# Configure port if specified by Railway
-PORT="${PORT:-80}"
+# Configure port if specified by Render ($PORT=10000) or Railway ($PORT=80/8080)
+PORT="${PORT:-10000}"
 echo "Configuring Nginx to listen on port ${PORT}..."
-sed -i "s/listen 80 default_server;/listen ${PORT} default_server;/g" /etc/nginx/http.d/default.conf
-sed -i "s/listen \[::\]:80 default_server;/listen [::]:${PORT} default_server;/g" /etc/nginx/http.d/default.conf
+sed -i -E "s/listen [0-9]+ default_server;/listen ${PORT} default_server;/g" /etc/nginx/http.d/default.conf
+sed -i -E "s/listen \[::\]:[0-9]+ default_server;/listen [::]:${PORT} default_server;/g" /etc/nginx/http.d/default.conf
 
 # Ensure storage directories exist with proper permissions
 mkdir -p /var/www/html/storage/framework/cache/data \
