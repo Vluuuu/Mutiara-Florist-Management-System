@@ -152,55 +152,8 @@ class VerifyCloudflareAccessJwt
 
     protected function verifySignature(string $teamDomain, string $kid, string $data, string $signature): bool
     {
-        $certs = Cache::remember('cf_access_jwks_'.$teamDomain, 3600, function () use ($teamDomain) {
-            $url = "https://{$teamDomain}.cloudflareaccess.com/cdn-cgi/access/certs";
-            try {
-                $response = Http::timeout(5)->get($url);
-                return $response->successful() ? $response->json() : null;
-            } catch (\Throwable $e) {
-                Log::warning("Failed to fetch Cloudflare certs from {$url}: ".$e->getMessage());
-                return null;
-            }
-        });
-
-        // STRICT FAIL-CLOSED: if JWKS is unavailable or malformed, NEVER allow access
-        if (! is_array($certs) || ! isset($certs['keys']) || ! is_array($certs['keys'])) {
-            Log::error("Cloudflare JWKS keys unavailable or invalid for team {$teamDomain}.");
-            return false;
-        }
-
-        $targetKey = null;
-        foreach ($certs['keys'] as $key) {
-            if (($key['kid'] ?? null) === $kid) {
-                $targetKey = $key;
-                break;
-            }
-        }
-
-        if (! $targetKey) {
-            Log::warning("Cloudflare JWKS does not contain matching key for kid: {$kid}");
-            return false;
-        }
-
-        $publicKey = null;
-
-        // 1. Try X.509 cert from 'cert' field
-        if (! empty($targetKey['cert']) && is_string($targetKey['cert'])) {
-            $cert = trim($targetKey['cert']);
-            if (! str_contains($cert, '-----BEGIN CERTIFICATE-----')) {
-                $cert = "-----BEGIN CERTIFICATE-----\n".chunk_split($cert, 64, "\n")."-----END CERTIFICATE-----";
-            }
-            $publicKey = openssl_pkey_get_public($cert);
-        }
-
-        // 2. Try X.509 cert from 'x5c' array
-        if (! $publicKey && ! empty($targetKey['x5c'][0]) && is_string($targetKey['x5c'][0])) {
-            $cert = "-----BEGIN CERTIFICATE-----\n".chunk_split(trim($targetKey['x5c'][0]), 64, "\n")."-----END CERTIFICATE-----";
-            $publicKey = openssl_pkey_get_public($cert);
-        }
-
+        $publicKey = $this->getPublicKey($teamDomain, $kid);
         if (! $publicKey) {
-            Log::error("Failed to parse public certificate from JWKS for kid: {$kid}");
             return false;
         }
 
@@ -212,5 +165,153 @@ class VerifyCloudflareAccessJwt
         $verifyResult = openssl_verify($data, $rawSig, $publicKey, OPENSSL_ALGO_SHA256);
 
         return $verifyResult === 1;
+    }
+
+    protected function getPublicKey(string $teamDomain, string $kid): mixed
+    {
+        $certs = $this->fetchCerts($teamDomain);
+        if (! is_array($certs)) {
+            Log::error("Cloudflare certs unavailable or malformed for team {$teamDomain}.");
+
+            return null;
+        }
+
+        $publicKey = $this->extractKeyFromCerts($certs, $kid);
+
+        // Key Rotation: If kid not found in cached JWKS, refresh cache once and retry
+        if (! $publicKey) {
+            Log::info("Key ID {$kid} not found in cached Cloudflare certs. Refreshing certs cache for team {$teamDomain}...");
+            $freshCerts = $this->fetchCerts($teamDomain, forceRefresh: true);
+            if (is_array($freshCerts)) {
+                $publicKey = $this->extractKeyFromCerts($freshCerts, $kid);
+            }
+        }
+
+        if (! $publicKey) {
+            Log::warning("Cloudflare Access certs do not contain matching or valid public key for kid: {$kid}");
+        }
+
+        return $publicKey;
+    }
+
+    protected function fetchCerts(string $teamDomain, bool $forceRefresh = false): ?array
+    {
+        $cacheKey = 'cf_access_jwks_'.$teamDomain;
+        if ($forceRefresh) {
+            Cache::forget($cacheKey);
+        }
+
+        return Cache::remember($cacheKey, 3600, function () use ($teamDomain) {
+            $url = "https://{$teamDomain}.cloudflareaccess.com/cdn-cgi/access/certs";
+            try {
+                $response = Http::timeout(5)->get($url);
+
+                return $response->successful() ? $response->json() : null;
+            } catch (\Throwable $e) {
+                Log::warning("Failed to fetch Cloudflare certs from {$url}: ".$e->getMessage());
+
+                return null;
+            }
+        });
+    }
+
+    protected function extractKeyFromCerts(array $certs, string $kid): mixed
+    {
+        // 1. Primary: match kid in public_certs[] array (Cloudflare PEM format)
+        if (isset($certs['public_certs']) && is_array($certs['public_certs'])) {
+            foreach ($certs['public_certs'] as $certItem) {
+                if (is_array($certItem) && ($certItem['kid'] ?? null) === $kid && ! empty($certItem['cert'])) {
+                    $key = $this->parsePemCertificate((string) $certItem['cert']);
+                    if ($key) {
+                        return $key;
+                    }
+                }
+            }
+        }
+
+        // 2. Secondary: match kid in public_cert object (if single object)
+        if (isset($certs['public_cert']) && is_array($certs['public_cert'])) {
+            if (($certs['public_cert']['kid'] ?? null) === $kid && ! empty($certs['public_cert']['cert'])) {
+                $key = $this->parsePemCertificate((string) $certs['public_cert']['cert']);
+                if ($key) {
+                    return $key;
+                }
+            }
+        }
+
+        // 3. Fallback: match kid in keys[] (JWK RSA n and e, or x5c)
+        if (isset($certs['keys']) && is_array($certs['keys'])) {
+            foreach ($certs['keys'] as $keyItem) {
+                if (is_array($keyItem) && ($keyItem['kid'] ?? null) === $kid) {
+                    // Try x5c
+                    if (! empty($keyItem['x5c'][0]) && is_string($keyItem['x5c'][0])) {
+                        $key = $this->parsePemCertificate($keyItem['x5c'][0]);
+                        if ($key) {
+                            return $key;
+                        }
+                    }
+                    // Try standard JWK RSA (n, e)
+                    if (! empty($keyItem['n']) && ! empty($keyItem['e']) && ($keyItem['kty'] ?? '') === 'RSA') {
+                        $key = $this->parseRsaJwk((string) $keyItem['n'], (string) $keyItem['e']);
+                        if ($key) {
+                            return $key;
+                        }
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    protected function parsePemCertificate(string $cert): mixed
+    {
+        $cert = trim($cert);
+        if (! str_contains($cert, '-----BEGIN CERTIFICATE-----')) {
+            $cert = "-----BEGIN CERTIFICATE-----\n".chunk_split($cert, 64, "\n")."-----END CERTIFICATE-----";
+        }
+
+        $res = openssl_pkey_get_public($cert);
+
+        return $res !== false ? $res : null;
+    }
+
+    protected function parseRsaJwk(string $nB64, string $eB64): mixed
+    {
+        $modulus = $this->base64UrlDecode($nB64);
+        $exponent = $this->base64UrlDecode($eB64);
+
+        if ($modulus === '' || $exponent === '') {
+            return null;
+        }
+
+        $encodeLength = function (int $len): string {
+            if ($len <= 0x7f) {
+                return chr($len);
+            }
+            if ($len <= 0xff) {
+                return chr(0x81).chr($len);
+            }
+
+            return chr(0x82).chr(($len >> 8) & 0xff).chr($len & 0xff);
+        };
+
+        $encodeInteger = function (string $bytes) use ($encodeLength): string {
+            if (ord($bytes[0]) > 0x7f) {
+                $bytes = "\x00".$bytes;
+            }
+
+            return "\x02".$encodeLength(strlen($bytes)).$bytes;
+        };
+
+        $modSeq = $encodeInteger($modulus);
+        $expSeq = $encodeInteger($exponent);
+        $rsaPubKey = "\x30".$encodeLength(strlen($modSeq.$expSeq)).$modSeq.$expSeq;
+
+        $pem = "-----BEGIN RSA PUBLIC KEY-----\n".chunk_split(base64_encode($rsaPubKey), 64, "\n")."-----END RSA PUBLIC KEY-----";
+
+        $res = openssl_pkey_get_public($pem);
+
+        return $res !== false ? $res : null;
     }
 }

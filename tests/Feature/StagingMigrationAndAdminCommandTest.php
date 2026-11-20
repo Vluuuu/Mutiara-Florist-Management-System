@@ -32,7 +32,70 @@ class StagingMigrationAndAdminCommandTest extends TestCase
         ]]);
 
         $this->artisan('mfms:migrate-staging', ['--connection' => 'dangerous_prod', '--force' => true])
-            ->expectsOutputToContain('PERINGATAN KERAS: Koneksi diarahkan ke database produksi lokal toko')
+            ->expectsOutputToContain('PERINGATAN KERAS: Target koneksi adalah database produksi toko (mutiara_florist_prod)')
+            ->assertExitCode(1);
+    }
+
+    public function test_migrate_staging_blocks_production_port_even_with_different_db_name(): void
+    {
+        config(['database.connections.dangerous_port' => [
+            'driver' => 'pgsql',
+            'host' => '127.0.0.1',
+            'port' => 3307,
+            'database' => 'random_test_name',
+        ]]);
+
+        $this->artisan('mfms:migrate-staging', ['--connection' => 'dangerous_port', '--force' => true])
+            ->expectsOutputToContain('PERINGATAN KERAS: Target koneksi diarahkan ke port database produksi lokal toko (:3307)')
+            ->assertExitCode(1);
+    }
+
+    public function test_migrate_staging_blocks_forbidden_external_supabase_project(): void
+    {
+        config(['database.connections.foreign_supabase' => [
+            'driver' => 'pgsql',
+            'host' => 'aws-0-ap-southeast-1.pooler.supabase.com',
+            'port' => 5432,
+            'database' => 'postgres',
+            'username' => 'postgres.slqwyjtcmlinnrbdsxkb',
+        ]]);
+
+        $this->artisan('mfms:migrate-staging', ['--connection' => 'foreign_supabase', '--force' => true])
+            ->expectsOutputToContain('DITOLAK: Proyek Supabase ini teridentifikasi sebagai proyek eksternal/terlarang (\'slqwyjtcmlinnrbdsxkb\')')
+            ->assertExitCode(1);
+    }
+
+    public function test_migrate_staging_blocks_mismatched_project_ref(): void
+    {
+        config(['database.connections.wrong_ref_supabase' => [
+            'driver' => 'pgsql',
+            'host' => 'aws-0-ap-southeast-1.pooler.supabase.com',
+            'port' => 5432,
+            'database' => 'postgres',
+            'username' => 'postgres.unauthorized_project_123',
+        ]]);
+
+        $this->artisan('mfms:migrate-staging', [
+            '--connection' => 'wrong_ref_supabase',
+            '--project-ref' => 'mfms-staging-valid-ref',
+            '--force' => true,
+        ])
+            ->expectsOutputToContain('Target koneksi Supabase tidak cocok dengan project ref staging yang diizinkan')
+            ->assertExitCode(1);
+    }
+
+    public function test_migrate_staging_blocks_invalid_pooler_username_format(): void
+    {
+        config(['database.connections.bad_user_supabase' => [
+            'driver' => 'pgsql',
+            'host' => 'aws-0-ap-southeast-1.pooler.supabase.com',
+            'port' => 5432,
+            'database' => 'postgres',
+            'username' => 'postgres', // Missing .<project_ref>
+        ]]);
+
+        $this->artisan('mfms:migrate-staging', ['--connection' => 'bad_user_supabase', '--force' => true])
+            ->expectsOutputToContain('Koneksi Supabase Pooler wajib menggunakan format username \'postgres.<project_ref>\'')
             ->assertExitCode(1);
     }
 
@@ -53,7 +116,25 @@ class StagingMigrationAndAdminCommandTest extends TestCase
         ]]);
 
         $this->artisan('mfms:create-admin', ['--connection' => 'fake_prod_conn'])
-            ->expectsOutputToContain('Dilarang keras membuat akun admin sembarangan pada database produksi toko!')
+            ->expectsOutputToContain('PERINGATAN KERAS: Target koneksi adalah database produksi toko (mutiara_florist_prod)')
+            ->assertExitCode(1);
+    }
+
+    public function test_create_admin_blocks_mismatched_project_ref(): void
+    {
+        config(['database.connections.wrong_ref_admin' => [
+            'driver' => 'pgsql',
+            'host' => 'aws-0-ap-southeast-1.pooler.supabase.com',
+            'port' => 5432,
+            'database' => 'postgres',
+            'username' => 'postgres.other_project_999',
+        ]]);
+
+        $this->artisan('mfms:create-admin', [
+            '--connection' => 'wrong_ref_admin',
+            '--project-ref' => 'mfms-staging-target',
+        ])
+            ->expectsOutputToContain('Target koneksi Supabase tidak cocok dengan project ref staging yang diizinkan')
             ->assertExitCode(1);
     }
 
@@ -91,7 +172,25 @@ class StagingMigrationAndAdminCommandTest extends TestCase
         ]]);
 
         $this->artisan('mfms:seed-staging', ['--connection' => 'fake_prod_conn'])
-            ->expectsOutputToContain('Dilarang keras melakukan seeding pada database produksi toko!')
+            ->expectsOutputToContain('PERINGATAN KERAS: Target koneksi adalah database produksi toko (mutiara_florist_prod)')
+            ->assertExitCode(1);
+    }
+
+    public function test_seed_staging_blocks_mismatched_project_ref(): void
+    {
+        config(['database.connections.wrong_ref_seeder' => [
+            'driver' => 'pgsql',
+            'host' => 'aws-0-ap-southeast-1.pooler.supabase.com',
+            'port' => 5432,
+            'database' => 'postgres',
+            'username' => 'postgres.alien_project_555',
+        ]]);
+
+        $this->artisan('mfms:seed-staging', [
+            '--connection' => 'wrong_ref_seeder',
+            '--project-ref' => 'mfms-staging-target',
+        ])
+            ->expectsOutputToContain('Target koneksi Supabase tidak cocok dengan project ref staging yang diizinkan')
             ->assertExitCode(1);
     }
 

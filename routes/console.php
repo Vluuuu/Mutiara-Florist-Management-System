@@ -4,22 +4,19 @@ use App\Models\User;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Hash;
 
-Artisan::command('mfms:create-admin {--connection= : Nama koneksi database target}', function (): int {
+Artisan::command('mfms:create-admin {--connection= : Nama koneksi database target} {--project-ref= : Target Supabase project ref}', function (): int {
     $connName = (string) ($this->option('connection') ?: config('database.default'));
-    $config = config("database.connections.{$connName}");
+    $projectRef = $this->option('project-ref') ? (string) $this->option('project-ref') : null;
 
-    if (! is_array($config)) {
-        $this->error("Koneksi database '{$connName}' tidak ditemukan.");
-        return 1;
-    }
-
-    $dbName = (string) ($config['database'] ?? '');
-    $dbPort = (string) ($config['port'] ?? '');
-    $dbHost = (string) ($config['host'] ?? '');
-
-    // Safeguard: Blocking execution on production database without manual override
-    if ($dbName === 'mutiara_florist_prod' || ($dbHost === '127.0.0.1' && $dbPort === '3307')) {
-        $this->error('Dilarang keras membuat akun admin sembarangan pada database produksi toko!');
+    try {
+        $meta = \App\Support\DatabaseTargetGuard::validateTarget(
+            $connName,
+            expectedProjectRef: $projectRef,
+            requirePgsql: false,
+            confirmServerIdentity: true
+        );
+    } catch (\Throwable $e) {
+        $this->error($e->getMessage());
         return 1;
     }
 
@@ -279,56 +276,38 @@ Artisan::command('mfms:test-payment-worker {order_id} {amount} {idempotency_key}
     }
 })->purpose('Worker khusus untuk pengujian konkurensi pembayaran independen (HANYA database testing)');
 
-Artisan::command('mfms:migrate-staging {--connection=pgsql_staging : Nama koneksi database staging} {--force : Lewati konfirmasi interaktif}', function (): int {
+Artisan::command('mfms:migrate-staging {--connection=pgsql_staging : Nama koneksi database staging} {--project-ref= : Target Supabase project ref yang diizinkan} {--force : Lewati konfirmasi interaktif}', function (): int {
     $connName = (string) $this->option('connection');
-    $config = config("database.connections.{$connName}");
+    $projectRef = $this->option('project-ref') ? (string) $this->option('project-ref') : null;
 
-    if (! is_array($config)) {
-        $this->error("Koneksi database '{$connName}' tidak ditemukan dalam config/database.php.");
-        return 1;
-    }
-
-    $driver = (string) ($config['driver'] ?? '');
-    $dbName = (string) ($config['database'] ?? '');
-    $dbPort = (string) ($config['port'] ?? '');
-    $dbHost = (string) ($config['host'] ?? '');
-
-    // 1. Safeguard: Driver must be PostgreSQL
-    if ($driver !== 'pgsql') {
-        $this->error("Target koneksi bukan PostgreSQL (driver: {$driver}). Operasi dibatalkan demi keamanan.");
-        return 1;
-    }
-
-    // 2. Safeguard: Production database protection
-    if ($dbName === 'mutiara_florist_prod' || ($dbHost === '127.0.0.1' && $dbPort === '3307')) {
-        $this->error("PERINGATAN KERAS: Koneksi diarahkan ke database produksi lokal toko (mutiara_florist_prod:3307). Migrasi DITOLAK!");
+    try {
+        $meta = \App\Support\DatabaseTargetGuard::validateTarget(
+            $connName,
+            expectedProjectRef: $projectRef,
+            requirePgsql: true,
+            confirmServerIdentity: true
+        );
+    } catch (\Throwable $e) {
+        $this->error($e->getMessage());
         return 1;
     }
 
     $this->info("=== MFMS Staging Database Migration ===");
     $this->line("Target Connection : {$connName}");
-    $this->line("Driver            : {$driver}");
-    $this->line("Host              : {$dbHost}:{$dbPort}");
-    $this->line("Database          : {$dbName}");
-    $this->line("User              : " . ($config['username'] ?? ''));
-    $this->line("SSL Mode          : " . ($config['sslmode'] ?? 'prefer'));
+    $this->line("Driver            : " . $meta['driver']);
+    $this->line("Host              : " . $meta['host'] . ":" . $meta['port']);
+    $this->line("Database          : " . $meta['database']);
+    $this->line("User              : " . $meta['username']);
+    $this->line("Project Ref       : " . ($meta['project_ref'] ?: '(none / local)'));
+    $this->line("SSL Mode          : " . $meta['sslmode']);
+    $this->line("Confirmed Server  : " . substr($meta['server_version'] ?? 'unknown', 0, 45) . "...");
 
     if (! $this->option('force') && ! $this->confirm('Apakah Anda yakin ingin menjalankan migrasi skema pada database target di atas?')) {
         $this->warn('Migrasi dibatalkan oleh pengguna.');
         return 1;
     }
 
-    // 3. Connectivity check
-    try {
-        $pdo = \Illuminate\Support\Facades\DB::connection($connName)->getPdo();
-        $version = $pdo->query('SELECT version()')->fetchColumn();
-        $this->info("Koneksi berhasil. Server: " . substr((string) $version, 0, 45) . "...");
-    } catch (\Throwable $e) {
-        $this->error("Koneksi ke database target gagal: " . $e->getMessage());
-        return 1;
-    }
-
-    // 4. Run Laravel migrations
+    // Run Laravel migrations
     $this->info("Menjalankan migrasi skema...");
     $exitCode = Artisan::call('migrate', [
         '--database' => $connName,
@@ -344,18 +323,19 @@ Artisan::command('mfms:migrate-staging {--connection=pgsql_staging : Nama koneks
     return $exitCode;
 })->purpose('Menjalankan migrasi satu kali ke database Supabase staging dari runner lokal dengan perlindungan ketat');
 
-Artisan::command('mfms:seed-staging {--connection=pgsql_staging : Nama koneksi database staging}', function (): int {
+Artisan::command('mfms:seed-staging {--connection=pgsql_staging : Nama koneksi database staging} {--project-ref= : Target Supabase project ref yang diizinkan}', function (): int {
     $connName = (string) $this->option('connection');
-    $config = config("database.connections.{$connName}");
+    $projectRef = $this->option('project-ref') ? (string) $this->option('project-ref') : null;
 
-    if (! is_array($config)) {
-        $this->error("Koneksi database '{$connName}' tidak ditemukan.");
-        return 1;
-    }
-
-    $dbName = (string) ($config['database'] ?? '');
-    if ($dbName === 'mutiara_florist_prod') {
-        $this->error("Dilarang keras melakukan seeding pada database produksi toko!");
+    try {
+        $meta = \App\Support\DatabaseTargetGuard::validateTarget(
+            $connName,
+            expectedProjectRef: $projectRef,
+            requirePgsql: true,
+            confirmServerIdentity: true
+        );
+    } catch (\Throwable $e) {
+        $this->error($e->getMessage());
         return 1;
     }
 

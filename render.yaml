@@ -3,6 +3,7 @@ services:
     name: mfms-staging
     runtime: docker
     dockerfilePath: ./Dockerfile
+    branch: feat/phase15a-postgres-compatibility
     region: singapore
     plan: free
     healthCheckPath: /up

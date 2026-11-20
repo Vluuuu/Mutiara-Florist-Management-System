@@ -19,6 +19,8 @@ return [
 
     'default' => env('DB_CONNECTION', 'sqlite'),
 
+    'staging_project_ref' => env('DB_STAGING_PROJECT_REF'),
+
     /*
     |--------------------------------------------------------------------------
     | Database Connections

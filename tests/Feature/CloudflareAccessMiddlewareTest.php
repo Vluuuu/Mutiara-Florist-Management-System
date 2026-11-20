@@ -13,6 +13,8 @@ class CloudflareAccessMiddlewareTest extends TestCase
 {
     private static ?string $testPrivateKey = null;
     private static ?string $testPublicCert = null;
+    private static ?string $testRsaN = null;
+    private static ?string $testRsaE = null;
 
     protected function setUp(): void
     {
@@ -31,9 +33,14 @@ class CloudflareAccessMiddlewareTest extends TestCase
 
             openssl_x509_export($cert, $certOut);
             openssl_pkey_export($res, $privOut, null, $opts);
+            $details = openssl_pkey_get_details($res);
+
+            $base64Url = fn ($data) => rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
 
             self::$testPublicCert = $certOut;
             self::$testPrivateKey = $privOut;
+            self::$testRsaN = $base64Url($details['rsa']['n']);
+            self::$testRsaE = $base64Url($details['rsa']['e']);
         }
     }
 
@@ -55,9 +62,13 @@ class CloudflareAccessMiddlewareTest extends TestCase
         return "{$signingInput}.{$rawSignature}";
     }
 
-    private function mockJwks(string $teamDomain, string $kid, ?string $cert = null): void
+    private function mockJwks(string $teamDomain, string $kid, ?string $cert = null, ?string $rsaN = null, ?string $rsaE = null): void
     {
         $certToUse = $cert ?? self::$testPublicCert;
+        $nToUse = $rsaN ?? self::$testRsaN;
+        $eToUse = $rsaE ?? self::$testRsaE;
+
+        // Realistic Cloudflare response: keys has JWK RSA (n and e, NO cert), public_certs has PEM certs
         Http::fake([
             "https://{$teamDomain}.cloudflareaccess.com/cdn-cgi/access/certs" => Http::response([
                 'keys' => [
@@ -66,8 +77,13 @@ class CloudflareAccessMiddlewareTest extends TestCase
                         'kty' => 'RSA',
                         'alg' => 'RS256',
                         'use' => 'sig',
-                        'cert' => $certToUse,
+                        'e' => $eToUse,
+                        'n' => $nToUse,
                     ],
+                ],
+                'public_cert' => [
+                    'kid' => $kid,
+                    'cert' => $certToUse,
                 ],
                 'public_certs' => [
                     [
@@ -452,5 +468,227 @@ class CloudflareAccessMiddlewareTest extends TestCase
         });
 
         $this->assertSame(200, $response->getStatusCode());
+    }
+
+    public function test_accepts_valid_jwt_via_jwk_keys_fallback_without_public_certs(): void
+    {
+        config([
+            'services.cloudflare.access_enforce' => true,
+            'services.cloudflare.access_team_domain' => 'test-team',
+            'services.cloudflare.access_aud' => 'aud-123',
+        ]);
+
+        // Simulates an endpoint returning only standard JWK RSA keys array (no public_certs/public_cert)
+        Http::fake([
+            'https://test-team.cloudflareaccess.com/cdn-cgi/access/certs' => Http::response([
+                'keys' => [
+                    [
+                        'kid' => 'test-kid',
+                        'kty' => 'RSA',
+                        'alg' => 'RS256',
+                        'use' => 'sig',
+                        'e' => self::$testRsaE,
+                        'n' => self::$testRsaN,
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        $jwt = $this->createJwt([
+            'aud' => 'aud-123',
+            'iss' => 'https://test-team.cloudflareaccess.com',
+            'exp' => time() + 3600,
+            'email' => 'operator@mutiaraflorist.id',
+        ]);
+
+        $request = Request::create('/dashboard', 'GET');
+        $request->headers->set('Cf-Access-Jwt-Assertion', $jwt);
+
+        $middleware = new VerifyCloudflareAccessJwt();
+        $response = $middleware->handle($request, fn ($req) => response('OK', 200));
+
+        $this->assertSame(200, $response->getStatusCode());
+    }
+
+    public function test_key_rotation_handles_new_key_id_after_rotation(): void
+    {
+        config([
+            'services.cloudflare.access_enforce' => true,
+            'services.cloudflare.access_team_domain' => 'test-team',
+            'services.cloudflare.access_aud' => 'aud-123',
+        ]);
+
+        // Initial JWKS only has old-kid
+        $oldKid = 'old-kid-1';
+        $newKid = 'new-kid-2';
+
+        $configPath = file_exists('D:/xampp/apache/conf/openssl.cnf') ? 'D:/xampp/apache/conf/openssl.cnf' : null;
+        $opts = $configPath ? ['config' => $configPath] : [];
+
+        $newRes = openssl_pkey_new(array_merge(['private_key_bits' => 1024, 'private_key_type' => OPENSSL_KEYTYPE_RSA], $opts));
+        $newCsr = openssl_csr_new(['commonName' => 'cloudflare-rotation-test'], $newRes, $opts);
+        $newCert = openssl_csr_sign($newCsr, null, $newRes, 1, $opts);
+        openssl_x509_export($newCert, $newCertOut);
+        openssl_pkey_export($newRes, $newPrivOut, null, $opts);
+        $newDetails = openssl_pkey_get_details($newRes);
+        $base64Url = fn ($data) => rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+        $newN = $base64Url($newDetails['rsa']['n']);
+        $newE = $base64Url($newDetails['rsa']['e']);
+
+        $callCount = 0;
+        Http::fake([
+            'https://test-team.cloudflareaccess.com/cdn-cgi/access/certs' => function () use (&$callCount, $oldKid, $newKid, $newCertOut, $newN, $newE) {
+                $callCount++;
+                if ($callCount === 1) {
+                    // First call: only old kid
+                    return Http::response([
+                        'keys' => [
+                            [
+                                'kid' => $oldKid,
+                                'kty' => 'RSA',
+                                'alg' => 'RS256',
+                                'use' => 'sig',
+                                'e' => self::$testRsaE,
+                                'n' => self::$testRsaN,
+                            ],
+                        ],
+                        'public_certs' => [
+                            [
+                                'kid' => $oldKid,
+                                'cert' => self::$testPublicCert,
+                            ],
+                        ],
+                    ], 200);
+                }
+
+                // Subsequent call (after cache bust due to unknown kid): rotated certs contain both keys
+                return Http::response([
+                    'keys' => [
+                        [
+                            'kid' => $oldKid,
+                            'kty' => 'RSA',
+                            'alg' => 'RS256',
+                            'use' => 'sig',
+                            'e' => self::$testRsaE,
+                            'n' => self::$testRsaN,
+                        ],
+                        [
+                            'kid' => $newKid,
+                            'kty' => 'RSA',
+                            'alg' => 'RS256',
+                            'use' => 'sig',
+                            'e' => $newE,
+                            'n' => $newN,
+                        ],
+                    ],
+                    'public_certs' => [
+                        [
+                            'kid' => $oldKid,
+                            'cert' => self::$testPublicCert,
+                        ],
+                        [
+                            'kid' => $newKid,
+                            'cert' => $newCertOut,
+                        ],
+                    ],
+                ], 200);
+            },
+        ]);
+
+        // Request 1 with old key populates cache
+        $oldJwt = $this->createJwt([
+            'aud' => 'aud-123',
+            'iss' => 'https://test-team.cloudflareaccess.com',
+            'exp' => time() + 3600,
+        ], ['alg' => 'RS256', 'kid' => $oldKid]);
+
+        $middleware = new VerifyCloudflareAccessJwt();
+        $res1 = $middleware->handle(Request::create('/dashboard', 'GET', server: ['HTTP_CF_ACCESS_JWT_ASSERTION' => $oldJwt]), fn () => response('OK', 200));
+        $this->assertSame(200, $res1->getStatusCode());
+        $this->assertSame(1, $callCount);
+
+        // Request 2 arrives with rotated key (new-kid) not in initial cache -> triggers automatic cache bust and fresh fetch
+        $newJwt = $this->createJwt([
+            'aud' => 'aud-123',
+            'iss' => 'https://test-team.cloudflareaccess.com',
+            'exp' => time() + 3600,
+        ], ['alg' => 'RS256', 'kid' => $newKid], $newPrivOut);
+
+        $res2 = $middleware->handle(Request::create('/dashboard', 'GET', server: ['HTTP_CF_ACCESS_JWT_ASSERTION' => $newJwt]), fn () => response('OK', 200));
+        $this->assertSame(200, $res2->getStatusCode());
+        $this->assertSame(2, $callCount);
+    }
+
+    public function test_key_rotation_accepts_multiple_valid_keys_in_public_certs(): void
+    {
+        config([
+            'services.cloudflare.access_enforce' => true,
+            'services.cloudflare.access_team_domain' => 'test-team',
+            'services.cloudflare.access_aud' => 'aud-123',
+        ]);
+
+        $kid1 = 'key-alpha';
+        $kid2 = 'key-beta';
+
+        $configPath = file_exists('D:/xampp/apache/conf/openssl.cnf') ? 'D:/xampp/apache/conf/openssl.cnf' : null;
+        $opts = $configPath ? ['config' => $configPath] : [];
+
+        $res2 = openssl_pkey_new(array_merge(['private_key_bits' => 1024, 'private_key_type' => OPENSSL_KEYTYPE_RSA], $opts));
+        $csr2 = openssl_csr_new(['commonName' => 'cloudflare-beta'], $res2, $opts);
+        $cert2 = openssl_csr_sign($csr2, null, $res2, 1, $opts);
+        openssl_x509_export($cert2, $cert2Out);
+        openssl_pkey_export($res2, $priv2Out, null, $opts);
+
+        Http::fake([
+            'https://test-team.cloudflareaccess.com/cdn-cgi/access/certs' => Http::response([
+                'keys' => [
+                    ['kid' => $kid1, 'kty' => 'RSA', 'alg' => 'RS256', 'use' => 'sig', 'e' => self::$testRsaE, 'n' => self::$testRsaN],
+                ],
+                'public_certs' => [
+                    ['kid' => $kid1, 'cert' => self::$testPublicCert],
+                    ['kid' => $kid2, 'cert' => $cert2Out],
+                ],
+            ], 200),
+        ]);
+
+        $jwt1 = $this->createJwt([
+            'aud' => 'aud-123',
+            'iss' => 'https://test-team.cloudflareaccess.com',
+            'exp' => time() + 3600,
+        ], ['alg' => 'RS256', 'kid' => $kid1]);
+
+        $jwt2 = $this->createJwt([
+            'aud' => 'aud-123',
+            'iss' => 'https://test-team.cloudflareaccess.com',
+            'exp' => time() + 3600,
+        ], ['alg' => 'RS256', 'kid' => $kid2], $priv2Out);
+
+        $middleware = new VerifyCloudflareAccessJwt();
+
+        $res1 = $middleware->handle(Request::create('/dashboard', 'GET', server: ['HTTP_CF_ACCESS_JWT_ASSERTION' => $jwt1]), fn () => response('OK', 200));
+        $this->assertSame(200, $res1->getStatusCode());
+
+        $res2 = $middleware->handle(Request::create('/dashboard', 'GET', server: ['HTTP_CF_ACCESS_JWT_ASSERTION' => $jwt2]), fn () => response('OK', 200));
+        $this->assertSame(200, $res2->getStatusCode());
+    }
+
+    public function test_edge_secret_valid_without_jwt_is_still_rejected(): void
+    {
+        config([
+            'services.cloudflare.access_enforce' => true,
+            'services.cloudflare.access_team_domain' => 'test-team',
+            'services.cloudflare.access_aud' => 'aud-123',
+            'services.cloudflare.edge_secret' => 'edge-secret-xyz',
+        ]);
+
+        $request = Request::create('/dashboard', 'GET');
+        $request->headers->set('X-MFMS-Edge-Secret', 'edge-secret-xyz');
+        // No Cf-Access-Jwt-Assertion header provided
+
+        $this->expectException(HttpException::class);
+        $this->expectExceptionMessage('Autentikasi Cloudflare Access Zero Trust wajib ada');
+
+        $middleware = new VerifyCloudflareAccessJwt();
+        $middleware->handle($request, fn () => response('OK', 200));
     }
 }
