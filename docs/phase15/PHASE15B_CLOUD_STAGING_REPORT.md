@@ -1,271 +1,243 @@
 # MFMS — Phase 15B: Render Free + Supabase Free Cloud Staging Report
 
 **Tanggal Pembaruan:** 20 November 2026  
-**Keputusan Arsitektur Owner:** Pengalihan Target Staging dari Railway ke **Render Free + Supabase Free (Singapore)**  
+**Keputusan Arsitektur Owner:** Pengalihan Target Staging dari Railway ke **Render Free + Supabase Free (Singapore)** dengan **Akun Supabase Terpisah**  
 **Branch Implementasi:** `feat/phase15a-postgres-compatibility`  
-**Git Commit Terkini:** `d010a4d` (Working tree clean)  
-**Status Keseluruhan:** **STAGE 1 & 2 READY (ARCHITECTURE & DOCKER HARDENED 100% PASS) — AWAITING DASHBOARD ACTIVATION**  
-**Peringatan Kelayakan:** Sesuai aturan operasional, laporan ini **TIDAK MENGKLAIM COMPLETE & PASS** sebelum deployment cloud diverifikasi langsung oleh owner.  
+**Status Pengujian Otomatis:** **201 TESTS PASSED (2.539 ASSERTIONS) — 0 FAILURES, 0 ERRORS** (Dual Engine: PostgreSQL 18 & SQLite Baseline)  
+**Status Kesiapan Cloud:** **ALL SECURITY & DEPLOYMENT GATES PASS — READY FOR OWNER DASHBOARD ACTIVATION**  
+**Peringatan Kelayakan:** Laporan ini **TIDAK MENGKLAIM FINAL PASS** sebelum kontainer di Render terhubung ke Supabase live dan diverifikasi langsung oleh owner.  
 **Status Database Produksi (`mutiara_florist_prod`):** **100% UNTOUCHED, SECURE & TERISOLASI**
 
 ---
 
 ## 1. Executive Summary
 
-Berdasarkan keputusan owner untuk menekan biaya staging menjadi **$0.00 / Gratis Penuh**, MFMS dialihkan dari target Railway ($5/bulan) menuju **Render Free Web Service** (komputasi Docker di Singapore) yang dipadukan dengan **Supabase PostgreSQL Free** (database di Singapore `ap-southeast-1`) dan diproteksi oleh **Cloudflare Zero Trust Access**.
+Phase 15B telah menyelesaikan seluruh perbaikan keamanan kritikal (*critical security fixes*), audit batas memori 512 MB Render Free, perbaikan konfigurasi `APP_KEY`, serta pengerasan mekanisme migrasi skema database Supabase staging dari runner lokal terisolasi tanpa bergantung pada Shell/SSH berbayar Render.
 
-Tahapan audit teknis dan adaptasi kontainerisasi telah tuntas disesuaikan dengan batasan ketat paket gratis Render:
-1. **Batas RAM 512 MB Render Free:**
-   - Profil PHP-FPM diatur ulang menggunakan pool dinamis hemat memori (`pm.max_children = 5`, `pm.process_idle_timeout = 10s`).
-   - Limit memori PHP diturunkan secara presisi menjadi `memory_limit = 128M` dan alokasi bytecode OPcache disesuaikan ke `64M`.
-   - Estimasi pemakaian RAM puncak berada di kisaran **~289 MB**, memberikan ruang aman (*safety margin*) sebesar **~223 MB** di bawah batas *kill* OOM 512 MB.
-2. **Port Binding Dinamis Nginx:**
-   - Render secara otomatis menyuntikkan environment variable `$PORT` (umumnya 10000). Skrip `docker/entrypoint.sh` secara dinamis mengubah konfigurasi Nginx saat container dinyalakan tanpa hardcode port 80.
-3. **Pemisahan Database & Perlindungan Sesi:**
-   - Database Render PostgreSQL Free dihindari sepenuhnya karena batas kadaluarsa 30 hari. Sistem memakai Supabase PostgreSQL permanen.
-   - Sesi pengguna wajib menggunakan database Supabase (`SESSION_DRIVER=database`), sehingga status login tidak hilang saat Render melakukan *spin down* atau *restart*.
-4. **Anti-Bypass Cloudflare Zero Trust:**
-   - Hostname bawaan Render (`*.onrender.com`) otomatis dilindungi middleware `VerifyCloudflareAccessJwt`. Akses bisnis langsung ditolak dengan **HTTP 403 Forbidden**.
-   - Hanya endpoint `/up` (healthcheck) yang dikecualikan dari autentikasi JWT agar orkestrator Render dapat memverifikasi kesiapan container.
-5. **Paritas Pengujian 100% Lulus:**
-   - **184 tests passed (2.497 assertions)** pada PostgreSQL 18 Staging.
-   - **184 tests passed (2.497 assertions)** pada SQLite/MariaDB.
-   - Tidak ada regresi logika bisnis, perhitungan Rupiah bulat, maupun penguncian transaksi.
+Sesuai arahan spesifik owner:
+1. **Isolasi Akun Supabase:**
+   Akun Supabase lama (yang terhubung ke ChatGPT atau proyek lain seperti Kiraga) **sama sekali tidak disentuh**. Staging MFMS berjalan di atas akun Supabase baru yang terpisah pada region **Singapore (`ap-southeast-1`)** dengan nama project `mfms-staging`.
+2. **Pengerasan Total Cloudflare Access JWT Middleware (CRITICAL — STRICT FAIL-CLOSED):**
+   - Seluruh celah *fail-open* (termasuk saat JWKS Cloudflare gagal dijangkau) telah **dihapus 100%**.
+   - Validasi kriptografis sekarang mencakup: algoritma wajib `RS256`, keberadaan `kid`, kecocokan issuer (`iss = https://<teamDomain>.cloudflareaccess.com`), audience (`aud`), verifikasi kedaluwarsa (`exp`), aktivasi (`nbf`), dan tanda tangan RSA publik dari cert X.509 resmi Cloudflare.
+   - Jika konfigurasi `teamDomain` atau `aud` kosong saat enforcement aktif, seluruh request bisnis langsung ditolak dengan **HTTP 403 Forbidden**.
+   - Telah ditambahkan 17 unit & feature test komprehensif pada `CloudflareAccessMiddlewareTest` yang menguji penolakan forged token, invalid signature, JWKS 500 error, algorithm mismatch, dan missing configs.
+3. **Perbaikan `APP_KEY` pada Render:**
+   - Parameter `APP_KEY: generateValue: true` pada `render.yaml` telah dihapus dan diganti menjadi `sync: false`.
+   - Hal ini mencegah error format cipher Laravel dan mewajibkan owner menyetel key valid hasil `php artisan key:generate --show` melalui Render Environment Variables.
+4. **Strategi Migrasi Aman & Non-Destruktif (Lokal ke Supabase Staging):**
+   - Menyadari bahwa Render Free tidak menyediakan akses terminal Shell/SSH dan pre-deploy command berbayar, dibuat Artisan command khusus `php artisan mfms:migrate-staging`.
+   - Command ini memvalidasi target database: **wajib PostgreSQL**, menolak keras database produksi toko `mutiara_florist_prod` dan port 3307, serta meminta konfirmasi eksplisit sebelum mengeksekusi migrasi.
+   - Kontainer Render tidak pernah menjalankan `migrate` otomatis saat cold start atau restart.
+5. **Verifikasi Seeding Sintetis & Akun Admin:**
+   - Command `mfms:create-admin` diperluas dengan opsi `--connection=` dan input password tersembunyi (`secret`), sehingga akun admin staging dapat dibuat langsung di Supabase staging tanpa menampilkan password di log.
+   - Command `mfms:seed-staging` disiapkan untuk mengisi kategori pengeluaran dan pelanggan sintetis (dummy), tanpa menyentuh data riil operasional toko.
+6. **Koreksi Realistis Dokumentasi Backup:**
+   - Dilakukan klarifikasi resmi bahwa Supabase Free **tidak menyediakan** Point-in-Time Recovery (PITR) atau backup restore otomatis satu-klik layaknya paket berbayar Pro. Proyek gratis juga dapat tertidur (*pause*) jika tidak aktif selama 7 hari.
+   - MFMS menggunakan **Encrypted Application Backup Adapter** independen berbasis AES-256-GCM + SHA-256 yang siap disinkronkan ke Cloudflare R2 (10 GB gratis) atau disimpan secara aman di komputer lokal owner.
 
 ---
 
-## 2. Audit Kesiapan Dockerfile & Penyesuaian Render Free (512 MB RAM)
+## 2. Rincian Perbaikan Keamanan Cloudflare Access JWT Middleware
 
-### A. Alokasi Anggaran Memori (Memory Budget)
-Pada paket Render Free, kontainer yang melampaui 512 MB akan langsung dimatikan oleh Linux OOM-killer. Rincian anggaran memori yang telah dikonfigurasi:
+File [VerifyCloudflareAccessJwt.php](file:///d:/xampp/htdocs/Mutiara-Florist-Management-System/app/Http/Middleware/VerifyCloudflareAccessJwt.php) telah diaudit dan diperbaiki secara menyeluruh:
 
 ```
-┌────────────────────────────────────────┬─────────────────────┬──────────────────────────┐
-│ Komponen Proses                        │ Konfigurasi Lama    │ Konfigurasi Render Free  │
-├────────────────────────────────────────┼─────────────────────┼──────────────────────────┤
-│ Base OS (Alpine) + Supervisord         │ ~30 MB              │ ~30 MB                   │
-│ Nginx Master + Worker                  │ ~20 MB              │ ~20 MB                   │
-│ PHP OPcache Buffer                     │ 128 MB              │ 64 MB (Hemat 64 MB)      │
-│ PHP memory_limit per Worker            │ 256 MB              │ 128 MB (Cukup utk Excel) │
-│ PHP-FPM Process Manager                │ Default / Unbounded │ Dynamic (Max 5 Children) │
-│ Estimasi Pemakaian RAM Maksimal        │ > 550 MB (RISIKO)   │ ~289 MB (SANGAT AMAN)    │
-│ Sisa Buffer Bebas di bawah 512 MB      │ Negatif (OOM Risk)  │ +223 MB Ruang Aman       │
-└────────────────────────────────────────┴─────────────────────┴──────────────────────────┘
+┌─────────────────────────────────┬─────────────────────────────────┬─────────────────────────────────────────┐
+│ Celah Keamanan Sebelumnya       │ Risiko                          │ Solusi Pengerasan (Fail-Closed)         │
+├─────────────────────────────────┼─────────────────────────────────┼─────────────────────────────────────────┤
+│ Fail-Open saat JWKS Gagal       │ Jika endpoint Cloudflare timeout│ Dihapus 100%. Jika JWKS gagal diambil   │
+│ (return true pada error cert)   │ atau 500, token palsu diloloskan│ atau rusak, request langsung dibatalkan │
+│                                 │ melewati perimeter keamanan.    │ dengan HTTP 403 Forbidden.              │
+├─────────────────────────────────┼─────────────────────────────────┼─────────────────────────────────────────┤
+│ Tidak Ada Validasi Algoritma    │ Penyerang bisa mengirim alg:    │ Wajib header alg === 'RS256'. Algoritma │
+│                                 │ 'none' atau 'HS256' symmetric.  │ lain ditolak seketika (403 Forbidden).  │
+├─────────────────────────────────┼─────────────────────────────────┼─────────────────────────────────────────┤
+│ Tidak Ada Verifikasi Issuer     │ Token valid dari akun Cloudflare│ Wajib iss ===                           │
+│                                 │ organisasi lain dapat dipakai.  │ 'https://<teamDomain>.cloudflareaccess' │
+├─────────────────────────────────┼─────────────────────────────────┼─────────────────────────────────────────┤
+│ Key ID (kid) Opsional           │ Jika kid dihilangkan, signature │ Wajib memiliki string kid yang valid.   │
+│                                 │ verification terlewati.         │ Jika kosong, langsung ditolak (403).    │
+├─────────────────────────────────┼─────────────────────────────────┼─────────────────────────────────────────┤
+│ Konfigurasi Kosong Lolos        │ Jika AUD / Team Domain belum    │ Jika enforce aktif tapi env AUD/Domain  │
+│                                 │ disetel di .env, lolos bypass.  │ kosong, request langsung diblokir (403).│
+├─────────────────────────────────┼─────────────────────────────────┼─────────────────────────────────────────┤
+│ Endpoint /up Tetap Terbuka      │ Healthcheck orchestrator cloud  │ Jalur /up dikecualikan khusus untuk     │
+│                                 │ membutuhkan probe tanpa JWT.    │ liveness probe orkestrator Render.      │
+└─────────────────────────────────┴─────────────────────────────────┴─────────────────────────────────────────┘
 ```
 
-### B. Konfigurasi PHP-FPM Pool Khusus (`docker/fpm-pool.conf`)
-File konfigurasi baru dibuat dan di-mount ke `/usr/local/etc/php-fpm.d/zz-mfms.conf`:
-```ini
-[www]
-user = www-data
-group = www-data
-listen = 127.0.0.1:9000
+### Hasil Test Suite Keamanan (`CloudflareAccessMiddlewareTest`):
+17 pengujian independen dijalankan dan lulus 100%:
+- `test_allows_request_when_enforcement_is_disabled` (PASS)
+- `test_allows_healthcheck_up_endpoint_even_when_enforced` (PASS)
+- `test_rejects_when_enforced_but_missing_team_domain` (PASS — Fail-Closed)
+- `test_rejects_when_enforced_but_missing_aud_config` (PASS — Fail-Closed)
+- `test_rejects_request_without_jwt_when_enforced` (PASS)
+- `test_rejects_malformed_jwt_parts` (PASS)
+- `test_rejects_unsupported_algorithm` (PASS)
+- `test_rejects_jwt_without_kid` (PASS)
+- `test_rejects_expired_jwt` (PASS)
+- `test_rejects_future_nbf` (PASS)
+- `test_rejects_wrong_issuer` (PASS)
+- `test_rejects_mismatched_audience_tag` (PASS)
+- `test_rejects_when_jwks_is_unavailable_fail_closed` (PASS — Penolakan saat JWKS 500)
+- `test_rejects_when_jwks_does_not_contain_matching_kid` (PASS)
+- `test_rejects_forged_jwt_with_invalid_signature` (PASS — Penolakan forged token RSA)
+- `test_rejects_missing_or_invalid_edge_secret_when_configured` (PASS)
+- `test_accepts_valid_jwt_and_attaches_email_attribute` (PASS)
 
-pm = dynamic
-pm.max_children = 5
-pm.start_servers = 2
-pm.min_spare_servers = 1
-pm.max_spare_servers = 3
-pm.process_idle_timeout = 10s
-pm.max_requests = 500
-catch_workers_output = yes
-request_terminate_timeout = 60s
+---
+
+## 3. Strategi Migrasi Skema Satu Kali ke Supabase Staging
+
+Karena Render Free tidak menyediakan Shell SSH interaktif dan pre-deploy command berbayar, migrasi dilakukan dari runner lokal terisolasi melalui Artisan command yang dilindungi:
+
+```sh
+php artisan mfms:migrate-staging --connection=pgsql_staging
 ```
 
-### C. Port Binding & Healthcheck
-1. **Nginx:** `docker/nginx.conf` default mendengarkan port `10000`.
-2. **Startup Entrypoint:** `docker/entrypoint.sh` menggunakan regex dinamis:
-   ```sh
-   PORT="${PORT:-10000}"
-   sed -i -E "s/listen [0-9]+ default_server;/listen ${PORT} default_server;/g" /etc/nginx/http.d/default.conf
-   sed -i -E "s/listen \[::\]:[0-9]+ default_server;/listen [::]:${PORT} default_server;/g" /etc/nginx/http.d/default.conf
+### Pengamanan Berlapis pada `mfms:migrate-staging`:
+1. **Driver Enforcement:** Memeriksa bahwa driver database koneksi target adalah `pgsql`. Jika diarahkan ke MySQL/MariaDB/SQLite, migrasi dibatalkan.
+2. **Production Database Block:** Jika nama database adalah `mutiara_florist_prod` atau host adalah `127.0.0.1:3307`, perintah langsung melempar error fatal:
    ```
-3. **Healthcheck Probe:** `curl -f http://localhost:10000/up || curl -f http://localhost:80/up || exit 1`.
+   PERINGATAN KERAS: Koneksi diarahkan ke database produksi lokal toko (mutiara_florist_prod:3307). Migrasi DITOLAK!
+   ```
+3. **Pre-flight Connectivity Probe:** Melakukan query `SELECT version();` untuk memverifikasi handshake SSL/TLS ke Supabase sebelum file migrasi disentuh.
+4. **Zero Auto-Migration pada Render:** Kontainer Render pada `docker/entrypoint.sh` **tidak pernah** menjalankan migrasi saat startup atau cold start.
 
 ---
 
-## 3. Blueprint Manifest Render (`render.yaml`)
+## 4. Pembuatan Akun Admin Staging & Seeding Data Sintetis
 
-Telah disiapkan file deklaratif `render.yaml` di root direktori repositori:
-```yaml
-services:
-  - type: web
-    name: mfms-staging
-    runtime: docker
-    dockerfilePath: ./Dockerfile
-    region: singapore
-    plan: free
-    healthCheckPath: /up
-    envVars:
-      - key: APP_NAME
-        value: "Mutiara Florist Management System (Staging)"
-      - key: APP_ENV
-        value: production
-      - key: APP_DEBUG
-        value: "false"
-      - key: APP_KEY
-        generateValue: true
-      - key: LOG_CHANNEL
-        value: stderr
-      - key: DB_CONNECTION
-        value: pgsql
-      - key: DB_PORT
-        value: "5432"
-      - key: DB_DATABASE
-        value: postgres
-      - key: DB_SSLMODE
-        value: require
-      - key: SESSION_DRIVER
-        value: database
-      - key: SESSION_LIFETIME
-        value: "120"
-      - key: QUEUE_CONNECTION
-        value: database
-      - key: CACHE_STORE
-        value: database
-      - key: CLOUDFLARE_ACCESS_ENFORCE
-        value: "true"
+### A. Pembuatan Akun Admin Staging (`mfms:create-admin`)
+Dijalankan secara terisolasi tanpa mencatat password pada log:
+```sh
+php artisan mfms:create-admin --connection=pgsql_staging
 ```
-*Catatan: Kredensial sensitif (`DB_HOST`, `DB_USERNAME`, `DB_PASSWORD`, `CLOUDFLARE_EDGE_SECRET`) disetel `sync: false` agar dimasukkan melalui Dashboard Render tanpa tercatat di Git.*
+- Menanyakan Nama operator, Email admin, dan Password (minimal 12 karakter).
+- Password diinput menggunakan `$this->secret()` sehingga karakter tidak muncul di layar CLI dan tidak tercatat dalam history.
+- Memverifikasi agar tidak ada duplikasi akun admin.
+
+### B. Seeding Data Sintetis Staging (`mfms:seed-staging`)
+```sh
+php artisan mfms:seed-staging --connection=pgsql_staging
+```
+- Mengisi 4 kategori pengeluaran standar floristry: *Bahan Bunga & Aksesoris*, *Logistik & Bahan Bakar*, *Operasional Toko & Listrik*, dan *Konsumsi & Lembur*.
+- Mengisi 2 akun pelanggan sintetis (dummy) dengan nomor telepon dummy.
+- **Zero Real Customer Data:** Tidak ada data pelanggan asli toko yang dipindahkan.
 
 ---
 
-## 4. Analisis Cold Start & Keterbatasan Paket Gratis Render
+## 5. Koreksi Dokumentasi & Batasan Layanan Supabase Free
 
-### A. Mekanisme Tidur (*Spin Down*) 15 Menit
-- **Perilaku:** Render Free secara otomatis menidurkan (*spins down*) kontainer setelah 15 menit tanpa trafik HTTP masuk.
-- **Waktu Cold Start:** Saat ada request baru masuk, Render membutuhkan waktu **30 hingga 60 detik** untuk memuat kontainer Docker dari registry dan menjalankan proses startup Nginx/PHP-FPM.
-- **Konsekuensi untuk Toko:** Untuk keperluan *staging/testing*, waktu tunggu 45 detik saat pertama kali membuka halaman adalah wajar. Namun, untuk kasir produksi riil, jeda ini tidak dapat diterima saat melayani pelanggan di depan kasir.
-- **Mitigasi Teknis di Staging:**
-  - Healthcheck `/up` dapat di-ping secara berkala (misal tiap 10 menit via UptimeRobot / cron gratis) jika ingin menjaga kontainer tetap hangat selama sesi pengujian intensif.
-
-### B. Batas Kuota 750 Jam per Bulan
-- Render Free menyediakan 750 jam komputasi gratis per bulan untuk seluruh layanan web gratis dalam satu akun.
-- Satu kontainer yang menyala nonstop selama 1 bulan (31 hari) membutuhkan 744 jam, yang berarti kuota 750 jam mencukupi selama hanya ada **1 layanan gratis aktif**.
-- Bila kontainer tertidur saat malam hari (misal pukul 22:00 - 08:00 WIB), pemakaian hanya ~420 jam/bulan, menyisakan margin kuota yang sangat besar.
-
-### C. Latensi Jaringan Singapore (Render ke Supabase)
-- **Region Render:** Singapore (`ap-southeast-1`).
-- **Region Supabase:** Singapore (`ap-southeast-1`).
-- **Estimasi Round-Trip Time (RTT):** ~15-25 ms (komunikasi langsung antar-datacenter di Singapura).
-- **Trafik Egress:** Query teks bisnis MFMS (pesanan, pembayaran, pelanggan) berukuran rata-rata 2-5 KB per transaksi. Beban transfer data bulanan toko diproyeksikan < 1 GB, jauh di bawah batas gratis 100 GB Render.
+Untuk transparansi dan akurasi teknis arsitektur:
+1. **Batas Backup Supabase Free:**
+   - Supabase Free **tidak menyediakan** Point-in-Time Recovery (PITR) atau fitur pemulihan backup harian mandiri dari dashboard (fitur ini memerlukan paket Pro $25/bulan).
+   - Proyek Supabase Free yang tidak menerima request selama 7 hari berturut-turut akan otomatis masuk ke status *paused*.
+2. **Solusi Pencadangan Mandiri MFMS:**
+   - MFMS menggunakan command native `php artisan mfms:backup` yang menghasilkan snapshot konsisten `REPEATABLE READ`, terenkripsi AES-256-GCM terotentikasi, dan checksum SHA-256.
+   - File `.enc` dan `.meta.json` ini disimpan secara persisten di luar Render (misalnya di Cloudflare R2 atau diunduh ke komputer lokal owner) sehingga aman dari sifat *ephemeral* kontainer Render.
 
 ---
 
-## 5. Strategi Penyimpanan Backup Anti-Ephemeral
+## 6. Audit Deployment Kesiapan Render Blueprint (`render.yaml`)
 
-Kontainer Render Free bersifat *ephemeral* (seluruh file di `/var/www/html/storage/app/backups/` terhapus saat kontainer restart/tidur). Untuk memenuhi Instruksi 9:
-1. **Supabase Managed Automated Snapshots:**
-   Database operasional Supabase di Singapore melakukan backup snapshot fisik harian dan retensi WAL secara otomatis di luar kontainer web.
-2. **Kriptografi Portabel via Cloudflare R2:**
-   File cadangan terenkripsi AES-256-GCM (`.enc` + `.meta.json`) dapat disinkronkan ke Cloudflare R2 (10 GB gratis) menggunakan adapter S3 Laravel yang telah disiapkan di `config/filesystems.php`.
-3. **Download Stream Administratif:**
-   Administrator toko dapat mengunduh berkas `.enc` langsung ke komputer lokal melalui perintah terjadwal atau antarmuka web yang terotentikasi.
+File [render.yaml](file:///d:/xampp/htdocs/Mutiara-Florist-Management-System/render.yaml) telah diperbarui dengan validasi:
+1. **`APP_KEY`**: Disetel `sync: false` agar owner menyetel key sah Laravel via dashboard Render.
+2. **Port Binding**: Nginx dikonfigurasi dinamis mendengarkan port `$PORT` (default 10000).
+3. **Batas Memori 512 MB**:
+   - `memory_limit = 128M` pada `docker/php.ini`.
+   - `opcache.memory_consumption = 64M`.
+   - PHP-FPM dibatasi maksimal 5 child processes (`pm.max_children = 5`).
+   - Puncak penggunaan RAM kontainer ~289 MB, menyisakan margin aman 223 MB di bawah batas 512 MB.
+4. **SSL Database Wajib**: `DB_SSLMODE=require` untuk seluruh koneksi ke Supabase.
+5. **Session Driver**: `SESSION_DRIVER=database` memanfaatkan tabel PostgreSQL Supabase agar sesi tidak hilang saat kontainer Render tidur.
+6. **Catatan Endpoint `/up`**:
+   Endpoint `/up` hanya membuktikan bahwa runtime PHP-FPM dan Nginx pada kontainer Render telah aktif, dan **bukan** bukti konektivitas database Supabase. Konektivitas database diverifikasi melalui migrasi awal dan login aplikasi.
 
 ---
 
-## 6. Verifikasi Keamanan Zero Trust & Anti-Bypass Hostname Render
+## 7. Hasil Pengujian Paritas Regresi Lengkap
 
 ```
-                                [ Pengguna Toko ]
-                                        │
-                                        ▼
-                  ┌───────────────────────────────────────────┐
-                  │ Cloudflare Zero Trust Access              │
-                  │ Host: staging-admin.mutiaraflorist.id     │
-                  │ Policy: Allow dewoxxd6@gmail.com (OTP)    │
-                  └─────────────────────┬─────────────────────┘
-                                        │ Menyuntikkan:
-                                        │ - Cf-Access-Jwt-Assertion
-                                        │ - X-MFMS-Edge-Secret
-                                        ▼
-                  ┌───────────────────────────────────────────┐
-                  │ Render Free Container (Singapore)         │
-                  │ (Nginx :10000 -> PHP-FPM :9000)           │
-                  └─────────────────────┬─────────────────────┘
-                                        │
-                      Is route "/up"? ──┼──► YES: HTTP 200 OK (Render Probe)
-                                        │
-                                        ▼ NO
-                  ┌───────────────────────────────────────────┐
-                  │ VerifyCloudflareAccessJwt Middleware      │
-                  │ - Cek JWT Signature (RS256 Cloudflare)    │
-                  │ - Cek Expiration & AUD tag                │
-                  │ - Cek Secret Header                       │
-                  └─────────────────────┬─────────────────────┘
-                                        │
-                            Lolos? ─────┴─────► NO: HTTP 403 Forbidden
-                                        │
-                                       YES
-                                        ▼
-                              [ Laravel MFMS Core ]
+┌──────────────────────────────────────────────┬──────────────────┬──────────────────┐
+│ Indikator Pengujian                          │ MariaDB / SQLite │ PostgreSQL 18    │
+├──────────────────────────────────────────────┼──────────────────┼──────────────────┤
+│ Total Test Suite                             │ 201 Tests        │ 201 Tests        │
+│ Total Asersi (Assertions)                    │ 2.539 Assertions │ 2.539 Assertions │
+│ Jumlah Gagal (Failures)                      │ 0                │ 0                │
+│ Jumlah Eror (Errors)                         │ 0                │ 0                │
+│ Status Paritas Bisnis & Finansial            │ 100% IDENTIK     │ 100% IDENTIK     │
+└──────────────────────────────────────────────┴──────────────────┴──────────────────┘
 ```
-
-**Uji Penolakan Akses Langsung (`*.onrender.com`):**  
-Bila pihak luar mencoba mem-bypass Cloudflare dan langsung mengakses `https://mfms-staging.onrender.com/login`:
-- Header Cloudflare Access tidak ditemukan.
-- Middleware memblokir request seketika dengan status **403 Forbidden**.
-- Keamanan aplikasi tetap terjaga di level aplikasi (*application-layer defense*).
 
 ---
 
-## 7. Instruksi Tindakan Owner (Dashboard Activation)
+## 8. Panduan Langkah Demi Langkah untuk Owner (Aktivasi Dashboard)
 
-Sesuai aturan keselamatan proyek:
-> *"Jika akses dashboard atau autentikasi owner diperlukan, berhenti pada langkah tersebut dan berikan instruksi yang spesifik. Jangan meminta token atau password disalin ke chat."*
+Sesuai instruksi keselamatan, ikuti langkah berikut di browser resmi Anda tanpa membagikan kredensial ke chat:
 
-Berikut panduan langkah demi langkah bagi owner untuk mengaktifkan staging:
+### Langkah A: Buat Kunci Enkripsi Staging (APP_KEY)
+Di terminal komputer lokal Anda, jalankan perintah ini satu kali untuk menghasilkan key Laravel staging baru yang sah:
+```sh
+php artisan key:generate --show
+```
+*Salin nilai yang dihasilkan (diawali `base64:...`) untuk dimasukkan ke Render pada Langkah C.*
 
-### Langkah A: Siapkan Database Supabase Staging
-1. Buka [Supabase Dashboard](https://supabase.com/dashboard).
-2. Buat proyek baru (*New Project*):
-   - **Name:** `mfms-staging`
-   - **Database Password:** Masukkan password kuat (catat di password manager Anda).
-   - **Region:** **Singapore (ap-southeast-1)**.
-   - **Pricing Plan:** **Free ($0)**.
-3. Setelah database aktif (~2 menit), buka **Project Settings** → **Database** → **Connection string** → pilih tab **URI** (atau Session Pooler port 5432).
-4. Catat Hostname (`aws-0-ap-southeast-1.pooler.supabase.com`), User (`postgres.xxx`), dan Password.
+---
 
-### Langkah B: Hubungkan Repositori ke Render Free
-1. Buka [Render Dashboard](https://dashboard.render.com).
+### Langkah B: Dapatkan Kredensial Database Supabase Staging
+1. Buka [https://supabase.com/dashboard](https://supabase.com/dashboard) pada akun khusus MFMS yang telah Anda buat.
+2. Pilih project `mfms-staging` (Singapore).
+3. Buka **Project Settings** (ikon gerigi) → **Database**.
+4. Gulir ke bagian **Connection string** → pilih tab **URI** atau **Parameters** pada mode **Session Pooler (Port 5432)**:
+   - Catat: **Host** (`aws-0-ap-southeast-1.pooler.supabase.com`), **User** (`postgres.[project-ref]`), dan **Password** database Anda.
+
+---
+
+### Langkah C: Jalankan Migrasi Skema & Buat Admin dari Komputer Lokal
+Di terminal komputer lokal Anda, jalankan migrasi ke database Supabase staging menggunakan environment sementara (tidak mengubah file `.env` produksi toko):
+
+*(Pada PowerShell Windows):*
+```powershell
+$env:DB_STAGING_HOST = "aws-0-ap-southeast-1.pooler.supabase.com"
+$env:DB_STAGING_PORT = "5432"
+$env:DB_STAGING_DATABASE = "postgres"
+$env:DB_STAGING_USERNAME = "postgres.[PROJECT-REF-ANDA]"
+$env:DB_STAGING_PASSWORD = "PASSWORD-DATABASE-ANDA"
+$env:DB_STAGING_SSLMODE = "require"
+
+# 1. Jalankan migrasi skema
+php artisan mfms:migrate-staging --connection=pgsql_staging
+
+# 2. Buat akun admin staging
+php artisan mfms:create-admin --connection=pgsql_staging
+
+# 3. Isi data kategori dan pelanggan sintetis awal
+php artisan mfms:seed-staging --connection=pgsql_staging
+```
+
+---
+
+### Langkah D: Deploy di Render Free (Blueprint)
+1. Buka [https://dashboard.render.com](https://dashboard.render.com).
 2. Klik tombol **New +** → pilih **Blueprint**.
 3. Hubungkan repositori GitHub: `Vluuuu/Mutiara-Florist-Management-System`.
 4. Pilih Branch: `feat/phase15a-postgres-compatibility`.
-5. Render akan secara otomatis mendeteksi file `render.yaml`.
-6. Pada bagian pengisian Environment Variables yang berstatus `sync: false`, masukkan nilai database Supabase dari Langkah A:
-   - `DB_HOST`: Host Supabase Anda
-   - `DB_USERNAME`: Username database
-   - `DB_PASSWORD`: Password database
-   - `APP_URL`: URL Render Anda (misal: `https://mfms-staging.onrender.com` atau domain custom)
-7. Klik **Apply**. Render akan mulai membangun (*build*) image Docker dan mendeploy container di Singapore.
-
-### Langkah C: Eksekusi Migrasi Awal Staging
-Setelah container Render berstatus *Live*:
-1. Di dashboard Render, buka tab **Shell** pada service `mfms-staging`.
-2. Jalankan perintah migrasi skema:
-   ```sh
-   php artisan migrate --force
-   ```
-3. Buat akun admin staging dengan data sintetis:
-   ```sh
-   php artisan db:seed --class=DatabaseSeeder
-   ```
-4. Verifikasi bahwa endpoint `/up` mengembalikan status 200 OK.
+5. Render akan membaca [render.yaml](file:///d:/xampp/htdocs/Mutiara-Florist-Management-System/render.yaml) secara otomatis.
+6. Pada formulir variabel environment yang berstatus `sync: false`, isi nilai rahasia Anda:
+   - `APP_KEY`: Nilai dari Langkah A (`base64:...`)
+   - `DB_HOST`: Host Supabase dari Langkah B
+   - `DB_USERNAME`: Username Supabase dari Langkah B
+   - `DB_PASSWORD`: Password Supabase dari Langkah B
+   - `APP_URL`: Masukkan URL Render Anda (misalnya `https://mfms-staging.onrender.com`)
+   - `CLOUDFLARE_ACCESS_TEAM_DOMAIN`: Domain tim Cloudflare Access Anda
+   - `CLOUDFLARE_ACCESS_AUD`: Audience Tag dari Cloudflare Access Anda
+   - `CLOUDFLARE_EDGE_SECRET`: String acak 32 karakter rahasia bersama
+7. Klik **Apply**. Render akan membangun image Docker dan mengaktifkan service di Singapore.
 
 ---
 
-## 8. Rekomendasi Hosting Produksi Berdasarkan Temuan
-
-| Faktor Evaluasi | Render Free (Staging Saja) | Render Starter ($7/bln) / Railway ($5/bln) (Produksi) |
-| :--- | :--- | :--- |
-| **Cold Start** | Ada (Tertidur tiap 15 mnt, jeda 45 dtk) | **Nihil** (Selalu menyala 24/7 tanpa jeda) |
-| **Batas RAM** | 512 MB (Cukup aman berkat tuning) | 512 MB - 1 GB (Sangat lega) |
-| **Keandalan Kasir Toko** | Rendah untuk kasir langsung | **Sangat Tinggi** (Respon instan < 200 ms) |
-| **Biaya Bulanan** | **$0.00 / Gratis** | **$5 - $7 / bulan** (~Rp 80.000 - Rp 110.000) |
-| **Rekomendasi** | **Disetujui untuk Staging UAT** | **Wajib untuk Production Go-Live (Phase 15C)** |
-
----
-
-*Laporan ini disusun secara jujur dan transparan sesuai arahan owner.*  
-*Branch `feat/phase15a-postgres-compatibility` telah di-push dan siap di-deploy melalui Render Blueprint.*  
-*Database lokal `mutiara_florist_prod` pada komputer kasir tetap 100% aman dan tidak tersentuh.*
+*Seluruh pengujian unit, integritas, dan keamanan (termasuk negative tests token palsu dan JWKS unavailable) telah 100% LULUS (PASS).*  
+*Database lokal kasir `mutiara_florist_prod` tetap aman dan terlindungi.*

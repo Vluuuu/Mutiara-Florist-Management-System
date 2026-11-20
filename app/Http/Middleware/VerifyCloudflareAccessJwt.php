@@ -14,6 +14,7 @@ class VerifyCloudflareAccessJwt
     /**
      * Handle an incoming request.
      * Enforces Cloudflare Access Zero Trust Edge verification on production.
+     * Strictly fail-closed: any missing configuration, invalid token, or JWKS failure blocks access.
      */
     public function handle(Request $request, Closure $next): Response
     {
@@ -32,11 +33,20 @@ class VerifyCloudflareAccessJwt
             return $next($request);
         }
 
-        // 1. Optional Edge Pre-Shared Secret Header check
+        // 1. Mandatory configuration checks when enforced (Fail-Closed)
+        $teamDomain = config('services.cloudflare.access_team_domain');
+        $expectedAud = config('services.cloudflare.access_aud');
+
+        if (empty($teamDomain) || empty($expectedAud)) {
+            Log::error('Cloudflare Access verification failed: Missing team domain or AUD in configuration.');
+            abort(403, 'Akses Ditolak: Konfigurasi keamanan Cloudflare Access belum lengkap.');
+        }
+
+        // 2. Optional Edge Pre-Shared Secret Header check
         $expectedEdgeSecret = config('services.cloudflare.edge_secret');
         if ($expectedEdgeSecret) {
             $providedSecret = $request->header('X-MFMS-Edge-Secret');
-            if (! hash_equals((string) $expectedEdgeSecret, (string) $providedSecret)) {
+            if (! $providedSecret || ! hash_equals((string) $expectedEdgeSecret, (string) $providedSecret)) {
                 Log::warning('Cloudflare Access verification failed: Invalid X-MFMS-Edge-Secret header.', [
                     'ip' => $request->ip(),
                     'path' => $request->path(),
@@ -45,9 +55,9 @@ class VerifyCloudflareAccessJwt
             }
         }
 
-        // 2. Cloudflare Access JWT Assertion Header check
+        // 3. Cloudflare Access JWT Assertion Header check
         $jwt = $request->header('Cf-Access-Jwt-Assertion');
-        if (! $jwt || ! is_string($jwt)) {
+        if (! $jwt || ! is_string($jwt) || trim($jwt) === '') {
             Log::warning('Cloudflare Access verification failed: Missing Cf-Access-Jwt-Assertion header.', [
                 'ip' => $request->ip(),
                 'path' => $request->path(),
@@ -55,8 +65,8 @@ class VerifyCloudflareAccessJwt
             abort(403, 'Akses Ditolak: Autentikasi Cloudflare Access Zero Trust wajib ada.');
         }
 
-        // 3. Parse JWT
-        $parts = explode('.', $jwt);
+        // 4. Parse JWT structure
+        $parts = explode('.', trim($jwt));
         if (count($parts) !== 3) {
             abort(403, 'Akses Ditolak: Format token Cloudflare Access tidak valid.');
         }
@@ -69,33 +79,57 @@ class VerifyCloudflareAccessJwt
             abort(403, 'Akses Ditolak: Payload token Cloudflare Access rusak.');
         }
 
-        // 4. Expiry verification
+        // 5. Algorithm & Key ID verification
+        if (($header['alg'] ?? null) !== 'RS256') {
+            Log::warning('Cloudflare Access verification failed: Unsupported algorithm.', [
+                'alg' => $header['alg'] ?? 'null',
+            ]);
+            abort(403, 'Akses Ditolak: Algoritma token Cloudflare Access harus RS256.');
+        }
+
+        $kid = $header['kid'] ?? null;
+        if (! is_string($kid) || trim($kid) === '') {
+            Log::warning('Cloudflare Access verification failed: Missing key ID (kid).');
+            abort(403, 'Akses Ditolak: Token Cloudflare Access tidak memiliki Key ID.');
+        }
+
+        // 6. Expiry verification
         if (! isset($payload['exp']) || time() >= (int) $payload['exp']) {
             abort(403, 'Akses Ditolak: Sesi Cloudflare Access telah kedaluwarsa.');
         }
 
-        // 5. Audience Tag (AUD) verification
-        $expectedAud = config('services.cloudflare.access_aud');
-        if ($expectedAud) {
-            $aud = $payload['aud'] ?? null;
-            $audMatches = is_array($aud) ? in_array($expectedAud, $aud, true) : ($aud === $expectedAud);
-            if (! $audMatches) {
-                Log::warning('Cloudflare Access verification failed: AUD mismatch.', [
-                    'expected' => $expectedAud,
-                    'provided' => $aud,
-                ]);
-                abort(403, 'Akses Ditolak: Target aplikasi Cloudflare Access tidak cocok.');
-            }
+        // 7. Not Before (nbf) verification if present
+        if (isset($payload['nbf']) && time() < (int) $payload['nbf']) {
+            abort(403, 'Akses Ditolak: Sesi Cloudflare Access belum aktif.');
         }
 
-        // 6. Cryptographic signature verification using Cloudflare Public JWKS certs
-        $teamDomain = config('services.cloudflare.access_team_domain');
-        if ($teamDomain && isset($header['kid'])) {
-            $isValidSignature = $this->verifySignature($teamDomain, $header['kid'], $rawHeader.'.'.$rawPayload, $rawSignature);
-            if (! $isValidSignature) {
-                Log::error('Cloudflare Access verification failed: Invalid RSA cryptographic signature.');
-                abort(403, 'Akses Ditolak: Validasi tanda tangan digital Cloudflare Access gagal.');
-            }
+        // 8. Issuer (iss) verification
+        $expectedIss = "https://{$teamDomain}.cloudflareaccess.com";
+        $iss = $payload['iss'] ?? null;
+        if ($iss !== $expectedIss) {
+            Log::warning('Cloudflare Access verification failed: Issuer mismatch.', [
+                'expected' => $expectedIss,
+                'provided' => $iss,
+            ]);
+            abort(403, 'Akses Ditolak: Penerbit (issuer) token Cloudflare Access tidak valid.');
+        }
+
+        // 9. Audience Tag (AUD) verification
+        $aud = $payload['aud'] ?? null;
+        $audMatches = is_array($aud) ? in_array($expectedAud, $aud, true) : ($aud === $expectedAud);
+        if (! $audMatches) {
+            Log::warning('Cloudflare Access verification failed: AUD mismatch.', [
+                'expected' => $expectedAud,
+                'provided' => $aud,
+            ]);
+            abort(403, 'Akses Ditolak: Target aplikasi Cloudflare Access tidak cocok.');
+        }
+
+        // 10. Cryptographic signature verification using Cloudflare Public JWKS certs (STRICTLY FAIL-CLOSED)
+        $isValidSignature = $this->verifySignature($teamDomain, $kid, $rawHeader.'.'.$rawPayload, $rawSignature);
+        if (! $isValidSignature) {
+            Log::error('Cloudflare Access verification failed: Invalid RSA signature or JWKS unavailable.');
+            abort(403, 'Akses Ditolak: Validasi tanda tangan digital Cloudflare Access gagal.');
         }
 
         // Attach verified Cloudflare Access user email to request attributes
@@ -129,9 +163,10 @@ class VerifyCloudflareAccessJwt
             }
         });
 
-        if (! is_array($certs) || ! isset($certs['keys'])) {
-            // If cert retrieval is temporarily unreachable, do not hard-lock out if AUD & expiry are valid
-            return true;
+        // STRICT FAIL-CLOSED: if JWKS is unavailable or malformed, NEVER allow access
+        if (! is_array($certs) || ! isset($certs['keys']) || ! is_array($certs['keys'])) {
+            Log::error("Cloudflare JWKS keys unavailable or invalid for team {$teamDomain}.");
+            return false;
         }
 
         $targetKey = null;
@@ -142,13 +177,40 @@ class VerifyCloudflareAccessJwt
             }
         }
 
-        if (! $targetKey || ! isset($targetKey['cert'])) {
+        if (! $targetKey) {
+            Log::warning("Cloudflare JWKS does not contain matching key for kid: {$kid}");
             return false;
         }
 
-        $publicKey = "-----BEGIN CERTIFICATE-----\n".trim($targetKey['cert'])."\n-----END CERTIFICATE-----";
-        $rawSig = $this->base64UrlDecode($signature);
+        $publicKey = null;
 
-        return openssl_verify($data, $rawSig, $publicKey, OPENSSL_ALGO_SHA256) === 1;
+        // 1. Try X.509 cert from 'cert' field
+        if (! empty($targetKey['cert']) && is_string($targetKey['cert'])) {
+            $cert = trim($targetKey['cert']);
+            if (! str_contains($cert, '-----BEGIN CERTIFICATE-----')) {
+                $cert = "-----BEGIN CERTIFICATE-----\n".chunk_split($cert, 64, "\n")."-----END CERTIFICATE-----";
+            }
+            $publicKey = openssl_pkey_get_public($cert);
+        }
+
+        // 2. Try X.509 cert from 'x5c' array
+        if (! $publicKey && ! empty($targetKey['x5c'][0]) && is_string($targetKey['x5c'][0])) {
+            $cert = "-----BEGIN CERTIFICATE-----\n".chunk_split(trim($targetKey['x5c'][0]), 64, "\n")."-----END CERTIFICATE-----";
+            $publicKey = openssl_pkey_get_public($cert);
+        }
+
+        if (! $publicKey) {
+            Log::error("Failed to parse public certificate from JWKS for kid: {$kid}");
+            return false;
+        }
+
+        $rawSig = $this->base64UrlDecode($signature);
+        if ($rawSig === '') {
+            return false;
+        }
+
+        $verifyResult = openssl_verify($data, $rawSig, $publicKey, OPENSSL_ALGO_SHA256);
+
+        return $verifyResult === 1;
     }
 }

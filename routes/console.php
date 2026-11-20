@@ -4,40 +4,58 @@ use App\Models\User;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Hash;
 
-Artisan::command('mfms:create-admin', function (): int {
-    if (User::query()->exists()) {
-        $this->error('Akun admin sudah ada. Pembuatan akun tambahan dinonaktifkan untuk MVP.');
+Artisan::command('mfms:create-admin {--connection= : Nama koneksi database target}', function (): int {
+    $connName = (string) ($this->option('connection') ?: config('database.default'));
+    $config = config("database.connections.{$connName}");
 
+    if (! is_array($config)) {
+        $this->error("Koneksi database '{$connName}' tidak ditemukan.");
         return 1;
     }
 
-    $name = trim((string) $this->ask('Nama operator'));
+    $dbName = (string) ($config['database'] ?? '');
+    $dbPort = (string) ($config['port'] ?? '');
+    $dbHost = (string) ($config['host'] ?? '');
+
+    // Safeguard: Blocking execution on production database without manual override
+    if ($dbName === 'mutiara_florist_prod' || ($dbHost === '127.0.0.1' && $dbPort === '3307')) {
+        $this->error('Dilarang keras membuat akun admin sembarangan pada database produksi toko!');
+        return 1;
+    }
+
+    if (User::on($connName)->exists()) {
+        $this->error("Akun admin sudah ada pada koneksi '{$connName}'. Pembuatan akun tambahan dinonaktifkan.");
+        return 1;
+    }
+
+    $name = trim((string) $this->ask('Nama operator admin'));
     $email = trim((string) $this->ask('Email admin'));
     $password = (string) $this->secret('Password (minimal 12 karakter)');
     $passwordConfirmation = (string) $this->secret('Ulangi password');
 
     if ($name === '' || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $this->error('Nama atau format email tidak valid.');
-
         return 1;
     }
 
     if (strlen($password) < 12 || $password !== $passwordConfirmation) {
         $this->error('Password minimal 12 karakter dan harus sama dengan konfirmasi.');
-
         return 1;
     }
 
-    User::query()->create([
+    $user = new User();
+    $user->setConnection($connName);
+    $user->fill([
         'name' => $name,
         'email' => $email,
         'password' => Hash::make($password),
     ]);
+    $user->save();
 
-    $this->info('Akun admin berhasil dibuat. Silakan masuk melalui /login.');
+    $this->info("Akun admin [{$email}] berhasil dibuat pada koneksi '{$connName}'. Password aman dan tidak tercatat di log.");
 
     return 0;
-})->purpose('Membuat satu akun admin lokal tanpa registrasi publik');
+})->purpose('Membuat satu akun admin pada database tertentu tanpa registrasi publik');
 
 Artisan::command('mfms:reset-password {--email= : Email admin yang akan direset password-nya}', function (): int {
     $emailOpt = trim((string) ($this->option('email') ?: ''));
@@ -260,4 +278,127 @@ Artisan::command('mfms:test-payment-worker {order_id} {amount} {idempotency_key}
         return 1;
     }
 })->purpose('Worker khusus untuk pengujian konkurensi pembayaran independen (HANYA database testing)');
+
+Artisan::command('mfms:migrate-staging {--connection=pgsql_staging : Nama koneksi database staging} {--force : Lewati konfirmasi interaktif}', function (): int {
+    $connName = (string) $this->option('connection');
+    $config = config("database.connections.{$connName}");
+
+    if (! is_array($config)) {
+        $this->error("Koneksi database '{$connName}' tidak ditemukan dalam config/database.php.");
+        return 1;
+    }
+
+    $driver = (string) ($config['driver'] ?? '');
+    $dbName = (string) ($config['database'] ?? '');
+    $dbPort = (string) ($config['port'] ?? '');
+    $dbHost = (string) ($config['host'] ?? '');
+
+    // 1. Safeguard: Driver must be PostgreSQL
+    if ($driver !== 'pgsql') {
+        $this->error("Target koneksi bukan PostgreSQL (driver: {$driver}). Operasi dibatalkan demi keamanan.");
+        return 1;
+    }
+
+    // 2. Safeguard: Production database protection
+    if ($dbName === 'mutiara_florist_prod' || ($dbHost === '127.0.0.1' && $dbPort === '3307')) {
+        $this->error("PERINGATAN KERAS: Koneksi diarahkan ke database produksi lokal toko (mutiara_florist_prod:3307). Migrasi DITOLAK!");
+        return 1;
+    }
+
+    $this->info("=== MFMS Staging Database Migration ===");
+    $this->line("Target Connection : {$connName}");
+    $this->line("Driver            : {$driver}");
+    $this->line("Host              : {$dbHost}:{$dbPort}");
+    $this->line("Database          : {$dbName}");
+    $this->line("User              : " . ($config['username'] ?? ''));
+    $this->line("SSL Mode          : " . ($config['sslmode'] ?? 'prefer'));
+
+    if (! $this->option('force') && ! $this->confirm('Apakah Anda yakin ingin menjalankan migrasi skema pada database target di atas?')) {
+        $this->warn('Migrasi dibatalkan oleh pengguna.');
+        return 1;
+    }
+
+    // 3. Connectivity check
+    try {
+        $pdo = \Illuminate\Support\Facades\DB::connection($connName)->getPdo();
+        $version = $pdo->query('SELECT version()')->fetchColumn();
+        $this->info("Koneksi berhasil. Server: " . substr((string) $version, 0, 45) . "...");
+    } catch (\Throwable $e) {
+        $this->error("Koneksi ke database target gagal: " . $e->getMessage());
+        return 1;
+    }
+
+    // 4. Run Laravel migrations
+    $this->info("Menjalankan migrasi skema...");
+    $exitCode = Artisan::call('migrate', [
+        '--database' => $connName,
+        '--force' => true,
+    ], $this->output);
+
+    if ($exitCode === 0) {
+        $this->info("Migrasi skema database staging berhasil 100%.");
+    } else {
+        $this->error("Terjadi kegagalan saat migrasi skema (Exit code: {$exitCode}).");
+    }
+
+    return $exitCode;
+})->purpose('Menjalankan migrasi satu kali ke database Supabase staging dari runner lokal dengan perlindungan ketat');
+
+Artisan::command('mfms:seed-staging {--connection=pgsql_staging : Nama koneksi database staging}', function (): int {
+    $connName = (string) $this->option('connection');
+    $config = config("database.connections.{$connName}");
+
+    if (! is_array($config)) {
+        $this->error("Koneksi database '{$connName}' tidak ditemukan.");
+        return 1;
+    }
+
+    $dbName = (string) ($config['database'] ?? '');
+    if ($dbName === 'mutiara_florist_prod') {
+        $this->error("Dilarang keras melakukan seeding pada database produksi toko!");
+        return 1;
+    }
+
+    $conn = \Illuminate\Support\Facades\DB::connection($connName);
+
+    // 1. Seed Synthetic Expense Categories
+    $categories = [
+        ['name' => 'Bahan Bunga & Aksesoris', 'is_active' => true],
+        ['name' => 'Logistik & Bahan Bakar', 'is_active' => true],
+        ['name' => 'Operasional Toko & Listrik', 'is_active' => true],
+        ['name' => 'Konsumsi & Lembur', 'is_active' => true],
+    ];
+
+    foreach ($categories as $cat) {
+        $exists = $conn->table('expense_categories')->where('name', $cat['name'])->exists();
+        if (! $exists) {
+            $conn->table('expense_categories')->insert(array_merge($cat, [
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]));
+        }
+    }
+    $this->info("Kategori pengeluaran sintetis berhasil disiapkan.");
+
+    // 2. Seed Synthetic Customers
+    $dummyCustomers = [
+        ['name' => 'Pelanggan Staging Mutiara A', 'phone' => '081299990001', 'notes' => 'Akun sintetis untuk pengujian order dan DP'],
+        ['name' => 'Pelanggan Staging Mutiara B', 'phone' => '081299990002', 'notes' => 'Akun sintetis untuk pengujian order lunas'],
+    ];
+
+    foreach ($dummyCustomers as $cust) {
+        $exists = $conn->table('customers')->where('phone', $cust['phone'])->exists();
+        if (! $exists) {
+            $conn->table('customers')->insert(array_merge($cust, [
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]));
+        }
+    }
+    $this->info("Pelanggan sintetis berhasil disiapkan (0 data riil digunakan).");
+
+    $this->info("Seeding data sintetis staging selesai.");
+    return 0;
+})->purpose('Mengisi data sintetis (kategori & pelanggan dummy) ke database staging');
+
 
