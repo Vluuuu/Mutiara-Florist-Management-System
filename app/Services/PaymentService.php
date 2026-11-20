@@ -29,9 +29,10 @@ class PaymentService
             ->leftJoinSub($posted, 'received', fn ($join) => $join->on('orders.id', '=', 'received.order_id'))
             ->whereRaw('orders.total_amount > COALESCE(received.paid_amount, 0)')
             ->when($search !== '', function ($query) use ($pattern): void {
-                $query->where(function ($query) use ($pattern): void {
-                    $query->whereRaw("orders.order_number LIKE ? ESCAPE '!'", [$pattern])
-                        ->orWhereRaw("customers.name LIKE ? ESCAPE '!'", [$pattern]);
+                $likeOp = DB::connection()->getDriverName() === 'pgsql' ? 'ILIKE' : 'LIKE';
+                $query->where(function ($query) use ($pattern, $likeOp): void {
+                    $query->whereRaw("orders.order_number {$likeOp} ? ESCAPE '!'", [$pattern])
+                        ->orWhereRaw("customers.name {$likeOp} ? ESCAPE '!'", [$pattern]);
                 });
             });
 

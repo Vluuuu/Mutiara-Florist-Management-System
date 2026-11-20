@@ -57,11 +57,12 @@ class UiPaymentController extends Controller
             ->when($historyStatus !== '', fn ($query) => $query->where('status', $historyStatus))
             ->when($search !== '', function ($query) use ($search) {
                 $pattern = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $search).'%';
-                $query->where(function ($sub) use ($pattern) {
-                    $sub->whereRaw("payments.reference LIKE ? ESCAPE '!'", [$pattern])
+                $likeOp = $query->getConnection()->getDriverName() === 'pgsql' ? 'ILIKE' : 'LIKE';
+                $query->where(function ($sub) use ($pattern, $likeOp) {
+                    $sub->whereRaw("payments.reference {$likeOp} ? ESCAPE '!'", [$pattern])
                         ->orWhereHas('order', fn ($oq) => $oq
-                            ->whereRaw("orders.order_number LIKE ? ESCAPE '!'", [$pattern])
-                            ->orWhereHas('customer', fn ($cq) => $cq->whereRaw("customers.name LIKE ? ESCAPE '!'", [$pattern])));
+                            ->whereRaw("orders.order_number {$likeOp} ? ESCAPE '!'", [$pattern])
+                            ->orWhereHas('customer', fn ($cq) => $cq->whereRaw("customers.name {$likeOp} ? ESCAPE '!'", [$pattern])));
                 });
             })
             ->orderByDesc('payment_date')

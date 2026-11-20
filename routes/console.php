@@ -39,6 +39,41 @@ Artisan::command('mfms:create-admin', function (): int {
     return 0;
 })->purpose('Membuat satu akun admin lokal tanpa registrasi publik');
 
+Artisan::command('mfms:reset-password {--email= : Email admin yang akan direset password-nya}', function (): int {
+    $emailOpt = trim((string) ($this->option('email') ?: ''));
+    $email = $emailOpt !== '' ? $emailOpt : trim((string) $this->ask('Email admin'));
+
+    if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $this->error('Format email tidak valid.');
+
+        return 1;
+    }
+
+    $user = User::query()->where('email', $email)->first();
+    if (! $user) {
+        $this->error("Akun dengan email '{$email}' tidak ditemukan.");
+
+        return 1;
+    }
+
+    $password = (string) $this->secret('Password baru (minimal 12 karakter)');
+    $passwordConfirmation = (string) $this->secret('Ulangi password baru');
+
+    if (strlen($password) < 12 || $password !== $passwordConfirmation) {
+        $this->error('Password baru minimal 12 karakter dan harus sama dengan konfirmasi.');
+
+        return 1;
+    }
+
+    $user->update([
+        'password' => Hash::make($password),
+    ]);
+
+    $this->info("Password untuk {$user->email} berhasil diperbarui. Silakan masuk melalui /login.");
+
+    return 0;
+})->purpose('Mereset password akun admin lokal secara interaktif tanpa ekspos CLI');
+
 Artisan::command('mfms:backup {--key= : Kunci enkripsi khusus} {--ask-key : Minta kunci enkripsi secara interaktif agar tidak terekspos di CLI} {--connection= : Nama koneksi database} {--dir= : Direktori khusus penyimpanan backup}', function (\App\Services\BackupService $backupService): int {
     $this->info('Memulai backup database terenkripsi (AES-256-GCM)...');
     try {

@@ -23,9 +23,10 @@ class CustomerService
         return Customer::query()
             ->withCount('orders')
             ->when($search !== '', function ($query) use ($pattern): void {
-                $query->where(function ($query) use ($pattern): void {
-                    $query->whereRaw("name LIKE ? ESCAPE '!'", [$pattern])
-                        ->orWhereRaw("phone LIKE ? ESCAPE '!'", [$pattern]);
+                $likeOp = $query->getConnection()->getDriverName() === 'pgsql' ? 'ILIKE' : 'LIKE';
+                $query->where(function ($query) use ($pattern, $likeOp): void {
+                    $query->whereRaw("name {$likeOp} ? ESCAPE '!'", [$pattern])
+                        ->orWhereRaw("phone {$likeOp} ? ESCAPE '!'", [$pattern]);
                 });
             })
             ->orderByDesc('id')

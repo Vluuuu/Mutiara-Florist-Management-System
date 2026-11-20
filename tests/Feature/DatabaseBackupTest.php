@@ -496,6 +496,99 @@ class DatabaseBackupTest extends TestCase
         $pdoB->exec("DELETE FROM orders WHERE order_number = 'ORD-PARALLEL-SNAPSHOT-TEST'");
     }
 
+    public function test_backup_and_restore_cycle_on_isolated_postgresql_testing(): void
+    {
+        try {
+            DB::connection('pgsql_testing')->getPdo();
+        } catch (\Throwable $e) {
+            $this->markTestSkipped('PostgreSQL staging testing instance unavailable: '.$e->getMessage());
+        }
+
+        // Seed sample relational data directly onto pgsql_testing
+        $admin = User::on('pgsql_testing')->create([
+            'name' => 'Staging Admin',
+            'email' => 'staging_admin_'.Str::random(6).'@example.com',
+            'password' => bcrypt('password123456'),
+        ]);
+
+        $customer = Customer::on('pgsql_testing')->create([
+            'name' => 'Florist Client ABC',
+            'phone' => '08123456789',
+        ]);
+
+        $cat = new ExpenseCategory();
+        $cat->setConnection('pgsql_testing');
+        $cat->name = 'Bahan Baku '.Str::random(4);
+        $cat->is_active = true;
+        $cat->save();
+
+        $order = new Order();
+        $order->setConnection('pgsql_testing');
+        $order->forceFill([
+            'order_number' => 'ORD-BCK-'.strtoupper(Str::random(6)),
+            'customer_id' => $customer->id,
+            'created_by' => $admin->id,
+            'order_date' => '2026-11-15',
+            'status' => 'PROCESSING',
+            'total_amount' => 500000,
+        ])->save();
+
+        $item = new OrderItem();
+        $item->setConnection('pgsql_testing');
+        $item->forceFill([
+            'order_id' => $order->id,
+            'flower_type' => 'Buket Lili',
+            'recipient' => 'Sari',
+            'sender_name' => 'Budi',
+            'delivery_date' => '2026-11-16',
+            'delivery_location' => 'Jakarta',
+            'quantity' => 1,
+            'unit_price' => 500000,
+            'shipping_mode' => 'INCLUDED',
+            'shipping_fee' => 0,
+            'fulfillment_status' => 'NEW',
+        ])->save();
+
+        // 1. Create encrypted backup from isolated postgresql instance
+        $result = $this->backupService->createBackup(null, 'pgsql_testing');
+        $this->assertFileExists($result['enc_path']);
+        $this->assertFileExists($result['meta_path']);
+
+        $meta = $result['meta'];
+        $this->assertSame('AES-256-GCM', $meta['cipher']);
+        $this->assertArrayHasKey('tag', $meta);
+        $this->assertArrayHasKey('aad', $meta);
+        $this->assertArrayHasKey('checksum_sha256', $meta);
+
+        // 2. Perform restore on isolated pgsql_testing
+        $report = $this->backupService->restoreTest($result['enc_path'], null, 'pgsql_testing');
+
+        $this->assertSame('SUCCESS', $report['status']);
+        $this->assertTrue($report['checksum_verified']);
+        $this->assertTrue($report['tables_verified']);
+        $this->assertTrue($report['metrics_verified']);
+        $this->assertTrue($report['fk_verified']);
+
+        // 3. Verify sequence synchronization by inserting new records post-restore without duplicate key violation
+        $newCustomer = Customer::on('pgsql_testing')->create([
+            'name' => 'Post-Restore Customer',
+            'phone' => '0899999999',
+        ]);
+        $this->assertGreaterThan(0, $newCustomer->id);
+
+        $newOrder = new Order();
+        $newOrder->setConnection('pgsql_testing');
+        $newOrder->forceFill([
+            'order_number' => 'ORD-POST-RESTORE-'.strtoupper(Str::random(6)),
+            'customer_id' => $newCustomer->id,
+            'created_by' => $admin->id,
+            'order_date' => '2026-11-20',
+            'status' => 'NEW',
+            'total_amount' => 100000,
+        ])->save();
+        $this->assertGreaterThan(0, $newOrder->id);
+    }
+
     public function test_artisan_backup_and_restore_commands(): void
     {
         $this->seedSampleData();

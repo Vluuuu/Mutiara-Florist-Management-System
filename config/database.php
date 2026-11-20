@@ -124,6 +124,37 @@ return [
             'sslmode' => env('DB_SSLMODE', 'prefer'),
         ],
 
+        'pgsql_staging' => [
+            'driver' => 'pgsql',
+            'url' => env('DB_STAGING_URL'),
+            'host' => env('DB_STAGING_HOST', '127.0.0.1'),
+            'port' => env('DB_STAGING_PORT', '5433'),
+            'database' => env('DB_STAGING_DATABASE', 'mfms_staging_db'),
+            'username' => env('DB_STAGING_USERNAME', 'mfms_staging_user'),
+            'password' => env('DB_STAGING_PASSWORD', 'mfms_staging_pass_isolated_2026'),
+            'charset' => env('DB_CHARSET', 'utf8'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => env('DB_STAGING_SCHEMA', 'public'),
+            'sslmode' => env('DB_STAGING_SSLMODE', 'prefer'),
+        ],
+
+        'pgsql_testing' => [
+            'driver' => 'pgsql',
+            'url' => env('DB_TEST_PGSQL_URL'),
+            'host' => env('DB_TEST_PGSQL_HOST', '127.0.0.1'),
+            'port' => env('DB_TEST_PGSQL_PORT', '5433'),
+            'database' => env('DB_TEST_PGSQL_DATABASE', 'mfms_staging_testing'),
+            'username' => env('DB_TEST_PGSQL_USERNAME', 'mfms_staging_user'),
+            'password' => env('DB_TEST_PGSQL_PASSWORD', 'mfms_staging_pass_isolated_2026'),
+            'charset' => 'utf8',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => 'prefer',
+            'is_testing' => true,
+        ],
+
         'sqlsrv' => [
             'driver' => 'sqlsrv',
             'url' => env('DB_URL'),

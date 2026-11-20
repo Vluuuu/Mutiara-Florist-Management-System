@@ -25,6 +25,38 @@ class BackupService
         'migrations',
     ];
 
+    /**
+     * Topologically sorted delete order (child tables before parent tables)
+     * guarantees zero foreign key constraint violations across all database engines.
+     */
+    public const DELETE_ORDER = [
+        'audit_logs',
+        'expenses',
+        'payments',
+        'order_items',
+        'orders',
+        'customers',
+        'expense_categories',
+        'users',
+        'migrations',
+    ];
+
+    /**
+     * Topologically sorted insert order (parent tables before child tables)
+     * guarantees relational integrity during restore across all database engines.
+     */
+    public const INSERT_ORDER = [
+        'users',
+        'expense_categories',
+        'customers',
+        'orders',
+        'order_items',
+        'payments',
+        'expenses',
+        'audit_logs',
+        'migrations',
+    ];
+
     protected string $backupDirectory;
 
     public function __construct(?string $backupDirectory = null)
@@ -94,6 +126,11 @@ class BackupService
                 $pdo->exec('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
                 $pdo->exec('START TRANSACTION WITH CONSISTENT SNAPSHOT');
                 $inConsistentSnapshot = true;
+            } elseif ($driver === 'pgsql') {
+                if (! $pdo->inTransaction()) {
+                    $pdo->exec('BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+                    $inConsistentSnapshot = true;
+                }
             } elseif ($driver === 'sqlite') {
                 if (! $pdo->inTransaction()) {
                     $pdo->beginTransaction();
@@ -137,7 +174,7 @@ class BackupService
         } finally {
             if ($inConsistentSnapshot) {
                 try {
-                    if ($driver === 'mysql' || $driver === 'mariadb') {
+                    if ($driver === 'mysql' || $driver === 'mariadb' || $driver === 'pgsql') {
                         $pdo->exec('ROLLBACK');
                     } elseif ($driver === 'sqlite') {
                         if ($pdo->inTransaction()) {
@@ -274,7 +311,7 @@ class BackupService
 
         // 2. Dilarang dijalankan pada koneksi operasional default
         $defaultConnection = config('database.default');
-        if ($targetConn === $defaultConnection && $defaultConnection !== 'testing') {
+        if ($targetConn === $defaultConnection && ! in_array($defaultConnection, ['testing', 'pgsql_testing', 'mariadb_testing'], true)) {
             throw new InvalidArgumentException(
                 "KEAMANAN DATA: Restorasi dilarang dijalankan pada koneksi database operasional default '{$defaultConnection}'! Gunakan database pengujian terisolasi."
             );
@@ -286,6 +323,7 @@ class BackupService
             'mfms', 'mutiara_florist', 'laravel',
             (string) config('database.connections.mysql.database'),
             (string) config('database.connections.mariadb.database'),
+            (string) config('database.connections.pgsql.database'),
         ]));
 
         if (in_array(strtolower($dbName), $prohibitedDbNames, true)) {
@@ -401,23 +439,35 @@ class BackupService
             }
 
             try {
-                $conn->transaction(function () use ($conn, $dump): void {
-                    // Truncate / delete all tables first
-                    foreach (self::TABLES as $table) {
+                $conn->transaction(function () use ($conn, $dump, $targetDriver): void {
+                    // Truncate / delete all tables first in child-to-parent order (zero FK violations)
+                    foreach (self::DELETE_ORDER as $table) {
                         if (Schema::connection($conn->getName())->hasTable($table)) {
                             $conn->table($table)->delete();
                         }
                     }
 
-                    // Insert rows with PDO prepared statements, preserving exact types and leading zeros
-                    foreach ($dump['tables'] as $table => $rows) {
-                        if (! Schema::connection($conn->getName())->hasTable($table) || empty($rows)) {
+                    // Insert rows with PDO prepared statements in parent-to-child order
+                    foreach (self::INSERT_ORDER as $table) {
+                        if (! isset($dump['tables'][$table]) || ! Schema::connection($conn->getName())->hasTable($table) || empty($dump['tables'][$table])) {
                             continue;
                         }
 
                         // Chunk inserts to avoid exceeding placeholder limits
-                        foreach (array_chunk($rows, 200) as $chunk) {
+                        foreach (array_chunk($dump['tables'][$table], 200) as $chunk) {
                             $conn->table($table)->insert($chunk);
+                        }
+                    }
+
+                    // Synchronize PostgreSQL sequences after restoring explicit IDs
+                    if ($targetDriver === 'pgsql') {
+                        foreach (self::TABLES as $table) {
+                            if ($table === 'migrations') {
+                                continue;
+                            }
+                            if (Schema::connection($conn->getName())->hasTable($table)) {
+                                $conn->statement("SELECT setval(pg_get_serial_sequence('{$table}', 'id'), COALESCE((SELECT MAX(id) FROM {$table}), 1), (SELECT MAX(id) FROM {$table}) IS NOT NULL)");
+                            }
                         }
                     }
                 });

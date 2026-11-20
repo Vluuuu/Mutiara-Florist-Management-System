@@ -115,7 +115,7 @@ class DashboardService
         $todayIso = now('Asia/Jakarta')->toDateString();
 
         $ordersToday = DB::table('orders')
-            ->whereRaw('DATE(order_date) = ?', [$todayIso])
+            ->whereDate('order_date', $todayIso)
             ->selectRaw('COUNT(*) as orders_count, COALESCE(SUM(total_amount), 0) as orders_billed')
             ->first();
 
@@ -129,13 +129,13 @@ class DashboardService
 
         $paymentsToday = DB::table('payments')
             ->where('status', 'POSTED')
-            ->whereRaw('DATE(payment_date) = ?', [$todayIso])
+            ->whereDate('payment_date', $todayIso)
             ->selectRaw('COUNT(*) as cash_in_count, COALESCE(SUM(amount), 0) as cash_in')
             ->first();
 
         $expensesToday = DB::table('expenses')
             ->where('status', 'POSTED')
-            ->whereRaw('DATE(expense_date) = ?', [$todayIso])
+            ->whereDate('expense_date', $todayIso)
             ->selectRaw('COUNT(*) as cash_out_count, COALESCE(SUM(amount), 0) as cash_out')
             ->first();
 

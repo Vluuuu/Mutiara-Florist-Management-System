@@ -42,7 +42,10 @@ class ExpenseController extends Controller
 
         $query = Expense::query()
             ->with(['category:id,name', 'recordedBy:id,name'])
-            ->when($search !== '', fn ($query) => $query->whereRaw("description LIKE ? ESCAPE '!'", [$pattern]))
+            ->when($search !== '', function ($query) use ($pattern) {
+                $likeOp = $query->getConnection()->getDriverName() === 'pgsql' ? 'ILIKE' : 'LIKE';
+                $query->whereRaw("description {$likeOp} ? ESCAPE '!'", [$pattern]);
+            })
             ->when($categoryId !== '', fn ($query) => $query->where('expense_category_id', $categoryId))
             ->when($from !== '', fn ($query) => $query->whereDate('expense_date', '>=', $from))
             ->when($to !== '', fn ($query) => $query->whereDate('expense_date', '<=', $to))

@@ -42,7 +42,10 @@ class UiExpenseController extends Controller
 
         $query = Expense::query()
             ->with(['category:id,name', 'recordedBy:id,name'])
-            ->when($search !== '', fn ($q) => $q->whereRaw("description LIKE ? ESCAPE '!'", [$pattern]))
+            ->when($search !== '', function ($q) use ($pattern) {
+                $likeOp = $q->getConnection()->getDriverName() === 'pgsql' ? 'ILIKE' : 'LIKE';
+                $q->whereRaw("description {$likeOp} ? ESCAPE '!'", [$pattern]);
+            })
             ->when(!empty($categoryId), fn ($q) => $q->where('expense_category_id', (int) $categoryId))
             ->when(!empty($from), fn ($q) => $q->whereDate('expense_date', '>=', $from))
             ->when(!empty($to), fn ($q) => $q->whereDate('expense_date', '<=', $to))

@@ -1,0 +1,16 @@
+.git
+.staging_postgres/
+node_modules/
+tests/
+docs/
+.env
+.env.*
+!.env.example
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/app/backups/*
+storage/app/exports/*
+.phpunit.result.cache
+*.md

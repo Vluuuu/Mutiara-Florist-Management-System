@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    'cloudflare' => [
+        'access_enforce' => env('CLOUDFLARE_ACCESS_ENFORCE', false),
+        'access_team_domain' => env('CLOUDFLARE_ACCESS_TEAM_DOMAIN'),
+        'access_aud' => env('CLOUDFLARE_ACCESS_AUD'),
+        'edge_secret' => env('CLOUDFLARE_EDGE_SECRET'),
+    ],
+
 ];

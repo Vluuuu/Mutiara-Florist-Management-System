@@ -30,9 +30,10 @@ class OrderService
             ->withCount('items')
             ->withSum(['payments as paid_amount' => fn ($query) => $query->where('status', 'POSTED')], 'amount')
             ->when($search !== '', function ($query) use ($pattern): void {
-                $query->where(function ($query) use ($pattern): void {
-                    $query->whereRaw("order_number LIKE ? ESCAPE '!'", [$pattern])
-                        ->orWhereHas('customer', fn ($query) => $query->whereRaw("name LIKE ? ESCAPE '!'", [$pattern]));
+                $likeOp = $query->getConnection()->getDriverName() === 'pgsql' ? 'ILIKE' : 'LIKE';
+                $query->where(function ($query) use ($pattern, $likeOp): void {
+                    $query->whereRaw("order_number {$likeOp} ? ESCAPE '!'", [$pattern])
+                        ->orWhereHas('customer', fn ($query) => $query->whereRaw("name {$likeOp} ? ESCAPE '!'", [$pattern]));
                 });
             })
             ->when($status !== '', fn ($query) => $query->where('status', $status))

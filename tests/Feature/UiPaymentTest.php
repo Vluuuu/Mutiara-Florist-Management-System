@@ -129,9 +129,10 @@ class UiPaymentTest extends TestCase
             'idempotency_key' => $uuid,
         ]);
 
+        $createdPayment = Payment::query()->where('idempotency_key', $uuid)->firstOrFail();
         $this->assertDatabaseHas('audit_logs', [
             'action' => 'payment.posted',
-            'subject_id' => $order->id,
+            'subject_id' => $createdPayment->id,
         ]);
     }
 
@@ -210,7 +211,7 @@ class UiPaymentTest extends TestCase
 
         $this->assertDatabaseHas('audit_logs', [
             'action' => 'payment.voided',
-            'subject_id' => $order->id,
+            'subject_id' => $payment->id,
         ]);
     }
 
