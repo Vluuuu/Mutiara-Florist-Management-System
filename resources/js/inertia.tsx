@@ -1,6 +1,10 @@
 import { createInertiaApp, router } from '@inertiajs/react';
 import { createRoot } from 'react-dom/client';
 import type { ComponentType } from 'react';
+import AppLayout from '@/layouts/app-layout';
+import { initNavigationLifecycle } from '@/lib/navigation-state';
+
+initNavigationLifecycle();
 
 router.on('navigate', (event) => {
     const pageProps = event.detail.page.props as { csrf_token?: string };
@@ -19,6 +23,18 @@ const pages = import.meta.glob<{ default: ComponentType<Record<string, unknown>>
 
 void createInertiaApp({
     title: (title) => `${title} - MFMS`,
+    layout: (name) => (name === 'Auth/Login' || name === 'Preview' ? undefined : AppLayout),
+    progress: {
+        delay: 120,
+        color: '#1D3B2A',
+        showSpinner: false,
+    },
+    defaults: {
+        prefetch: {
+            cacheFor: '10s',
+            hoverDelay: 75,
+        },
+    },
     resolve: (name) => {
         const page = pages[`./pages/${name}.tsx`];
 

@@ -9,13 +9,14 @@ import {
     Power,
     PowerOff,
 } from 'lucide-react';
-import AppLayout from '@/layouts/app-layout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { FormField, Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
+import { DataListSkeleton } from '@/components/ui/page-skeleton';
 import { ResponsiveDataList, type DataColumn } from '@/components/ui/responsive-data-list';
+import { useInstantPageGuard } from '@/lib/use-instant-page-guard';
 import { formatAmount } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { ExpenseCategoryItem } from '@/types';
@@ -23,12 +24,14 @@ import type { ExpenseCategoryItem } from '@/types';
 type CategoryFilter = 'all' | 'active' | 'inactive';
 
 type ExpenseCategoriesIndexProps = {
-    categories: ExpenseCategoryItem[];
+    categories?: ExpenseCategoryItem[];
 };
 
 export default function ExpenseCategoriesIndex({
     categories,
 }: ExpenseCategoriesIndexProps) {
+    useInstantPageGuard(Boolean(categories));
+    const categoryList = categories ?? [];
     const [statusFilter, setStatusFilter] = useState<CategoryFilter>('all');
     const [isLoading, setIsLoading] = useState(false);
 
@@ -65,8 +68,12 @@ export default function ExpenseCategoriesIndex({
     const toggleLockRef = useRef(false);
 
     useEffect(() => {
-        const stopStart = router.on('start', () => setIsLoading(true));
-        const stopFinish = router.on('finish', () => setIsLoading(false));
+        const stopStart = router.on('start', (e) => {
+            if (!e.detail.visit.prefetch) setIsLoading(true);
+        });
+        const stopFinish = router.on('finish', (e) => {
+            if (!e.detail.visit.prefetch) setIsLoading(false);
+        });
         return () => {
             stopStart();
             stopFinish();
@@ -74,20 +81,20 @@ export default function ExpenseCategoriesIndex({
     }, []);
 
     const activeCount = useMemo(
-        () => categories.filter((c) => Boolean(c.is_active)).length,
-        [categories],
+        () => categoryList.filter((c) => Boolean(c.is_active)).length,
+        [categoryList],
     );
-    const inactiveCount = categories.length - activeCount;
+    const inactiveCount = categoryList.length - activeCount;
 
     const filteredCategories = useMemo(() => {
         if (statusFilter === 'active') {
-            return categories.filter((c) => Boolean(c.is_active));
+            return categoryList.filter((c) => Boolean(c.is_active));
         }
         if (statusFilter === 'inactive') {
-            return categories.filter((c) => !c.is_active);
+            return categoryList.filter((c) => !c.is_active);
         }
-        return categories;
-    }, [categories, statusFilter]);
+        return categoryList;
+    }, [categoryList, statusFilter]);
 
     const handleCreate = (e: FormEvent) => {
         e.preventDefault();
@@ -241,8 +248,17 @@ export default function ExpenseCategoriesIndex({
         },
     ];
 
+    if (!categories) {
+        return (
+            <>
+                <Head title="Kategori Biaya" />
+                <DataListSkeleton title="Kategori Biaya" rows={5} showFilters={false} />
+            </>
+        );
+    }
+
     return (
-        <AppLayout title="Kategori Biaya">
+        <>
             <Head title="Kategori Biaya" />
 
             <div className="mb-7 border-b border-[#DED6C8] pb-5">
@@ -257,7 +273,7 @@ export default function ExpenseCategoriesIndex({
                     <div className="flex flex-col gap-3 border-b border-[#DED6C8] bg-[#EFE9DE]/55 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
                         <div>
                             <h2 className="atelier-h2">
-                                Daftar Kategori ({formatAmount(categories.length)})
+                                Daftar Kategori ({formatAmount(categoryList.length)})
                             </h2>
                             <p className="mt-0.5 text-[13px] text-[#545852] tabular-nums">
                                 {formatAmount(activeCount)} aktif · {formatAmount(inactiveCount)} nonaktif
@@ -576,6 +592,6 @@ export default function ExpenseCategoriesIndex({
                     </div>
                 )}
             </Modal>
-        </AppLayout>
+        </>
     );
 }

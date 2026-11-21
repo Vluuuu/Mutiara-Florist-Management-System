@@ -1,10 +1,10 @@
 import type { FormEvent } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft, Save } from 'lucide-react';
-import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { FormField, Input, Textarea } from '@/components/ui/input';
+import { useUnsavedChangesGuard } from '@/lib/navigation-state';
 
 export default function CustomersCreate() {
     const { data, setData, post, processing, errors } = useForm({
@@ -13,18 +13,25 @@ export default function CustomersCreate() {
         notes: '',
     });
 
+    const isDirty = !processing && (data.name !== '' || data.phone !== '' || data.notes !== '');
+    useUnsavedChangesGuard(isDirty);
+
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
         post('/ui-customers');
     };
 
     return (
-        <AppLayout title="Tambah Pelanggan">
+        <>
             <Head title="Tambah Pelanggan" />
 
             <div className="mb-6 border-b border-[#DED6C8] pb-4">
                 <Link
                     href="/ui-customers"
+                    component="Customers/Index"
+                    prefetch="hover"
+                    cacheFor="10s"
+                    cacheTags={['customers']}
                     className="inline-flex min-h-[44px] items-center gap-1.5 text-sm font-semibold text-[#1D3B2A] hover:underline"
                 >
                     <ArrowLeft className="size-4" aria-hidden="true" />
@@ -93,11 +100,19 @@ export default function CustomersCreate() {
                             {processing ? 'Menyimpan...' : 'Simpan pelanggan'}
                         </Button>
                         <Button asChild variant="secondary" className="min-w-[120px]">
-                            <Link href="/ui-customers">Batal</Link>
+                            <Link
+                                href="/ui-customers"
+                                component="Customers/Index"
+                                prefetch="hover"
+                                cacheFor="10s"
+                                cacheTags={['customers']}
+                            >
+                                Batal
+                            </Link>
                         </Button>
                     </div>
                 </form>
             </Card>
-        </AppLayout>
+        </>
     );
 }

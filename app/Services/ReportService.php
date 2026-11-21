@@ -82,73 +82,92 @@ class ReportService
     }
 
     /**
-     * Gathers all operational and financial metrics for the resolved period.
+     * Gathers core KPI summary metrics for the resolved period (fast initial payload).
+     *
+     * @return array{period: array{preset: string, from: string, to: string, label: string}, summary: array<string, int>, notes: array<string, string>}
      */
-    public function getFinancialReport(?string $preset = '30d', ?string $from = null, ?string $to = null, ?string $granularity = null): array
+    public function getSummaryReport(?string $preset = '30d', ?string $from = null, ?string $to = null): array
     {
         $period = $this->resolvePeriod($preset, $from, $to);
         $fromStr = $period['from'];
-        $toStr = $period['to'];
+        $toEnd = $period['to'].' 23:59:59';
 
-        $toEnd = $toStr.' 23:59:59';
-
-        // 1. Operational order metrics (based on order_date)
-        $ordersCount = (int) DB::table('orders')
+        // 1. Operational order + cash metrics in consolidated aggregate queries
+        $orderAgg = DB::table('orders')
             ->where('order_date', '>=', $fromStr)
             ->where('order_date', '<=', $toEnd)
-            ->count();
+            ->selectRaw('COUNT(*) AS orders_count, COALESCE(SUM(total_amount), 0) AS total_billed')
+            ->first();
 
-        $totalBilled = (int) DB::table('orders')
-            ->where('order_date', '>=', $fromStr)
-            ->where('order_date', '<=', $toEnd)
-            ->sum('total_amount');
-
-        $flowerTotal = (int) DB::table('order_items')
+        $itemAgg = DB::table('order_items')
             ->join('orders', 'order_items.order_id', '=', 'orders.id')
             ->where('orders.order_date', '>=', $fromStr)
             ->where('orders.order_date', '<=', $toEnd)
-            ->sum(DB::raw('order_items.quantity * order_items.unit_price'));
+            ->selectRaw('COALESCE(SUM(order_items.quantity * order_items.unit_price), 0) AS flower_total')
+            ->selectRaw("COALESCE(SUM(CASE WHEN order_items.shipping_mode = 'SEPARATE' THEN order_items.shipping_fee ELSE 0 END), 0) AS shipping_total")
+            ->first();
 
-        $shippingTotal = (int) DB::table('order_items')
-            ->join('orders', 'order_items.order_id', '=', 'orders.id')
-            ->where('orders.order_date', '>=', $fromStr)
-            ->where('orders.order_date', '<=', $toEnd)
-            ->where('order_items.shipping_mode', 'SEPARATE')
-            ->sum('order_items.shipping_fee');
+        $cashAgg = DB::selectOne(
+            "SELECT
+                (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE status = 'POSTED' AND payment_date >= ? AND payment_date <= ?) AS cash_in,
+                (SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE status = 'POSTED' AND expense_date >= ? AND expense_date <= ?) AS cash_out",
+            [$fromStr, $toEnd, $fromStr, $toEnd]
+        );
 
-        // 2. Cash metrics (only POSTED, based on transaction dates)
-        $cashIn = (int) DB::table('payments')
-            ->where('status', 'POSTED')
-            ->where('payment_date', '>=', $fromStr)
-            ->where('payment_date', '<=', $toEnd)
-            ->sum('amount');
-
-        $cashOut = (int) DB::table('expenses')
-            ->where('status', 'POSTED')
-            ->where('expense_date', '>=', $fromStr)
-            ->where('expense_date', '<=', $toEnd)
-            ->sum('amount');
-
-        $cashDiff = $cashIn - $cashOut;
-
-        // 3. Current running receivables snapshot (all open orders)
+        // 2. Current running receivables snapshot (all open orders) in 1 query
         $postedPaymentsSub = DB::table('payments')
             ->select('order_id')
             ->selectRaw('SUM(amount) AS paid_amount')
             ->where('status', 'POSTED')
             ->groupBy('order_id');
 
-        $currentOutstanding = (int) DB::table('orders')
+        $receivableAgg = DB::table('orders')
             ->leftJoinSub($postedPaymentsSub, 'received', fn ($join) => $join->on('orders.id', '=', 'received.order_id'))
             ->whereRaw('orders.total_amount > COALESCE(received.paid_amount, 0)')
-            ->sum(DB::raw('orders.total_amount - COALESCE(received.paid_amount, 0)'));
+            ->selectRaw('COUNT(*) AS open_receivables_count')
+            ->selectRaw('COALESCE(SUM(orders.total_amount - COALESCE(received.paid_amount, 0)), 0) AS current_outstanding')
+            ->first();
 
-        $openReceivablesCount = (int) DB::table('orders')
-            ->leftJoinSub($postedPaymentsSub, 'received', fn ($join) => $join->on('orders.id', '=', 'received.order_id'))
-            ->whereRaw('orders.total_amount > COALESCE(received.paid_amount, 0)')
-            ->count();
+        $ordersCount = (int) ($orderAgg->orders_count ?? 0);
+        $totalBilled = (int) ($orderAgg->total_billed ?? 0);
+        $flowerTotal = (int) ($itemAgg->flower_total ?? 0);
+        $shippingTotal = (int) ($itemAgg->shipping_total ?? 0);
+        $cashIn = (int) ($cashAgg->cash_in ?? 0);
+        $cashOut = (int) ($cashAgg->cash_out ?? 0);
+        $cashDiff = $cashIn - $cashOut;
+        $currentOutstanding = (int) ($receivableAgg->current_outstanding ?? 0);
+        $openReceivablesCount = (int) ($receivableAgg->open_receivables_count ?? 0);
 
-        // 4. Fulfillment breakdown (orders created in period)
+        return [
+            'period' => $period,
+            'summary' => [
+                'orders_count' => $ordersCount,
+                'total_billed' => $totalBilled,
+                'flower_total' => $flowerTotal,
+                'shipping_total' => $shippingTotal,
+                'cash_in' => $cashIn,
+                'cash_out' => $cashOut,
+                'cash_diff' => $cashDiff,
+                'current_outstanding' => $currentOutstanding,
+                'open_receivables_count' => $openReceivablesCount,
+            ],
+            'notes' => [
+                'cash_diff_label' => 'Selisih Kas',
+                'cash_diff_disclaimer' => 'Selisih kas merupakan penerimaan kas dikurangi pengeluaran kas pada periode ini, BUKAN laba bersih usaha.',
+                'outstanding_disclaimer' => 'Piutang berjalan merupakan snapshot saldo tagihan terbuka saat ini (bukan saldo historis pada akhir periode).',
+            ],
+        ];
+    }
+
+    /**
+     * Gathers fulfillment, payment, and expense category breakdowns for deferred report rendering.
+     *
+     * @return array{fulfillment_breakdown: array<string, int>, payment_breakdown: array<string, int>, expense_breakdown: array<int, array{category: string, amount: int, count: int, percent: int}>}
+     */
+    public function getBreakdowns(string $fromStr, string $toStr, ?int $totalCashOut = null): array
+    {
+        $toEnd = $toStr.' 23:59:59';
+
         $fulfillmentCounts = DB::table('orders')
             ->select('status')
             ->selectRaw('COUNT(*) as total')
@@ -165,79 +184,90 @@ class ReportService
             'COMPLETED' => (int) ($fulfillmentCounts['COMPLETED'] ?? 0),
         ];
 
-        // 5. Payment breakdown (orders created in period)
-        $ordersInPeriod = DB::table('orders')
+        $postedPaymentsSub = DB::table('payments')
+            ->select('order_id')
+            ->selectRaw('SUM(amount) AS paid_amount')
+            ->where('status', 'POSTED')
+            ->groupBy('order_id');
+
+        $payCounts = DB::table('orders')
             ->leftJoinSub($postedPaymentsSub, 'received', fn ($join) => $join->on('orders.id', '=', 'received.order_id'))
-            ->select([
-                'orders.id',
-                'orders.total_amount',
-            ])
-            ->selectRaw('COALESCE(received.paid_amount, 0) AS paid_amount')
             ->where('orders.order_date', '>=', $fromStr)
             ->where('orders.order_date', '<=', $toEnd)
-            ->get();
-
-        $unpaidCount = 0;
-        $partialCount = 0;
-        $paidCount = 0;
-
-        foreach ($ordersInPeriod as $ord) {
-            $paid = (int) $ord->paid_amount;
-            $total = (int) $ord->total_amount;
-
-            if ($paid <= 0) {
-                $unpaidCount++;
-            } elseif ($paid < $total) {
-                $partialCount++;
-            } else {
-                $paidCount++;
-            }
-        }
+            ->selectRaw('SUM(CASE WHEN COALESCE(received.paid_amount, 0) <= 0 THEN 1 ELSE 0 END) AS unpaid_count')
+            ->selectRaw('SUM(CASE WHEN COALESCE(received.paid_amount, 0) > 0 AND COALESCE(received.paid_amount, 0) < orders.total_amount THEN 1 ELSE 0 END) AS partial_count')
+            ->selectRaw('SUM(CASE WHEN COALESCE(received.paid_amount, 0) >= orders.total_amount THEN 1 ELSE 0 END) AS paid_count')
+            ->first();
 
         $paymentBreakdown = [
-            'UNPAID' => $unpaidCount,
-            'PARTIAL' => $partialCount,
-            'PAID' => $paidCount,
+            'UNPAID' => (int) ($payCounts->unpaid_count ?? 0),
+            'PARTIAL' => (int) ($payCounts->partial_count ?? 0),
+            'PAID' => (int) ($payCounts->paid_count ?? 0),
         ];
 
-        // 6. Daily trend data (max 92 days) + grouped chart series & expense breakdown
-        $dailyTrends = $this->buildDailyTrends($fromStr, $toStr);
-        $resolvedGranularity = $this->resolveGranularity($granularity, $period);
-        $chartSeries = $this->buildChartSeries($resolvedGranularity, $fromStr, $toStr, $dailyTrends);
-        $expenseBreakdown = $this->buildExpenseBreakdown($fromStr, $toEnd, $cashOut);
+        $expenseBreakdown = $this->buildExpenseBreakdown($fromStr, $toEnd, $totalCashOut);
 
         return [
-            'period' => $period,
-            'summary' => [
-                'orders_count' => $ordersCount,
-                'total_billed' => $totalBilled,
-                'flower_total' => $flowerTotal,
-                'shipping_total' => $shippingTotal,
-                'cash_in' => $cashIn,
-                'cash_out' => $cashOut,
-                'cash_diff' => $cashDiff,
-                'current_outstanding' => $currentOutstanding,
-                'open_receivables_count' => $openReceivablesCount,
-            ],
             'fulfillment_breakdown' => $fulfillmentBreakdown,
             'payment_breakdown' => $paymentBreakdown,
             'expense_breakdown' => $expenseBreakdown,
+        ];
+    }
+
+    /**
+     * Gathers daily trend rows and grouped chart series for deferred report rendering.
+     *
+     * @param  array{preset: string, from: string, to: string, label: string}  $period
+     * @return array{daily_trends: array<int, array<string, mixed>>, chart_series: array<string, mixed>}
+     */
+    public function getTrendSeries(array $period, ?string $granularity = null): array
+    {
+        $fromStr = $period['from'];
+        $toStr = $period['to'];
+        $resolvedGranularity = $this->resolveGranularity($granularity, $period);
+
+        $fromDate = Carbon::parse($fromStr, 'Asia/Jakarta')->startOfDay();
+        $toDate = Carbon::parse($toStr, 'Asia/Jakarta')->startOfDay();
+        $totalDays = (int) $fromDate->diffInDays($toDate) + 1;
+
+        // Fetch full map once when window <= 92 days so non-daily chart series avoids duplicate DB queries.
+        $sharedMap = $totalDays <= 92
+            ? $this->fetchDailyActivityMap($fromStr, $toStr.' 23:59:59')
+            : null;
+
+        $dailyTrends = $this->buildDailyTrends($fromStr, $toStr, $sharedMap);
+        $chartSeries = $this->buildChartSeries($resolvedGranularity, $fromStr, $toStr, $dailyTrends, $sharedMap);
+
+        return [
             'daily_trends' => $dailyTrends,
             'chart_series' => $chartSeries,
-            'notes' => [
-                'cash_diff_label' => 'Selisih Kas',
-                'cash_diff_disclaimer' => 'Selisih kas merupakan penerimaan kas dikurangi pengeluaran kas pada periode ini, BUKAN laba bersih usaha.',
-                'outstanding_disclaimer' => 'Piutang berjalan merupakan snapshot saldo tagihan terbuka saat ini (bukan saldo historis pada akhir periode).',
-            ],
+        ];
+    }
+
+    /**
+     * Gathers all operational and financial metrics for the resolved period.
+     */
+    public function getFinancialReport(?string $preset = '30d', ?string $from = null, ?string $to = null, ?string $granularity = null): array
+    {
+        $core = $this->getSummaryReport($preset, $from, $to);
+        $period = $core['period'];
+        $breakdowns = $this->getBreakdowns($period['from'], $period['to'], $core['summary']['cash_out']);
+        $trends = $this->getTrendSeries($period, $granularity);
+
+        return [
+            ...$core,
+            ...$breakdowns,
+            ...$trends,
         ];
     }
 
     /**
      * Assembles daily trend metrics between two dates (capped at 92 days).
      *
+     * @param  array<string, array{orders_count: int, billed: int, cash_in: int, cash_out: int}>|null  $preloadedMap
      * @return array<int, array{date: string, formatted_date: string, orders_count: int, billed: int, cash_in: int, cash_out: int}>
      */
-    protected function buildDailyTrends(string $from, string $to): array
+    protected function buildDailyTrends(string $from, string $to, ?array $preloadedMap = null): array
     {
         $startDate = Carbon::parse($from);
         $endDate = Carbon::parse($to);
@@ -250,7 +280,7 @@ class ReportService
         $startStr = $startDate->format('Y-m-d');
         $endStr = $endDate->format('Y-m-d').' 23:59:59';
 
-        $dailyMap = $this->fetchDailyActivityMap($startStr, $endStr);
+        $dailyMap = $preloadedMap ?? $this->fetchDailyActivityMap($startStr, $endStr);
         $period = CarbonPeriod::create($startDate, $endDate);
         $trends = [];
 
@@ -378,7 +408,7 @@ class ReportService
      * Every series mode strictly aggregates only activity within [$from, $to].
      * Daily mode keeps a 92-day performance cap and explicitly signals truncation.
      */
-    protected function buildChartSeries(string $granularity, string $from, string $to, array $dailyTrends): array
+    protected function buildChartSeries(string $granularity, string $from, string $to, array $dailyTrends, ?array $preloadedMap = null): array
     {
         $fromDate = Carbon::parse($from, 'Asia/Jakarta')->startOfDay();
         $toDate = Carbon::parse($to, 'Asia/Jakarta')->startOfDay();
@@ -420,7 +450,7 @@ class ReportService
             ];
         }
 
-        $raw = $this->fetchDailyActivityMap($fromDate->format('Y-m-d'), $toDate->format('Y-m-d').' 23:59:59');
+        $raw = $preloadedMap ?? $this->fetchDailyActivityMap($fromDate->format('Y-m-d'), $toDate->format('Y-m-d').' 23:59:59');
 
         if ($granularity === 'weekly') {
             $buckets = [];
@@ -580,7 +610,7 @@ class ReportService
      *
      * @return array<int, array{category: string, amount: int, count: int, percent: int}>
      */
-    protected function buildExpenseBreakdown(string $fromStr, string $toEnd, int $totalCashOut): array
+    protected function buildExpenseBreakdown(string $fromStr, string $toEnd, ?int $totalCashOut = null): array
     {
         $rows = DB::table('expenses')
             ->leftJoin('expense_categories', 'expense_categories.id', '=', 'expenses.expense_category_id')
@@ -593,9 +623,11 @@ class ReportService
             ->orderByDesc('total_amount')
             ->get();
 
-        return $rows->map(function ($row) use ($totalCashOut): array {
+        $resolvedTotalCashOut = $totalCashOut ?? (int) $rows->sum('total_amount');
+
+        return $rows->map(function ($row) use ($resolvedTotalCashOut): array {
             $amt = (int) $row->total_amount;
-            $pct = $totalCashOut > 0 ? (int) round(($amt / $totalCashOut) * 100) : 0;
+            $pct = $resolvedTotalCashOut > 0 ? (int) round(($amt / $resolvedTotalCashOut) * 100) : 0;
 
             return [
                 'category' => (string) $row->category_name,

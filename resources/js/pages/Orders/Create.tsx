@@ -1,10 +1,11 @@
 import { Head } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
 import { OrderForm } from '@/components/order-form';
+import { FormCardSkeleton } from '@/components/ui/page-skeleton';
+import { useInstantPageGuard } from '@/lib/use-instant-page-guard';
 import type { OrderCustomerOption } from '@/types';
 
 type OrdersCreateProps = {
-    customers: OrderCustomerOption[];
+    customers?: OrderCustomerOption[];
     selectedCustomerId?: number | null;
     todayIso?: string;
 };
@@ -14,15 +15,21 @@ export default function OrdersCreate({
     selectedCustomerId = null,
     todayIso,
 }: OrdersCreateProps) {
+    useInstantPageGuard(Boolean(customers));
+
     return (
-        <AppLayout title="Buat Pesanan">
+        <>
             <Head title="Buat Pesanan" />
-            <OrderForm
-                mode="create"
-                customers={customers}
-                selectedCustomerId={selectedCustomerId}
-                todayIso={todayIso}
-            />
-        </AppLayout>
+            {customers ? (
+                <OrderForm
+                    mode="create"
+                    customers={customers}
+                    selectedCustomerId={selectedCustomerId}
+                    todayIso={todayIso}
+                />
+            ) : (
+                <FormCardSkeleton title="Buat Pesanan" fields={6} />
+            )}
+        </>
     );
 }

@@ -25,15 +25,27 @@ class UiReportController extends Controller
         $to = $request->query('to');
         $granularity = $request->query('granularity');
 
-        $report = $this->reportService->getFinancialReport(
-            is_string($preset) ? $preset : '30d',
-            is_string($from) ? $from : null,
-            is_string($to) ? $to : null,
-            is_string($granularity) ? $granularity : null
-        );
+        $presetStr = is_string($preset) ? $preset : '30d';
+        $fromStr = is_string($from) ? $from : null;
+        $toStr = is_string($to) ? $to : null;
+        $granularityStr = is_string($granularity) ? $granularity : null;
+
+        $coreReport = $this->reportService->getSummaryReport($presetStr, $fromStr, $toStr);
+        $period = $coreReport['period'];
+        $cashOut = $coreReport['summary']['cash_out'];
 
         return Inertia::render('Reports/Index', [
-            'report' => $report,
+            'report' => $coreReport,
+            'reportBreakdowns' => Inertia::defer(
+                fn () => $this->reportService->getBreakdowns($period['from'], $period['to'], $cashOut),
+                'breakdowns',
+                true
+            ),
+            'reportTrends' => Inertia::defer(
+                fn () => $this->reportService->getTrendSeries($period, $granularityStr),
+                'trends',
+                true
+            ),
         ]);
     }
 

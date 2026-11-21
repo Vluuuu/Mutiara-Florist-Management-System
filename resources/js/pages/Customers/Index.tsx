@@ -1,24 +1,26 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { AlertCircle, Plus, Search, Users, X } from 'lucide-react';
-import AppLayout from '@/layouts/app-layout';
 import { Pagination } from '@/components/pagination';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { DataListSkeleton } from '@/components/ui/page-skeleton';
 import { ResponsiveDataList, type DataColumn } from '@/components/ui/responsive-data-list';
+import { useInstantPageGuard } from '@/lib/use-instant-page-guard';
 import { formatAmount } from '@/lib/format';
 import type { AppPageProps, CustomerItem, PaginatedData } from '@/types';
 
 type CustomersIndexProps = {
-    customers: PaginatedData<CustomerItem>;
-    filters: {
+    customers?: PaginatedData<CustomerItem>;
+    filters?: {
         q?: string;
     };
 };
 
-export default function CustomersIndex({ customers, filters }: CustomersIndexProps) {
+export default function CustomersIndex({ customers, filters = {} }: CustomersIndexProps) {
     const { errors } = usePage<AppPageProps>().props;
+    useInstantPageGuard(Boolean(customers));
     const [search, setSearch] = useState(filters.q ?? '');
     const [isLoading, setIsLoading] = useState(false);
     const isSearching = (filters.q ?? '').trim() !== '';
@@ -28,8 +30,12 @@ export default function CustomersIndex({ customers, filters }: CustomersIndexPro
     }, [filters.q]);
 
     useEffect(() => {
-        const stopStart = router.on('start', () => setIsLoading(true));
-        const stopFinish = router.on('finish', () => setIsLoading(false));
+        const stopStart = router.on('start', (e) => {
+            if (!e.detail.visit.prefetch) setIsLoading(true);
+        });
+        const stopFinish = router.on('finish', (e) => {
+            if (!e.detail.visit.prefetch) setIsLoading(false);
+        });
         return () => {
             stopStart();
             stopFinish();
@@ -70,6 +76,10 @@ export default function CustomersIndex({ customers, filters }: CustomersIndexPro
                 <div>
                     <Link
                         href={`/ui-customers/${customer.id}`}
+                        component="Customers/Show"
+                        prefetch="hover"
+                        cacheFor="10s"
+                        cacheTags={['customers']}
                         className="inline-flex min-h-[44px] items-center font-bold text-[#1D3B2A] hover:underline"
                     >
                         {customer.name}
@@ -111,10 +121,26 @@ export default function CustomersIndex({ customers, filters }: CustomersIndexPro
             render: (customer) => (
                 <div className="inline-flex items-center justify-end gap-2.5">
                     <Button asChild variant="secondary" className="min-w-[100px]">
-                        <Link href={`/ui-orders/create?customer_id=${customer.id}`}>+ Pesan</Link>
+                        <Link
+                            href={`/ui-orders/create?customer_id=${customer.id}`}
+                            component="Orders/Create"
+                            prefetch="hover"
+                            cacheFor="10s"
+                            cacheTags={['customers', 'orders']}
+                        >
+                            + Pesan
+                        </Link>
                     </Button>
                     <Button asChild variant="secondary" className="min-w-[100px]">
-                        <Link href={`/ui-customers/${customer.id}`}>Detail</Link>
+                        <Link
+                            href={`/ui-customers/${customer.id}`}
+                            component="Customers/Show"
+                            prefetch="hover"
+                            cacheFor="10s"
+                            cacheTags={['customers']}
+                        >
+                            Detail
+                        </Link>
                     </Button>
                 </div>
             ),
@@ -123,8 +149,17 @@ export default function CustomersIndex({ customers, filters }: CustomersIndexPro
 
     const searchError = errors?.q;
 
+    if (!customers) {
+        return (
+            <>
+                <Head title="Pelanggan" />
+                <DataListSkeleton title="Daftar Pelanggan" rows={6} showFilters />
+            </>
+        );
+    }
+
     return (
-        <AppLayout title="Pelanggan">
+        <>
             <Head title="Pelanggan" />
 
             <div className="mb-7 flex flex-col gap-3 border-b border-[#DED6C8] pb-5 sm:flex-row sm:items-center sm:justify-between">
@@ -135,7 +170,12 @@ export default function CustomersIndex({ customers, filters }: CustomersIndexPro
                 </div>
                 <div>
                     <Button asChild variant="primary" className="min-w-[180px]">
-                        <Link href="/ui-customers/create">
+                        <Link
+                            href="/ui-customers/create"
+                            component="Customers/Create"
+                            prefetch="hover"
+                            cacheFor="10s"
+                        >
                             <Plus className="size-4" aria-hidden="true" />
                             Tambah Pelanggan
                         </Link>
@@ -236,6 +276,10 @@ export default function CustomersIndex({ customers, filters }: CustomersIndexPro
                                     <div className="min-w-0">
                                         <Link
                                             href={`/ui-customers/${customer.id}`}
+                                            component="Customers/Show"
+                                            prefetch="hover"
+                                            cacheFor="10s"
+                                            cacheTags={['customers']}
                                             className="inline-flex min-h-[44px] items-center text-base font-bold text-[#1D3B2A] hover:underline"
                                         >
                                             {customer.name}
@@ -257,10 +301,24 @@ export default function CustomersIndex({ customers, filters }: CustomersIndexPro
 
                                 <div className="grid grid-cols-2 gap-2.5 pt-1">
                                     <Button asChild variant="secondary">
-                                        <Link href={`/ui-customers/${customer.id}`}>Detail</Link>
+                                        <Link
+                                            href={`/ui-customers/${customer.id}`}
+                                            component="Customers/Show"
+                                            prefetch="hover"
+                                            cacheFor="10s"
+                                            cacheTags={['customers']}
+                                        >
+                                            Detail
+                                        </Link>
                                     </Button>
                                     <Button asChild variant="primary">
-                                        <Link href={`/ui-orders/create?customer_id=${customer.id}`}>
+                                        <Link
+                                            href={`/ui-orders/create?customer_id=${customer.id}`}
+                                            component="Orders/Create"
+                                            prefetch="hover"
+                                            cacheFor="10s"
+                                            cacheTags={['customers', 'orders']}
+                                        >
                                             + Pesan
                                         </Link>
                                     </Button>
@@ -291,7 +349,12 @@ export default function CustomersIndex({ customers, filters }: CustomersIndexPro
                                         </Button>
                                     ) : (
                                         <Button asChild variant="primary" className="min-w-[180px]">
-                                            <Link href="/ui-customers/create">
+                                            <Link
+                                                href="/ui-customers/create"
+                                                component="Customers/Create"
+                                                prefetch="hover"
+                                                cacheFor="10s"
+                                            >
                                                 <Plus className="size-4" aria-hidden="true" />
                                                 Tambah Pelanggan
                                             </Link>
@@ -315,6 +378,6 @@ export default function CustomersIndex({ customers, filters }: CustomersIndexPro
                     </div>
                 )}
             </Card>
-        </AppLayout>
+        </>
     );
 }

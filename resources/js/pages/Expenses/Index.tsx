@@ -9,14 +9,15 @@ import {
     Search,
     X,
 } from 'lucide-react';
-import AppLayout from '@/layouts/app-layout';
 import { Pagination } from '@/components/pagination';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { FormField, Input, Select, Textarea } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
+import { DataListSkeleton } from '@/components/ui/page-skeleton';
 import { ResponsiveDataList, type DataColumn } from '@/components/ui/responsive-data-list';
+import { useInstantPageGuard } from '@/lib/use-instant-page-guard';
 import { formatRupiah } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type {
@@ -28,19 +29,20 @@ import type {
 } from '@/types';
 
 type ExpensesIndexProps = {
-    expenses: PaginatedData<ExpenseItem>;
-    postedTotal: number;
-    categories: ExpenseCategoryItem[];
-    filters: ExpenseFilters;
+    expenses?: PaginatedData<ExpenseItem>;
+    postedTotal?: number;
+    categories?: ExpenseCategoryItem[];
+    filters?: Partial<ExpenseFilters>;
 };
 
 export default function ExpensesIndex({
     expenses,
-    postedTotal,
-    categories,
-    filters,
+    postedTotal = 0,
+    categories = [],
+    filters = {},
 }: ExpensesIndexProps) {
     const { errors } = usePage<AppPageProps>().props;
+    useInstantPageGuard(Boolean(expenses));
     const [q, setQ] = useState(filters.q ?? '');
     const [categoryId, setCategoryId] = useState(
         filters.category_id ? String(filters.category_id) : '',
@@ -73,8 +75,12 @@ export default function ExpensesIndex({
     }, [filters.q, filters.category_id, filters.status, filters.from, filters.to]);
 
     useEffect(() => {
-        const stopStart = router.on('start', () => setIsLoading(true));
-        const stopFinish = router.on('finish', () => setIsLoading(false));
+        const stopStart = router.on('start', (e) => {
+            if (!e.detail.visit.prefetch) setIsLoading(true);
+        });
+        const stopFinish = router.on('finish', (e) => {
+            if (!e.detail.visit.prefetch) setIsLoading(false);
+        });
         return () => {
             stopStart();
             stopFinish();
@@ -239,8 +245,17 @@ export default function ExpensesIndex({
         },
     ];
 
+    if (!expenses) {
+        return (
+            <>
+                <Head title="Pengeluaran" />
+                <DataListSkeleton title="Pengeluaran Toko" rows={6} showFilters />
+            </>
+        );
+    }
+
     return (
-        <AppLayout title="Pengeluaran">
+        <>
             <Head title="Pengeluaran" />
 
             {/* Header */}
@@ -253,13 +268,25 @@ export default function ExpensesIndex({
 
                 <div className="flex flex-wrap items-center gap-2.5">
                     <Button asChild variant="secondary" className="min-w-[164px]">
-                        <Link href="/ui-expense-categories">
+                        <Link
+                            href="/ui-expense-categories"
+                            component="ExpenseCategories/Index"
+                            prefetch="hover"
+                            cacheFor="10s"
+                            cacheTags={['expense-categories', 'expenses']}
+                        >
                             <FolderCog className="size-4" aria-hidden="true" />
                             Kategori Biaya
                         </Link>
                     </Button>
                     <Button asChild variant="primary" className="min-w-[176px]">
-                        <Link href="/ui-expenses/create">
+                        <Link
+                            href="/ui-expenses/create"
+                            component="Expenses/Create"
+                            prefetch="hover"
+                            cacheFor="10s"
+                            cacheTags={['expense-categories', 'expenses']}
+                        >
                             <Plus className="size-4" aria-hidden="true" />
                             Catat Pengeluaran
                         </Link>
@@ -454,7 +481,13 @@ export default function ExpensesIndex({
                                         </Button>
                                     ) : (
                                         <Button asChild variant="primary">
-                                            <Link href="/ui-expenses/create">
+                                            <Link
+                                                href="/ui-expenses/create"
+                                                component="Expenses/Create"
+                                                prefetch="hover"
+                                                cacheFor="10s"
+                                                cacheTags={['expense-categories', 'expenses']}
+                                            >
                                                 + Catat Pengeluaran
                                             </Link>
                                         </Button>
@@ -617,6 +650,6 @@ export default function ExpensesIndex({
                     </form>
                 )}
             </Modal>
-        </AppLayout>
+        </>
     );
 }

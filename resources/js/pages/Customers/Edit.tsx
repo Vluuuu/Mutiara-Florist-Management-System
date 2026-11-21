@@ -1,13 +1,15 @@
-import type { FormEvent } from 'react';
+import { useEffect, type FormEvent } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft, Save } from 'lucide-react';
-import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { FormField, Input, Textarea } from '@/components/ui/input';
+import { FormCardSkeleton } from '@/components/ui/page-skeleton';
+import { useUnsavedChangesGuard } from '@/lib/navigation-state';
+import { useInstantPageGuard } from '@/lib/use-instant-page-guard';
 
 type CustomerEditProps = {
-    customer: {
+    customer?: {
         id: number;
         name: string;
         phone: string;
@@ -16,11 +18,39 @@ type CustomerEditProps = {
 };
 
 export default function CustomersEdit({ customer }: CustomerEditProps) {
+    useInstantPageGuard(Boolean(customer));
+
     const { data, setData, put, processing, errors } = useForm({
-        name: customer.name,
-        phone: customer.phone,
-        notes: customer.notes,
+        name: customer?.name ?? '',
+        phone: customer?.phone ?? '',
+        notes: customer?.notes ?? '',
     });
+
+    useEffect(() => {
+        if (!customer) return;
+        setData({
+            name: customer.name,
+            phone: customer.phone,
+            notes: customer.notes,
+        });
+    }, [customer?.id]);
+
+    const isDirty =
+        Boolean(customer) &&
+        !processing &&
+        (data.name !== (customer?.name ?? '') ||
+            data.phone !== (customer?.phone ?? '') ||
+            data.notes !== (customer?.notes ?? ''));
+    useUnsavedChangesGuard(isDirty);
+
+    if (!customer) {
+        return (
+            <>
+                <Head title="Edit Pelanggan" />
+                <FormCardSkeleton fields={3} />
+            </>
+        );
+    }
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
@@ -28,12 +58,16 @@ export default function CustomersEdit({ customer }: CustomerEditProps) {
     };
 
     return (
-        <AppLayout title="Edit Pelanggan">
+        <>
             <Head title={`Edit ${customer.name}`} />
 
             <div className="mb-6 border-b border-[#DED6C8] pb-4">
                 <Link
                     href={`/ui-customers/${customer.id}`}
+                    component="Customers/Show"
+                    prefetch="hover"
+                    cacheFor="10s"
+                    cacheTags={['customers']}
                     className="inline-flex min-h-[44px] items-center gap-1.5 text-sm font-semibold text-[#1D3B2A] hover:underline"
                 >
                     <ArrowLeft className="size-4" aria-hidden="true" />
@@ -101,11 +135,19 @@ export default function CustomersEdit({ customer }: CustomerEditProps) {
                             {processing ? 'Menyimpan...' : 'Simpan perubahan'}
                         </Button>
                         <Button asChild variant="secondary" className="min-w-[120px]">
-                            <Link href={`/ui-customers/${customer.id}`}>Batal</Link>
+                            <Link
+                                href={`/ui-customers/${customer.id}`}
+                                component="Customers/Show"
+                                prefetch="hover"
+                                cacheFor="10s"
+                                cacheTags={['customers']}
+                            >
+                                Batal
+                            </Link>
                         </Button>
                     </div>
                 </form>
             </Card>
-        </AppLayout>
+        </>
     );
 }

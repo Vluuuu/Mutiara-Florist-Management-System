@@ -136,10 +136,12 @@ class Phase9Sprint2OperationsTest extends TestCase
                 ->where('deliveryQueue.0.urgency', 'overdue')
                 ->where('deliveryQueue.1.flower_type', 'Buket Mawar Hari Ini')
                 ->where('deliveryQueue.1.urgency', 'today')
-                ->has('receivables', 1)
-                ->where('receivables.0.id', $order1->id)
-                ->where('receivables.0.outstanding', 850000)
-                ->where('receivables.0.payment_status', 'UNPAID')
+                ->loadDeferredProps('receivables', fn (Assert $deferred) => $deferred
+                    ->has('receivables', 1)
+                    ->where('receivables.0.id', $order1->id)
+                    ->where('receivables.0.outstanding', 850000)
+                    ->where('receivables.0.payment_status', 'UNPAID')
+                )
                 ->etc());
 
         // Legacy fallback dashboard keeps identical numbers
@@ -517,10 +519,12 @@ class Phase9Sprint2OperationsTest extends TestCase
             ->get(route('dashboard'))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->has('receivables', 3)
-                ->where('receivables.0.customer_name', 'Pelanggan Piutang Satu')
-                ->where('receivables.1.customer_name', 'Pelanggan Piutang Dua')
-                ->where('receivables.2.customer_name', 'Pelanggan Piutang Tiga')
+                ->loadDeferredProps('receivables', fn (Assert $deferred) => $deferred
+                    ->has('receivables', 3)
+                    ->where('receivables.0.customer_name', 'Pelanggan Piutang Satu')
+                    ->where('receivables.1.customer_name', 'Pelanggan Piutang Dua')
+                    ->where('receivables.2.customer_name', 'Pelanggan Piutang Tiga')
+                )
                 ->etc());
     }
 }

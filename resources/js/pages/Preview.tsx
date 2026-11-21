@@ -28,7 +28,14 @@ export default function Preview({ user, dashboardUrl }: PreviewProps) {
                         </div>
                     </div>
                     <Button asChild variant="primary">
-                        <Link href={dashboardUrl}>Buka Ruang Kerja Hari Ini</Link>
+                        <Link
+                            href={dashboardUrl}
+                            component="Dashboard"
+                            prefetch="hover"
+                            cacheFor="10s"
+                        >
+                            Buka Ruang Kerja Hari Ini
+                        </Link>
                     </Button>
                 </header>
 

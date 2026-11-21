@@ -19,17 +19,33 @@ import {
 } from '@/components/app-sidebar';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
+import { NavigationErrorBanner } from '@/components/ui/page-skeleton';
+import {
+    cancelLeaveDirtyPage,
+    clearAllDirtyForms,
+    clearNavigationError,
+    confirmLeaveDirtyPage,
+    invalidateNavigationCache,
+    retryLastNavigation,
+    useNavigationState,
+} from '@/lib/navigation-state';
 import type { AppPageProps } from '@/types';
 import { cn } from '@/lib/utils';
 
 type AppLayoutProps = {
-    title: string;
+    title?: string;
     children: ReactNode;
 };
 
 export default function AppLayout({ title: _title, children }: AppLayoutProps) {
     const { url, props } = usePage<AppPageProps>();
     const { auth, flash, errors, nav } = props;
+    const {
+        isNavigating,
+        navigationError,
+        pendingBlockedVisit,
+        dirtyMessage,
+    } = useNavigationState();
 
     const [menuDrawerOpen, setMenuDrawerOpen] = useState(false);
     const [logoutModalOpen, setLogoutModalOpen] = useState(false);
@@ -62,6 +78,8 @@ export default function AppLayout({ title: _title, children }: AppLayoutProps) {
 
     const handleConfirmLogout = () => {
         setIsLoggingOut(true);
+        clearAllDirtyForms();
+        invalidateNavigationCache();
         router.post(
             nav?.logout ?? '/logout',
             {},
@@ -75,9 +93,30 @@ export default function AppLayout({ title: _title, children }: AppLayoutProps) {
     };
 
     const bottomDestinations = [
-        { label: 'Hari Ini', href: dashboardHref, icon: CalendarDays, exact: true },
-        { label: 'Pesanan', href: ordersHref, icon: ShoppingBag, exact: true },
-        { label: 'Buat', href: createOrderHref, icon: PlusCircle, exact: false },
+        {
+            label: 'Hari Ini',
+            href: dashboardHref,
+            component: 'Dashboard',
+            cacheTags: ['dashboard', 'orders', 'payments', 'expenses'],
+            icon: CalendarDays,
+            exact: true,
+        },
+        {
+            label: 'Pesanan',
+            href: ordersHref,
+            component: 'Orders/Index',
+            cacheTags: ['orders'],
+            icon: ShoppingBag,
+            exact: true,
+        },
+        {
+            label: 'Buat',
+            href: createOrderHref,
+            component: 'Orders/Create',
+            cacheTags: ['customers', 'orders'],
+            icon: PlusCircle,
+            exact: false,
+        },
     ];
 
     return (
@@ -182,7 +221,15 @@ export default function AppLayout({ title: _title, children }: AppLayoutProps) {
                                     variant="primary"
                                     className="hidden h-11 min-w-[144px] md:inline-flex"
                                 >
-                                    <Link href={createOrderHref}>+ Pesanan Baru</Link>
+                                    <Link
+                                        href={createOrderHref}
+                                        component="Orders/Create"
+                                        prefetch="hover"
+                                        cacheFor="10s"
+                                        cacheTags={['customers', 'orders']}
+                                    >
+                                        + Pesanan Baru
+                                    </Link>
                                 </Button>
                             </div>
                         </div>
@@ -211,6 +258,15 @@ export default function AppLayout({ title: _title, children }: AppLayoutProps) {
                                     Cari
                                 </Button>
                             </form>
+                        )}
+                        {isNavigating && (
+                            <div
+                                role="status"
+                                aria-live="polite"
+                                className="pointer-events-none absolute inset-x-0 bottom-0 h-[3px] bg-[#1D3B2A]"
+                            >
+                                <span className="sr-only">Sedang memuat halaman tujuan...</span>
+                            </div>
                         )}
                     </header>
 
@@ -259,6 +315,14 @@ export default function AppLayout({ title: _title, children }: AppLayoutProps) {
                             </div>
                         )}
 
+                        {navigationError && (
+                            <NavigationErrorBanner
+                                error={navigationError}
+                                onRetry={retryLastNavigation}
+                                onDismiss={clearNavigationError}
+                            />
+                        )}
+
                         {children}
                     </main>
                 </div>
@@ -275,7 +339,12 @@ export default function AppLayout({ title: _title, children }: AppLayoutProps) {
                         <Link
                             key={dest.label}
                             href={dest.href}
+                            component={dest.component}
+                            prefetch="hover"
+                            cacheFor="10s"
+                            cacheTags={dest.cacheTags}
                             aria-current={isActive ? 'page' : undefined}
+                            aria-busy={isActive && isNavigating ? 'true' : undefined}
                             className={cn(
                                 'flex min-h-[48px] flex-col items-center justify-center gap-1 px-1 py-1.5 text-[13px] transition-colors',
                                 isActive
@@ -309,6 +378,10 @@ export default function AppLayout({ title: _title, children }: AppLayoutProps) {
                 <nav aria-label="Menu lanjutan" className="space-y-2.5">
                     <Link
                         href={paymentsHref}
+                        component="Payments/Index"
+                        prefetch="hover"
+                        cacheFor="10s"
+                        cacheTags={['payments', 'orders']}
                         onClick={() => setMenuDrawerOpen(false)}
                         className="flex min-h-[44px] w-full items-center justify-center rounded-[8px] border-[1.5px] border-[#7D776C] bg-[#FFFDF9] px-4 py-2.5 text-[15px] font-semibold text-[#1C211E] hover:bg-[#EFE9DE]"
                     >
@@ -318,6 +391,10 @@ export default function AppLayout({ title: _title, children }: AppLayoutProps) {
                         <Link
                             key={item.label}
                             href={resolveNavHref(nav, item)}
+                            component={item.component}
+                            prefetch="hover"
+                            cacheFor="10s"
+                            cacheTags={item.cacheTags}
                             onClick={() => setMenuDrawerOpen(false)}
                             className="flex min-h-[44px] w-full items-center justify-center rounded-[8px] border-[1.5px] border-[#7D776C] bg-[#FFFDF9] px-4 py-2.5 text-[15px] font-semibold text-[#1C211E] hover:bg-[#EFE9DE]"
                         >
@@ -370,6 +447,38 @@ export default function AppLayout({ title: _title, children }: AppLayoutProps) {
             >
                 <p className="text-[15px] text-[#545852]">
                     Pastikan seluruh pesanan atau pembayaran yang sedang diketik sudah disimpan sebelum keluar.
+                </p>
+            </Modal>
+
+            {/* Accessible Unsaved Form Guard Modal */}
+            <Modal
+                open={Boolean(pendingBlockedVisit)}
+                onClose={cancelLeaveDirtyPage}
+                title="Perubahan Belum Disimpan"
+                footer={
+                    <>
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={cancelLeaveDirtyPage}
+                            className="w-full sm:w-auto sm:min-w-[164px]"
+                        >
+                            Tetap di Halaman Ini
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="urgent"
+                            onClick={confirmLeaveDirtyPage}
+                            className="w-full sm:w-auto sm:min-w-[164px]"
+                        >
+                            Tinggalkan Halaman
+                        </Button>
+                    </>
+                }
+            >
+                <p className="text-[15px] text-[#545852]">
+                    {dirtyMessage ??
+                        'Ada perubahan pada formulir yang belum disimpan. Jika berpindah halaman sekarang, isian Anda akan hilang.'}
                 </p>
             </Modal>
         </div>

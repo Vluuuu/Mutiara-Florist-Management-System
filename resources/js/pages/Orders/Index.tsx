@@ -1,21 +1,22 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { AlertCircle, Plus, Search, ShoppingBag, X } from 'lucide-react';
-import AppLayout from '@/layouts/app-layout';
 import { OrderCodeBadge } from '@/components/order-code-badge';
 import { Pagination } from '@/components/pagination';
 import { Badge, getFulfillmentBadgeMeta, getPaymentBadgeMeta } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { DataListSkeleton } from '@/components/ui/page-skeleton';
 import { ResponsiveDataList, type DataColumn } from '@/components/ui/responsive-data-list';
+import { useInstantPageGuard } from '@/lib/use-instant-page-guard';
 import { formatAmount, formatRupiah } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { AppPageProps, OrderListItem, PaginatedData } from '@/types';
 
 type OrdersIndexProps = {
-    orders: PaginatedData<OrderListItem>;
-    filters: {
+    orders?: PaginatedData<OrderListItem>;
+    filters?: {
         q?: string;
         status?: string;
         payment?: string;
@@ -32,8 +33,9 @@ const STATUS_CHIPS: Array<{ key: StatusFilterKey; label: string }> = [
     { key: 'COMPLETED', label: 'Selesai' },
 ];
 
-export default function OrdersIndex({ orders, filters }: OrdersIndexProps) {
+export default function OrdersIndex({ orders, filters = {} }: OrdersIndexProps) {
     const { errors } = usePage<AppPageProps>().props;
+    useInstantPageGuard(Boolean(orders));
     const [search, setSearch] = useState(filters.q ?? '');
     const [isLoading, setIsLoading] = useState(false);
 
@@ -53,8 +55,12 @@ export default function OrdersIndex({ orders, filters }: OrdersIndexProps) {
     }, [filters.q]);
 
     useEffect(() => {
-        const stopStart = router.on('start', () => setIsLoading(true));
-        const stopFinish = router.on('finish', () => setIsLoading(false));
+        const stopStart = router.on('start', (e) => {
+            if (!e.detail.visit.prefetch) setIsLoading(true);
+        });
+        const stopFinish = router.on('finish', (e) => {
+            if (!e.detail.visit.prefetch) setIsLoading(false);
+        });
         return () => {
             stopStart();
             stopFinish();
@@ -96,6 +102,10 @@ export default function OrdersIndex({ orders, filters }: OrdersIndexProps) {
             render: (ord) => (
                 <Link
                     href={`/ui-orders/${ord.id}`}
+                    component="Orders/Show"
+                    prefetch="hover"
+                    cacheFor="10s"
+                    cacheTags={['orders']}
                     className="inline-flex min-h-[44px] items-center hover:underline"
                 >
                     <OrderCodeBadge orderNumber={ord.order_number} />
@@ -109,6 +119,10 @@ export default function OrdersIndex({ orders, filters }: OrdersIndexProps) {
                 <div>
                     <Link
                         href={`/ui-customers/${ord.customer.id}`}
+                        component="Customers/Show"
+                        prefetch="hover"
+                        cacheFor="10s"
+                        cacheTags={['customers']}
                         className="inline-flex min-h-[44px] items-center font-bold text-[#1D3B2A] hover:underline"
                     >
                         {ord.customer.name}
@@ -175,7 +189,15 @@ export default function OrdersIndex({ orders, filters }: OrdersIndexProps) {
             cellClassName: 'whitespace-nowrap',
             render: (ord) => (
                 <Button asChild variant="secondary" className="min-w-[96px]">
-                    <Link href={`/ui-orders/${ord.id}`}>Detail</Link>
+                    <Link
+                        href={`/ui-orders/${ord.id}`}
+                        component="Orders/Show"
+                        prefetch="hover"
+                        cacheFor="10s"
+                        cacheTags={['orders']}
+                    >
+                        Detail
+                    </Link>
                 </Button>
             ),
         },
@@ -183,8 +205,17 @@ export default function OrdersIndex({ orders, filters }: OrdersIndexProps) {
 
     const filterError = errors?.q ?? errors?.status ?? errors?.payment;
 
+    if (!orders) {
+        return (
+            <>
+                <Head title="Pesanan" />
+                <DataListSkeleton title="Daftar Pesanan" rows={6} showFilters />
+            </>
+        );
+    }
+
     return (
-        <AppLayout title="Pesanan">
+        <>
             <Head title="Pesanan" />
 
             <div className="mb-7 flex flex-col gap-3 border-b border-[#DED6C8] pb-5 sm:flex-row sm:items-center sm:justify-between">
@@ -195,7 +226,13 @@ export default function OrdersIndex({ orders, filters }: OrdersIndexProps) {
                 </div>
                 <div>
                     <Button asChild variant="primary" className="min-w-[160px]">
-                        <Link href="/ui-orders/create">
+                        <Link
+                            href="/ui-orders/create"
+                            component="Orders/Create"
+                            prefetch="hover"
+                            cacheFor="10s"
+                            cacheTags={['customers', 'orders']}
+                        >
                             <Plus className="size-4" aria-hidden="true" />
                             Buat Pesanan
                         </Link>
@@ -358,6 +395,10 @@ export default function OrdersIndex({ orders, filters }: OrdersIndexProps) {
                                     <div>
                                         <Link
                                             href={`/ui-customers/${ord.customer.id}`}
+                                            component="Customers/Show"
+                                            prefetch="hover"
+                                            cacheFor="10s"
+                                            cacheTags={['customers']}
                                             className="inline-flex min-h-[44px] items-center text-base font-bold text-[#1D3B2A] hover:underline"
                                         >
                                             {ord.customer.name}
@@ -382,7 +423,15 @@ export default function OrdersIndex({ orders, filters }: OrdersIndexProps) {
                                             )}
                                         </div>
                                         <Button asChild variant="primary" className="min-w-[124px]">
-                                            <Link href={`/ui-orders/${ord.id}`}>Buka Detail</Link>
+                                            <Link
+                                                href={`/ui-orders/${ord.id}`}
+                                                component="Orders/Show"
+                                                prefetch="hover"
+                                                cacheFor="10s"
+                                                cacheTags={['orders']}
+                                            >
+                                                Buka Detail
+                                            </Link>
                                         </Button>
                                     </div>
                                 </article>
@@ -412,7 +461,13 @@ export default function OrdersIndex({ orders, filters }: OrdersIndexProps) {
                                         </Button>
                                     ) : (
                                         <Button asChild variant="primary" className="min-w-[164px]">
-                                            <Link href="/ui-orders/create">
+                                            <Link
+                                                href="/ui-orders/create"
+                                                component="Orders/Create"
+                                                prefetch="hover"
+                                                cacheFor="10s"
+                                                cacheTags={['customers', 'orders']}
+                                            >
                                                 <Plus className="size-4" aria-hidden="true" />
                                                 Buat Pesanan
                                             </Link>
@@ -436,6 +491,6 @@ export default function OrdersIndex({ orders, filters }: OrdersIndexProps) {
                     </div>
                 )}
             </Card>
-        </AppLayout>
+        </>
     );
 }

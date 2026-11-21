@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import {
     AlertCircle,
@@ -8,13 +8,15 @@ import {
     Plus,
     Save,
 } from 'lucide-react';
-import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { CurrencyInput } from '@/components/ui/currency-input';
 import { FormField, Input, Textarea } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
+import { FormCardSkeleton } from '@/components/ui/page-skeleton';
 import { SearchableSelect } from '@/components/ui/searchable-select';
+import { invalidateNavigationCache, useUnsavedChangesGuard } from '@/lib/navigation-state';
+import { useInstantPageGuard } from '@/lib/use-instant-page-guard';
 import { formatDateWib, formatRupiah, getWibTodayIso } from '@/lib/format';
 import type { AppPageProps } from '@/types';
 
@@ -24,8 +26,8 @@ type CategoryOption = {
 };
 
 type ExpensesCreateProps = {
-    categories: CategoryOption[];
-    newExpenseKey: string;
+    categories?: CategoryOption[];
+    newExpenseKey?: string;
     todayIso?: string;
 };
 
@@ -35,11 +37,19 @@ export default function ExpensesCreate({
     todayIso,
 }: ExpensesCreateProps) {
     const { csrf_token } = usePage<AppPageProps>().props;
+    const hasCoreData = Boolean(categories && newExpenseKey);
+    useInstantPageGuard(hasCoreData);
     const defaultDate = todayIso || getWibTodayIso();
 
     const [categoryList, setCategoryList] = useState<CategoryOption[]>(() =>
-        [...categories].sort((a, b) => a.name.localeCompare(b.name, 'id')),
+        categories ? [...categories].sort((a, b) => a.name.localeCompare(b.name, 'id')) : [],
     );
+
+    useEffect(() => {
+        if (categories) {
+            setCategoryList([...categories].sort((a, b) => a.name.localeCompare(b.name, 'id')));
+        }
+    }, [categories]);
 
     const submitLockRef = useRef(false);
     const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
@@ -55,8 +65,23 @@ export default function ExpensesCreate({
         expense_date: defaultDate,
         amount: null,
         description: '',
-        idempotency_key: newExpenseKey,
+        idempotency_key: newExpenseKey ?? '',
     });
+
+    useEffect(() => {
+        if (newExpenseKey) {
+            setData('idempotency_key', newExpenseKey);
+        }
+    }, [newExpenseKey]);
+
+    const isDirty =
+        hasCoreData &&
+        !processing &&
+        (data.expense_category_id !== '' ||
+            data.expense_date !== defaultDate ||
+            data.amount !== null ||
+            data.description.trim() !== '');
+    useUnsavedChangesGuard(isDirty);
 
     // Quick-create category modal state (keeps main expense form intact)
     const [quickModalOpen, setQuickModalOpen] = useState(false);
@@ -197,6 +222,7 @@ export default function ExpensesCreate({
             }
 
             const created = body.category;
+            invalidateNavigationCache();
             setCategoryList((prev) =>
                 [...prev, created].sort((a, b) => a.name.localeCompare(b.name, 'id')),
             );
@@ -211,14 +237,27 @@ export default function ExpensesCreate({
         }
     };
 
+    if (!hasCoreData) {
+        return (
+            <>
+                <Head title="Catat Pengeluaran" />
+                <FormCardSkeleton fields={4} />
+            </>
+        );
+    }
+
     return (
-        <AppLayout title="Catat Pengeluaran">
+        <>
             <Head title="Catat Pengeluaran" />
 
             <div id="expense-form-top" className="pb-24 lg:pb-0">
                 <div className="mb-6 border-b border-[#DED6C8] pb-4">
                     <Link
                         href="/ui-expenses"
+                        component="Expenses/Index"
+                        prefetch="hover"
+                        cacheFor="10s"
+                        cacheTags={['expenses']}
                         className="inline-flex min-h-[44px] items-center gap-1.5 text-sm font-semibold text-[#1D3B2A] hover:underline"
                     >
                         <ArrowLeft className="size-4" aria-hidden="true" />
@@ -454,7 +493,15 @@ export default function ExpensesCreate({
                                 {processing ? 'Menyimpan...' : 'Simpan Pengeluaran'}
                             </Button>
                             <Button asChild variant="secondary" className="w-full">
-                                <Link href="/ui-expenses">Batal</Link>
+                                <Link
+                                    href="/ui-expenses"
+                                    component="Expenses/Index"
+                                    prefetch="hover"
+                                    cacheFor="10s"
+                                    cacheTags={['expenses']}
+                                >
+                                    Batal
+                                </Link>
                             </Button>
                         </div>
                     </Card>
@@ -514,6 +561,6 @@ export default function ExpensesCreate({
                     </div>
                 </form>
             </Modal>
-        </AppLayout>
+        </>
     );
 }

@@ -10,7 +10,6 @@ import {
     Phone,
     Wallet,
 } from 'lucide-react';
-import AppLayout from '@/layouts/app-layout';
 import { DeliveryConfirmModal, type DeliveryConfirmTarget } from '@/components/delivery-confirm-modal';
 import { LedgerSummaryStrip } from '@/components/ledger-summary-strip';
 import { OrderCodeBadge } from '@/components/order-code-badge';
@@ -20,6 +19,8 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { FormField, Textarea } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
+import { DetailPageSkeleton } from '@/components/ui/page-skeleton';
+import { useInstantPageGuard } from '@/lib/use-instant-page-guard';
 import { formatAmount, formatDateTimeWib, formatDateWib, formatRupiah, getWibTodayIso } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type {
@@ -31,7 +32,7 @@ import type {
 } from '@/types';
 
 type OrdersShowProps = {
-    order: OrderDetail;
+    order?: OrderDetail;
     todayIso?: string;
 };
 
@@ -54,6 +55,7 @@ const NEXT_STEP_CONFIG: Record<
 
 export default function OrdersShow({ order, todayIso: serverTodayIso }: OrdersShowProps) {
     const { errors } = usePage<AppPageProps>().props;
+    useInstantPageGuard(Boolean(order));
     const todayIso = useMemo(() => serverTodayIso ?? getWibTodayIso(), [serverTodayIso]);
 
     // Modal Catat Pembayaran (berbagi komponen dengan Dashboard)
@@ -74,6 +76,15 @@ export default function OrdersShow({ order, todayIso: serverTodayIso }: OrdersSh
     const [waPreviewVisible, setWaPreviewVisible] = useState(false);
     const [waCopiedText, setWaCopiedText] = useState('');
     const [waCopyStatus, setWaCopyStatus] = useState('');
+
+    if (!order) {
+        return (
+            <>
+                <Head title="Detail Pesanan" />
+                <DetailPageSkeleton />
+            </>
+        );
+    }
 
     const orderStatusMeta = getFulfillmentBadgeMeta(order.status);
     const paymentStatusMeta = getPaymentBadgeMeta(order.payment_status);
@@ -214,12 +225,16 @@ export default function OrdersShow({ order, todayIso: serverTodayIso }: OrdersSh
     const voidReasonLen = voidReason.trim().length;
 
     return (
-        <AppLayout title={`Pesanan ${order.order_number}`}>
+        <>
             <Head title={`Pesanan ${order.order_number}`} />
 
             <div className="mb-7 border-b border-[#DED6C8] pb-5">
                 <Link
                     href="/ui-orders"
+                    component="Orders/Index"
+                    prefetch="hover"
+                    cacheFor="10s"
+                    cacheTags={['orders']}
                     className="inline-flex min-h-[44px] items-center gap-1.5 text-sm font-semibold text-[#1D3B2A] hover:underline"
                 >
                     <ArrowLeft className="size-4" aria-hidden="true" />
@@ -244,6 +259,10 @@ export default function OrdersShow({ order, todayIso: serverTodayIso }: OrdersSh
                         <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[15px] text-[#545852]">
                             <Link
                                 href={`/ui-customers/${order.customer.id}`}
+                                component="Customers/Show"
+                                prefetch="hover"
+                                cacheFor="10s"
+                                cacheTags={['customers']}
                                 className="inline-flex min-h-[44px] items-center font-bold text-[#1D3B2A] hover:underline"
                             >
                                 {order.customer.name}
@@ -262,7 +281,13 @@ export default function OrdersShow({ order, todayIso: serverTodayIso }: OrdersSh
 
                     <div className="grid w-full grid-cols-2 gap-2.5 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
                         <Button asChild variant="secondary" className="w-full sm:w-auto sm:min-w-[152px]">
-                            <Link href={`/ui-orders/${order.id}/edit`}>
+                            <Link
+                                href={`/ui-orders/${order.id}/edit`}
+                                component="Orders/Edit"
+                                prefetch="hover"
+                                cacheFor="10s"
+                                cacheTags={['orders']}
+                            >
                                 <Edit3 className="size-4" aria-hidden="true" />
                                 Edit Pesanan
                             </Link>
@@ -725,6 +750,6 @@ export default function OrdersShow({ order, todayIso: serverTodayIso }: OrdersSh
                     </form>
                 )}
             </Modal>
-        </AppLayout>
+        </>
     );
 }

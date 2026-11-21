@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { Head, router, usePage } from '@inertiajs/react';
+import { Deferred, Head, router, usePage } from '@inertiajs/react';
 import { AlertCircle, ChevronDown, ChevronUp, Download, FileSpreadsheet } from 'lucide-react';
-import AppLayout from '@/layouts/app-layout';
 import { LedgerSummaryStrip } from '@/components/ledger-summary-strip';
 import {
     ExpenseCategoryCard,
@@ -11,19 +10,32 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { FormField, Input } from '@/components/ui/input';
+import {
+    DeferredSectionError,
+    PageHeaderSkeleton,
+    ReportBreakdownsSkeleton,
+    ReportChartSkeleton,
+    SummaryStripSkeleton,
+} from '@/components/ui/page-skeleton';
 import { ResponsiveDataList, type DataColumn } from '@/components/ui/responsive-data-list';
+import { useNavigationState } from '@/lib/navigation-state';
+import { useInstantPageGuard } from '@/lib/use-instant-page-guard';
 import { formatAmount, formatRupiah } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type {
     AppPageProps,
     FinancialReportData,
+    ReportBreakdownsData,
     ReportChartPoint,
     ReportGranularity,
     ReportPreset,
+    ReportTrendsData,
 } from '@/types';
 
 type ReportsIndexProps = {
-    report: FinancialReportData;
+    report?: FinancialReportData;
+    reportBreakdowns?: ReportBreakdownsData;
+    reportTrends?: ReportTrendsData;
 };
 
 const PRESET_OPTIONS: Array<{ key: ReportPreset; label: string }> = [
@@ -43,43 +55,74 @@ const GRANULARITY_LABEL: Record<ReportGranularity, string> = {
     yearly: 'Tahunan',
 };
 
-export default function ReportsIndex({ report }: ReportsIndexProps) {
+export default function ReportsIndex({
+    report,
+    reportBreakdowns,
+    reportTrends,
+}: ReportsIndexProps) {
     const { errors } = usePage<AppPageProps>().props;
-    const {
-        period,
-        summary,
-        fulfillment_breakdown,
-        payment_breakdown,
-        expense_breakdown = [],
-        daily_trends,
-        chart_series,
-        notes,
-    } = report;
+    const { deferredErrors } = useNavigationState();
+    useInstantPageGuard(Boolean(report));
 
-    const [selectedPreset, setSelectedPreset] = useState<ReportPreset>(period.preset);
-    const [customFrom, setCustomFrom] = useState<string>(period.from);
-    const [customTo, setCustomTo] = useState<string>(period.to);
+    const period = report?.period;
+    const summary = report?.summary;
+    const notes = report?.notes;
+
+    const effectiveBreakdowns: ReportBreakdownsData | undefined =
+        reportBreakdowns ??
+        (report?.fulfillment_breakdown && report?.payment_breakdown
+            ? {
+                  fulfillment_breakdown: report.fulfillment_breakdown,
+                  payment_breakdown: report.payment_breakdown,
+                  expense_breakdown: report.expense_breakdown ?? [],
+              }
+            : undefined);
+
+    const effectiveTrends: ReportTrendsData | undefined =
+        reportTrends ??
+        (report?.daily_trends
+            ? {
+                  daily_trends: report.daily_trends,
+                  chart_series: report.chart_series,
+              }
+            : undefined);
+
+    const dailyTrends = effectiveTrends?.daily_trends ?? [];
+    const chartSeries = effectiveTrends?.chart_series;
+
+    const [selectedPreset, setSelectedPreset] = useState<ReportPreset>(period?.preset ?? '30d');
+    const [customFrom, setCustomFrom] = useState<string>(period?.from ?? '');
+    const [customTo, setCustomTo] = useState<string>(period?.to ?? '');
     const [dateRangeError, setDateRangeError] = useState<string | null>(null);
     const [tableOpen, setTableOpen] = useState(false);
     const [onlyActiveRows, setOnlyActiveRows] = useState(true);
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
+        if (!period) return;
         setSelectedPreset(period.preset);
         setCustomFrom(period.from);
         setCustomTo(period.to);
-    }, [period.preset, period.from, period.to]);
+    }, [period?.preset, period?.from, period?.to]);
 
     useEffect(() => {
-        const stopStart = router.on('start', () => setIsLoading(true));
-        const stopFinish = router.on('finish', () => setIsLoading(false));
+        const stopStart = router.on('start', (e) => {
+            if (!e.detail.visit.prefetch && !e.detail.visit.only?.length) {
+                setIsLoading(true);
+            }
+        });
+        const stopFinish = router.on('finish', (e) => {
+            if (!e.detail.visit.prefetch && !e.detail.visit.only?.length) {
+                setIsLoading(false);
+            }
+        });
         return () => {
             stopStart();
             stopFinish();
         };
     }, []);
 
-    const activeGranularity: ReportGranularity = chart_series?.granularity ?? 'weekly';
+    const activeGranularity: ReportGranularity = chartSeries?.granularity ?? 'weekly';
 
     const visitReport = (
         nextPreset: ReportPreset,
@@ -107,6 +150,7 @@ export default function ReportsIndex({ report }: ReportsIndexProps) {
     };
 
     const handleSelectGranularity = (granularity: ReportGranularity) => {
+        if (!period) return;
         visitReport(period.preset, period.from, period.to, granularity);
     };
 
@@ -124,11 +168,13 @@ export default function ReportsIndex({ report }: ReportsIndexProps) {
         visitReport('custom', customFrom, customTo);
     };
 
-    const exportUrl = `/ui-reports/export?preset=${encodeURIComponent(period.preset)}&from=${encodeURIComponent(period.from)}&to=${encodeURIComponent(period.to)}`;
+    const exportUrl = period
+        ? `/ui-reports/export?preset=${encodeURIComponent(period.preset)}&from=${encodeURIComponent(period.from)}&to=${encodeURIComponent(period.to)}`
+        : '#';
 
     const fallbackPoints: ReportChartPoint[] = useMemo(
         () =>
-            daily_trends.map((day) => ({
+            dailyTrends.map((day) => ({
                 key: day.date,
                 label: day.formatted_date,
                 full_label: day.date,
@@ -138,13 +184,14 @@ export default function ReportsIndex({ report }: ReportsIndexProps) {
                 cash_out: day.cash_out,
                 cash_diff: day.cash_in - day.cash_out,
             })),
-        [daily_trends],
+        [dailyTrends],
     );
 
-    const seriesPoints = chart_series?.points ?? fallbackPoints;
+    const seriesPoints = chartSeries?.points ?? fallbackPoints;
     const seriesRangeLabel =
-        chart_series?.range_label ?? `Per Hari (${period.from} - ${period.to})`;
-    const seriesNotice = chart_series?.notice ?? null;
+        chartSeries?.range_label ??
+        (period ? `Per Hari (${period.from} - ${period.to})` : 'Per Hari');
+    const seriesNotice = chartSeries?.notice ?? null;
 
     const activePointsCount = useMemo(
         () =>
@@ -164,7 +211,9 @@ export default function ReportsIndex({ report }: ReportsIndexProps) {
     const serverError = errors?.to ?? errors?.from ?? errors?.preset ?? dateRangeError;
 
     const averageOrderValue =
-        summary.orders_count > 0 ? Math.round(summary.total_billed / summary.orders_count) : 0;
+        summary && summary.orders_count > 0
+            ? Math.round(summary.total_billed / summary.orders_count)
+            : 0;
 
     const trendColumns: DataColumn<ReportChartPoint>[] = [
         {
@@ -224,8 +273,22 @@ export default function ReportsIndex({ report }: ReportsIndexProps) {
         },
     ];
 
+    if (!report || !period || !summary || !notes) {
+        return (
+            <>
+                <Head title="Laporan Keuangan" />
+                <div className="space-y-6">
+                    <PageHeaderSkeleton title="Laporan Usaha" subtitle="Memuat ringkasan dan grafik laporan..." />
+                    <SummaryStripSkeleton cards={4} />
+                    <ReportChartSkeleton />
+                    <ReportBreakdownsSkeleton />
+                </div>
+            </>
+        );
+    }
+
     return (
-        <AppLayout title="Laporan">
+        <>
             <Head title="Laporan Keuangan" />
 
             {/* A. Header Ringkas */}
@@ -441,31 +504,90 @@ export default function ReportsIndex({ report }: ReportsIndexProps) {
                 </div>
             </div>
 
-            {/* C. Grafik Keuangan Utama */}
-            <FinancialTrendChart
-                points={seriesPoints}
-                granularity={activeGranularity}
-                rangeLabel={seriesRangeLabel}
-                notice={seriesNotice}
-                isLoading={isLoading}
-                onGranularityChange={handleSelectGranularity}
-            />
+            {/* C. Grafik Keuangan Utama (Deferred: reportTrends) */}
+            <Deferred
+                data="reportTrends"
+                fallback={
+                    <div className="mb-7 space-y-4">
+                        {deferredErrors.reportTrends ? (
+                            <DeferredSectionError
+                                title="Grafik tren keuangan belum termuat"
+                                message={deferredErrors.reportTrends}
+                                onRetry={() => router.reload({ only: ['reportTrends'] })}
+                            />
+                        ) : (
+                            <ReportChartSkeleton />
+                        )}
+                    </div>
+                }
+                rescue={({ reloading }) => (
+                    <div className="mb-7">
+                        <DeferredSectionError
+                            title="Grafik tren keuangan gagal dimuat"
+                            reloading={reloading}
+                            onRetry={() => router.reload({ only: ['reportTrends'] })}
+                        />
+                    </div>
+                )}
+            >
+                <FinancialTrendChart
+                    points={seriesPoints}
+                    granularity={activeGranularity}
+                    rangeLabel={seriesRangeLabel}
+                    notice={seriesNotice}
+                    isLoading={isLoading}
+                    onGranularityChange={handleSelectGranularity}
+                />
+            </Deferred>
 
-            {/* D. Ringkasan Status Ringkas (Distribution Bar + List) */}
-            <StatusDistributionPanel
-                totalOrders={summary.orders_count}
-                fulfillment={fulfillment_breakdown}
-                payment={payment_breakdown}
-            />
-
-            {/* E. Pengeluaran per Kategori */}
-            <ExpenseCategoryCard
-                items={expense_breakdown}
-                totalCashOut={summary.cash_out}
-            />
+            {/* D & E. Ringkasan Status & Pengeluaran per Kategori (Deferred: reportBreakdowns) */}
+            <Deferred
+                data="reportBreakdowns"
+                fallback={
+                    <div className="mb-7">
+                        {deferredErrors.reportBreakdowns ? (
+                            <DeferredSectionError
+                                title="Rincian status & biaya belum termuat"
+                                message={deferredErrors.reportBreakdowns}
+                                onRetry={() => router.reload({ only: ['reportBreakdowns'] })}
+                            />
+                        ) : (
+                            <ReportBreakdownsSkeleton />
+                        )}
+                    </div>
+                }
+                rescue={({ reloading }) => (
+                    <div className="mb-7">
+                        <DeferredSectionError
+                            title="Rincian status & biaya gagal dimuat"
+                            reloading={reloading}
+                            onRetry={() => router.reload({ only: ['reportBreakdowns'] })}
+                        />
+                    </div>
+                )}
+            >
+                {effectiveBreakdowns && (
+                    <>
+                        <StatusDistributionPanel
+                            totalOrders={summary.orders_count}
+                            fulfillment={effectiveBreakdowns.fulfillment_breakdown}
+                            payment={effectiveBreakdowns.payment_breakdown}
+                        />
+                        <ExpenseCategoryCard
+                            items={effectiveBreakdowns.expense_breakdown ?? []}
+                            totalCashOut={summary.cash_out}
+                        />
+                    </>
+                )}
+            </Deferred>
 
             {/* F. Rincian Angka (Progressive Disclosure) */}
-            <Card className="overflow-hidden">
+            <Deferred
+                data="reportTrends"
+                fallback={<></>}
+                rescue={<></>}
+            >
+                <Card className="overflow-hidden">
                 <div className="flex flex-wrap items-center justify-between gap-3 bg-[#FFFDF9] px-5 py-4">
                     <div>
                         <h2 className="atelier-h2">
@@ -591,6 +713,7 @@ export default function ReportsIndex({ report }: ReportsIndexProps) {
                     </div>
                 )}
             </Card>
-        </AppLayout>
+            </Deferred>
+        </>
     );
 }

@@ -115,6 +115,8 @@ export function Pagination({ links, from, to, total, itemLabel = 'data', classNa
                         <li key={index}>
                             <Link
                                 href={link.url}
+                                prefetch="hover"
+                                cacheFor="10s"
                                 preserveScroll
                                 preserveState
                                 aria-current={link.active ? 'page' : undefined}

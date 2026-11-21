@@ -11,6 +11,7 @@ import {
     Wallet,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { useNavigationState } from '@/lib/navigation-state';
 import type { AppPageProps } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -18,22 +19,82 @@ type NavItemConfig = {
     label: string;
     hrefKey: keyof AppPageProps['nav'];
     defaultHref: string;
+    component: string;
+    cacheTags: string[];
     icon: LucideIcon;
     matchExact?: boolean;
 };
 
 export const primaryNavItems: NavItemConfig[] = [
-    { label: 'Hari Ini', hrefKey: 'dashboard', defaultHref: '/dashboard', icon: CalendarDays, matchExact: true },
-    { label: 'Pesanan', hrefKey: 'uiOrders', defaultHref: '/ui-orders', icon: ShoppingBag, matchExact: true },
-    { label: 'Buat Pesanan', hrefKey: 'uiOrdersCreate', defaultHref: '/ui-orders/create', icon: PlusCircle },
-    { label: 'Piutang & Bayar', hrefKey: 'uiPayments', defaultHref: '/ui-payments', icon: Wallet },
+    {
+        label: 'Hari Ini',
+        hrefKey: 'dashboard',
+        defaultHref: '/dashboard',
+        component: 'Dashboard',
+        cacheTags: ['dashboard', 'orders', 'payments', 'expenses'],
+        icon: CalendarDays,
+        matchExact: true,
+    },
+    {
+        label: 'Pesanan',
+        hrefKey: 'uiOrders',
+        defaultHref: '/ui-orders',
+        component: 'Orders/Index',
+        cacheTags: ['orders'],
+        icon: ShoppingBag,
+        matchExact: true,
+    },
+    {
+        label: 'Buat Pesanan',
+        hrefKey: 'uiOrdersCreate',
+        defaultHref: '/ui-orders/create',
+        component: 'Orders/Create',
+        cacheTags: ['customers', 'orders'],
+        icon: PlusCircle,
+    },
+    {
+        label: 'Piutang & Bayar',
+        hrefKey: 'uiPayments',
+        defaultHref: '/ui-payments',
+        component: 'Payments/Index',
+        cacheTags: ['payments', 'orders'],
+        icon: Wallet,
+    },
 ];
 
 export const secondaryNavItems: NavItemConfig[] = [
-    { label: 'Pelanggan', hrefKey: 'uiCustomers', defaultHref: '/ui-customers', icon: Users },
-    { label: 'Pengeluaran', hrefKey: 'uiExpenses', defaultHref: '/ui-expenses', icon: ReceiptText },
-    { label: 'Kategori Biaya', hrefKey: 'uiExpenseCategories', defaultHref: '/ui-expense-categories', icon: Tags },
-    { label: 'Laporan', hrefKey: 'uiReports', defaultHref: '/ui-reports', icon: BarChart3 },
+    {
+        label: 'Pelanggan',
+        hrefKey: 'uiCustomers',
+        defaultHref: '/ui-customers',
+        component: 'Customers/Index',
+        cacheTags: ['customers'],
+        icon: Users,
+    },
+    {
+        label: 'Pengeluaran',
+        hrefKey: 'uiExpenses',
+        defaultHref: '/ui-expenses',
+        component: 'Expenses/Index',
+        cacheTags: ['expenses'],
+        icon: ReceiptText,
+    },
+    {
+        label: 'Kategori Biaya',
+        hrefKey: 'uiExpenseCategories',
+        defaultHref: '/ui-expense-categories',
+        component: 'ExpenseCategories/Index',
+        cacheTags: ['expense-categories', 'expenses'],
+        icon: Tags,
+    },
+    {
+        label: 'Laporan',
+        hrefKey: 'uiReports',
+        defaultHref: '/ui-reports',
+        component: 'Reports/Index',
+        cacheTags: ['reports', 'orders', 'payments', 'expenses'],
+        icon: BarChart3,
+    },
 ];
 
 export function resolveNavHref(nav: AppPageProps['nav'] | undefined, item: NavItemConfig): string {
@@ -60,6 +121,28 @@ export function isNavItemActive(currentUrl: string, href: string, matchExact = f
     return currentPath === path || currentPath.startsWith(path + '/');
 }
 
+function isNavItemPending(
+    pendingUrl: string | null,
+    pendingComponent: string | null,
+    href: string,
+    component: string,
+    matchExact = false,
+): boolean {
+    if (pendingComponent && pendingComponent === component) {
+        return true;
+    }
+    if (!pendingUrl) {
+        return false;
+    }
+    try {
+        const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost';
+        const pendingPath = new URL(pendingUrl, origin).pathname;
+        return isNavItemActive(pendingPath, href, matchExact);
+    } catch {
+        return false;
+    }
+}
+
 type SidebarNavProps = {
     onNavigate?: () => void;
     onRequestLogout?: () => void;
@@ -67,6 +150,7 @@ type SidebarNavProps = {
 
 export function SidebarContent({ onNavigate, onRequestLogout }: SidebarNavProps) {
     const { url, props } = usePage<AppPageProps>();
+    const { isNavigating, pendingUrl, pendingComponent } = useNavigationState();
     const nav = props.nav;
     const userName = props.auth?.user?.name ?? 'Operator Toko';
 
@@ -79,26 +163,54 @@ export function SidebarContent({ onNavigate, onRequestLogout }: SidebarNavProps)
                 {items.map((item) => {
                     const href = resolveNavHref(nav, item);
                     const isActive = isNavItemActive(url, href, item.matchExact);
+                    const isPending =
+                        isNavigating &&
+                        isNavItemPending(
+                            pendingUrl,
+                            pendingComponent,
+                            href,
+                            item.component,
+                            item.matchExact,
+                        );
                     return (
                         <li key={item.label}>
                             <Link
                                 href={href}
+                                component={item.component}
+                                prefetch="hover"
+                                cacheFor="10s"
+                                cacheTags={item.cacheTags}
                                 onClick={onNavigate}
                                 aria-current={isActive ? 'page' : undefined}
+                                aria-busy={isPending ? 'true' : undefined}
+                                data-nav-pending={isPending ? 'true' : 'false'}
                                 className={cn(
                                     'flex min-h-[44px] items-center gap-3 rounded-[8px] px-3 py-2.5 text-[15px] transition-colors focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[#F2ECE1]',
                                     isActive
                                         ? 'bg-[#F2ECE1] font-bold text-[#182920]'
-                                        : 'font-medium text-[#F5F1E8] hover:bg-[#233B2E]',
+                                        : isPending
+                                          ? 'bg-[#233B2E] font-semibold text-[#F5F1E8]'
+                                          : 'font-medium text-[#F5F1E8] hover:bg-[#233B2E]',
                                 )}
                             >
                                 <item.icon className="size-[18px] shrink-0" aria-hidden="true" />
-                                <span>{item.label}</span>
-                                {isActive && (
+                                <span className="truncate">{item.label}</span>
+                                {isPending ? (
                                     <span
-                                        aria-hidden="true"
-                                        className="ml-auto size-2 shrink-0 rounded-full bg-[#9A3B22]"
-                                    />
+                                        className={cn(
+                                            'ml-auto shrink-0 text-[11px] font-semibold',
+                                            isActive ? 'text-[#9A3B22]' : 'text-[#F2ECE1]',
+                                        )}
+                                    >
+                                        Memuat...
+                                    </span>
+                                ) : (
+                                    isActive && (
+                                        <span
+                                            aria-hidden="true"
+                                            className="ml-auto size-2 shrink-0 rounded-full bg-[#9A3B22]"
+                                        />
+                                    )
                                 )}
                             </Link>
                         </li>

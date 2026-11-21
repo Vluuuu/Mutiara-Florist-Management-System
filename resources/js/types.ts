@@ -425,13 +425,30 @@ export type ReportNotes = {
     outstanding_disclaimer: string;
 };
 
-export type FinancialReportData = {
+export type ReportCoreData = {
     period: ReportPeriod;
     summary: ReportSummary;
+    notes: ReportNotes;
+};
+
+export type ReportBreakdownsData = {
     fulfillment_breakdown: FulfillmentBreakdown;
     payment_breakdown: PaymentBreakdown;
     expense_breakdown?: ExpenseBreakdownItem[];
+};
+
+export type ReportTrendsData = {
     daily_trends: DailyTrendItem[];
+    chart_series?: ReportChartSeries;
+};
+
+export type FinancialReportData = {
+    period: ReportPeriod;
+    summary: ReportSummary;
+    fulfillment_breakdown?: FulfillmentBreakdown;
+    payment_breakdown?: PaymentBreakdown;
+    expense_breakdown?: ExpenseBreakdownItem[];
+    daily_trends?: DailyTrendItem[];
     chart_series?: ReportChartSeries;
     notes: ReportNotes;
 };

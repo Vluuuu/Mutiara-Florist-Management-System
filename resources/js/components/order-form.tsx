@@ -16,6 +16,7 @@ import { CurrencyInput } from '@/components/ui/currency-input';
 import { FormField, Input, Select, Textarea } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { SearchableSelect } from '@/components/ui/searchable-select';
+import { invalidateNavigationCache, useUnsavedChangesGuard } from '@/lib/navigation-state';
 import { formatRupiah, getWibTodayIso } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type {
@@ -183,6 +184,37 @@ export function OrderForm({
     );
     const grandTotal = productTotal + shippingTotal;
     const belowReceived = hasPayments && order ? grandTotal < order.received : false;
+
+    const currentSnapshot = useMemo(
+        () =>
+            JSON.stringify({
+                customerId,
+                orderDate,
+                notes,
+                changeReason,
+                items: items.map((item) => ({
+                    id: item.id,
+                    flower_type: item.flower_type,
+                    recipient: item.recipient,
+                    sender_name: item.sender_name,
+                    delivery_date: item.delivery_date,
+                    delivery_location: item.delivery_location,
+                    quantity: item.quantity,
+                    unit_price: item.unit_price,
+                    shipping_mode: item.shipping_mode,
+                    shipping_fee: item.shipping_fee,
+                    fulfillment_status: item.fulfillment_status,
+                    notes: item.notes,
+                })),
+            }),
+        [customerId, orderDate, notes, changeReason, items],
+    );
+    const initialSnapshotRef = useRef<string | null>(null);
+    if (initialSnapshotRef.current === null) {
+        initialSnapshotRef.current = currentSnapshot;
+    }
+    const isDirty = !isSubmitting && currentSnapshot !== initialSnapshotRef.current;
+    useUnsavedChangesGuard(isDirty);
 
     useEffect(() => {
         setActiveErrors(errors ?? {});
@@ -431,6 +463,7 @@ export function OrderForm({
             }
 
             const created = body.customer;
+            invalidateNavigationCache();
             setCustomerList((prev) =>
                 [...prev, created].sort((a, b) => a.name.localeCompare(b.name, 'id')),
             );
@@ -448,12 +481,17 @@ export function OrderForm({
     };
 
     const backHref = mode === 'edit' && order ? `/ui-orders/${order.id}` : '/ui-orders';
+    const backComponent = mode === 'edit' && order ? 'Orders/Show' : 'Orders/Index';
 
     return (
         <div className="pb-28 lg:pb-0">
             <div className="mb-6 border-b border-[#DED6C8] pb-4">
                 <Link
                     href={backHref}
+                    component={backComponent}
+                    prefetch="hover"
+                    cacheFor="10s"
+                    cacheTags={['orders']}
                     className="inline-flex min-h-[44px] items-center gap-1.5 text-sm font-semibold text-[#1D3B2A] hover:underline"
                 >
                     <ArrowLeft className="size-4" aria-hidden="true" />
@@ -1183,7 +1221,15 @@ export function OrderForm({
                                 </dl>
                                 <div className="mt-5 grid grid-cols-2 gap-3 border-t border-[#DED6C8] pt-4">
                                     <Button asChild variant="secondary" className="w-full">
-                                        <Link href={backHref}>Batal</Link>
+                                        <Link
+                                            href={backHref}
+                                            component={backComponent}
+                                            prefetch="hover"
+                                            cacheFor="10s"
+                                            cacheTags={['orders']}
+                                        >
+                                            Batal
+                                        </Link>
                                     </Button>
                                     <Button
                                         type="submit"
@@ -1250,7 +1296,15 @@ export function OrderForm({
                                           : 'Simpan Pesanan'}
                                 </Button>
                                 <Button asChild variant="secondary" size="default" className="w-full">
-                                    <Link href={backHref}>Batal</Link>
+                                    <Link
+                                        href={backHref}
+                                        component={backComponent}
+                                        prefetch="hover"
+                                        cacheFor="10s"
+                                        cacheTags={['orders']}
+                                    >
+                                        Batal
+                                    </Link>
                                 </Button>
                             </div>
                         </Card>

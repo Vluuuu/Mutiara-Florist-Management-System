@@ -11,24 +11,35 @@ import {
     ShoppingBag,
     User,
 } from 'lucide-react';
-import AppLayout from '@/layouts/app-layout';
 import { OrderCodeBadge } from '@/components/order-code-badge';
 import { Badge, getFulfillmentBadgeMeta, getPaymentBadgeMeta } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Modal } from '@/components/ui/modal';
+import { DetailPageSkeleton } from '@/components/ui/page-skeleton';
 import { ResponsiveDataList, type DataColumn } from '@/components/ui/responsive-data-list';
+import { useInstantPageGuard } from '@/lib/use-instant-page-guard';
 import { formatAmount, formatDateTimeWib, formatRupiah } from '@/lib/format';
 import type { CustomerDetail, CustomerOrderHistoryItem } from '@/types';
 
 type CustomerShowProps = {
-    customer: CustomerDetail;
+    customer?: CustomerDetail;
     orders?: CustomerOrderHistoryItem[];
 };
 
 export default function CustomersShow({ customer, orders = [] }: CustomerShowProps) {
+    useInstantPageGuard(Boolean(customer));
     const [isArchiving, setIsArchiving] = useState(false);
     const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+
+    if (!customer) {
+        return (
+            <>
+                <Head title="Detail Pelanggan" />
+                <DetailPageSkeleton />
+            </>
+        );
+    }
 
     const handleArchive = () => {
         if (isArchiving) return;
@@ -49,6 +60,10 @@ export default function CustomersShow({ customer, orders = [] }: CustomerShowPro
             render: (ord) => (
                 <Link
                     href={`/ui-orders/${ord.id}`}
+                    component="Orders/Show"
+                    prefetch="hover"
+                    cacheFor="10s"
+                    cacheTags={['orders']}
                     className="inline-flex min-h-[44px] items-center hover:underline"
                 >
                     <OrderCodeBadge orderNumber={ord.order_number} />
@@ -100,19 +115,31 @@ export default function CustomersShow({ customer, orders = [] }: CustomerShowPro
             cellClassName: 'whitespace-nowrap',
             render: (ord) => (
                 <Button asChild variant="secondary" size="sm">
-                    <Link href={`/ui-orders/${ord.id}`}>Detail</Link>
+                    <Link
+                        href={`/ui-orders/${ord.id}`}
+                        component="Orders/Show"
+                        prefetch="hover"
+                        cacheFor="10s"
+                        cacheTags={['orders']}
+                    >
+                        Detail
+                    </Link>
                 </Button>
             ),
         },
     ];
 
     return (
-        <AppLayout title="Detail Pelanggan">
+        <>
             <Head title={`Pelanggan: ${customer.name}`} />
 
             <div className="mb-7 border-b border-[#DED6C8] pb-5">
                 <Link
                     href="/ui-customers"
+                    component="Customers/Index"
+                    prefetch="hover"
+                    cacheFor="10s"
+                    cacheTags={['customers']}
                     className="inline-flex min-h-[44px] items-center gap-1.5 text-sm font-semibold text-[#1D3B2A] hover:underline"
                 >
                     <ArrowLeft className="size-4" aria-hidden="true" />
@@ -127,13 +154,25 @@ export default function CustomersShow({ customer, orders = [] }: CustomerShowPro
                     </div>
                     <div className="flex flex-wrap items-center gap-2.5">
                         <Button asChild variant="secondary" className="min-w-[156px]">
-                            <Link href={`/ui-customers/${customer.id}/edit`}>
+                            <Link
+                                href={`/ui-customers/${customer.id}/edit`}
+                                component="Customers/Edit"
+                                prefetch="hover"
+                                cacheFor="10s"
+                                cacheTags={['customers']}
+                            >
                                 <Edit3 className="size-4" aria-hidden="true" />
                                 Edit pelanggan
                             </Link>
                         </Button>
                         <Button asChild variant="primary" className="min-w-[156px]">
-                            <Link href={`/ui-orders/create?customer_id=${customer.id}`}>
+                            <Link
+                                href={`/ui-orders/create?customer_id=${customer.id}`}
+                                component="Orders/Create"
+                                prefetch="hover"
+                                cacheFor="10s"
+                                cacheTags={['customers', 'orders']}
+                            >
                                 <Plus className="size-4" aria-hidden="true" />
                                 Buat Pesanan
                             </Link>
@@ -205,7 +244,13 @@ export default function CustomersShow({ customer, orders = [] }: CustomerShowPro
                                 Riwayat Pesanan Pelanggan
                             </h2>
                             <Button asChild variant="secondary" size="sm" className="min-w-[124px]">
-                                <Link href={`/ui-orders/create?customer_id=${customer.id}`}>
+                                <Link
+                                    href={`/ui-orders/create?customer_id=${customer.id}`}
+                                    component="Orders/Create"
+                                    prefetch="hover"
+                                    cacheFor="10s"
+                                    cacheTags={['customers', 'orders']}
+                                >
                                     + Pesan lagi
                                 </Link>
                             </Button>
@@ -251,7 +296,15 @@ export default function CustomersShow({ customer, orders = [] }: CustomerShowPro
                                                     )}
                                                 </div>
                                                 <Button asChild variant="secondary" className="min-w-[120px]">
-                                                    <Link href={`/ui-orders/${ord.id}`}>Detail Nota</Link>
+                                                    <Link
+                                                        href={`/ui-orders/${ord.id}`}
+                                                        component="Orders/Show"
+                                                        prefetch="hover"
+                                                        cacheFor="10s"
+                                                        cacheTags={['orders']}
+                                                    >
+                                                        Detail Nota
+                                                    </Link>
                                                 </Button>
                                             </div>
                                         </article>
@@ -271,7 +324,13 @@ export default function CustomersShow({ customer, orders = [] }: CustomerShowPro
                                         </p>
                                         <div className="mt-4">
                                             <Button asChild variant="primary" size="sm">
-                                                <Link href={`/ui-orders/create?customer_id=${customer.id}`}>
+                                                <Link
+                                                    href={`/ui-orders/create?customer_id=${customer.id}`}
+                                                    component="Orders/Create"
+                                                    prefetch="hover"
+                                                    cacheFor="10s"
+                                                    cacheTags={['customers', 'orders']}
+                                                >
                                                     + Buat Pesanan
                                                 </Link>
                                             </Button>
@@ -355,6 +414,6 @@ export default function CustomersShow({ customer, orders = [] }: CustomerShowPro
                     Pelanggan yang tidak memiliki pesanan dapat diarsipkan dengan aman. Anda tidak akan melihatnya lagi di daftar aktif.
                 </p>
             </Modal>
-        </AppLayout>
+        </>
     );
 }

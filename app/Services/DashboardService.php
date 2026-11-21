@@ -16,10 +16,23 @@ class DashboardService
     public function stats(): array
     {
         // MVP: no cancellation. Operational order value is not the same as cash received.
-        $orders = (int) DB::table('orders')->count();
-        $billed = (int) DB::table('orders')->sum('total_amount');
-        $received = (int) DB::table('payments')->where('status', 'POSTED')->sum('amount');
-        $expenses = (int) DB::table('expenses')->where('status', 'POSTED')->sum('amount');
+        // Consolidated into a single round-trip query for Supabase/Postgres latency optimization.
+        $row = DB::selectOne(
+            "SELECT
+                o.orders_count,
+                o.billed,
+                (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE status = 'POSTED') AS received,
+                (SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE status = 'POSTED') AS expenses
+            FROM (
+                SELECT COUNT(*) AS orders_count, COALESCE(SUM(total_amount), 0) AS billed
+                FROM orders
+            ) o"
+        );
+
+        $orders = (int) ($row->orders_count ?? 0);
+        $billed = (int) ($row->billed ?? 0);
+        $received = (int) ($row->received ?? 0);
+        $expenses = (int) ($row->expenses ?? 0);
 
         return [
             'orders' => $orders,
@@ -33,11 +46,12 @@ class DashboardService
 
     /**
      * Query read-only antrean item bunga yang belum selesai dikirim (urut tanggal kirim terdekat).
-     * Memakai perbandingan tanggal kalender (DATE) tanpa estimasi jam/menit.
+     * Memakai perbandingan rentang tanggal kalender yang ramah indeks B-Tree PostgreSQL/MySQL.
      */
     public function activeDeliveryQueue(int $limit = 12): array
     {
         $todayIso = now('Asia/Jakarta')->toDateString();
+        $todayEnd = $todayIso.' 23:59:59';
 
         $baseQuery = DB::table('order_items')
             ->join('orders', 'orders.id', '=', 'order_items.order_id')
@@ -46,8 +60,8 @@ class DashboardService
 
         $counts = (clone $baseQuery)
             ->selectRaw('COUNT(*) as total_count')
-            ->selectRaw('SUM(CASE WHEN DATE(order_items.delivery_date) < ? THEN 1 ELSE 0 END) as overdue_count', [$todayIso])
-            ->selectRaw('SUM(CASE WHEN DATE(order_items.delivery_date) = ? THEN 1 ELSE 0 END) as today_count', [$todayIso])
+            ->selectRaw('SUM(CASE WHEN order_items.delivery_date < ? THEN 1 ELSE 0 END) as overdue_count', [$todayIso])
+            ->selectRaw('SUM(CASE WHEN order_items.delivery_date >= ? AND order_items.delivery_date <= ? THEN 1 ELSE 0 END) as today_count', [$todayIso, $todayEnd])
             ->selectRaw("SUM(CASE WHEN order_items.fulfillment_status = 'READY' THEN 1 ELSE 0 END) as ready_count")
             ->first();
 
@@ -109,62 +123,79 @@ class DashboardService
 
     /**
      * Ringkasan operasional & transaksi khusus tanggal hari ini (WIB).
+     * Menggabungkan agregasi skalar agar hemat round-trip ke Supabase PostgreSQL.
      */
     public function todayStats(): array
     {
         $todayIso = now('Asia/Jakarta')->toDateString();
+        $todayEnd = $todayIso.' 23:59:59';
 
-        $ordersToday = DB::table('orders')
-            ->whereDate('order_date', $todayIso)
-            ->selectRaw('COUNT(*) as orders_count, COALESCE(SUM(total_amount), 0) as orders_billed')
-            ->first();
+        $summaryRow = DB::selectOne(
+            "SELECT
+                o.orders_count,
+                o.orders_billed,
+                p.cash_in_count,
+                p.cash_in,
+                e.cash_out_count,
+                e.cash_out,
+                (
+                    SELECT COUNT(*)
+                    FROM orders ord
+                    LEFT JOIN (
+                        SELECT order_id, SUM(amount) AS paid_amount
+                        FROM payments
+                        WHERE status = 'POSTED'
+                        GROUP BY order_id
+                    ) paid_totals ON paid_totals.order_id = ord.id
+                    WHERE ord.total_amount > COALESCE(paid_totals.paid_amount, 0)
+                ) AS open_receivables_count
+            FROM (
+                SELECT COUNT(*) AS orders_count, COALESCE(SUM(total_amount), 0) AS orders_billed
+                FROM orders
+                WHERE order_date >= ? AND order_date <= ?
+            ) o
+            CROSS JOIN (
+                SELECT COUNT(*) AS cash_in_count, COALESCE(SUM(amount), 0) AS cash_in
+                FROM payments
+                WHERE status = 'POSTED' AND payment_date >= ? AND payment_date <= ?
+            ) p
+            CROSS JOIN (
+                SELECT COUNT(*) AS cash_out_count, COALESCE(SUM(amount), 0) AS cash_out
+                FROM expenses
+                WHERE status = 'POSTED' AND expense_date >= ? AND expense_date <= ?
+            ) e",
+            [$todayIso, $todayEnd, $todayIso, $todayEnd, $todayIso, $todayEnd]
+        );
 
         $deliveries = DB::table('order_items')
-            ->selectRaw('SUM(CASE WHEN DATE(delivery_date) = ? THEN 1 ELSE 0 END) as deliveries_total_today', [$todayIso])
-            ->selectRaw("SUM(CASE WHEN DATE(delivery_date) = ? AND fulfillment_status IN ('NEW', 'PROCESSING', 'READY') THEN 1 ELSE 0 END) as deliveries_pending_today", [$todayIso])
-            ->selectRaw("SUM(CASE WHEN DATE(delivery_date) = ? AND fulfillment_status = 'DELIVERED' THEN 1 ELSE 0 END) as deliveries_delivered_today", [$todayIso])
-            ->selectRaw("SUM(CASE WHEN DATE(delivery_date) < ? AND fulfillment_status IN ('NEW', 'PROCESSING', 'READY') THEN 1 ELSE 0 END) as deliveries_overdue", [$todayIso])
+            ->where(function ($q) use ($todayIso, $todayEnd): void {
+                $q->whereIn('fulfillment_status', ['NEW', 'PROCESSING', 'READY'])
+                    ->orWhere(function ($q2) use ($todayIso, $todayEnd): void {
+                        $q2->where('delivery_date', '>=', $todayIso)
+                            ->where('delivery_date', '<=', $todayEnd);
+                    });
+            })
+            ->selectRaw('SUM(CASE WHEN delivery_date >= ? AND delivery_date <= ? THEN 1 ELSE 0 END) as deliveries_total_today', [$todayIso, $todayEnd])
+            ->selectRaw("SUM(CASE WHEN delivery_date >= ? AND delivery_date <= ? AND fulfillment_status IN ('NEW', 'PROCESSING', 'READY') THEN 1 ELSE 0 END) as deliveries_pending_today", [$todayIso, $todayEnd])
+            ->selectRaw("SUM(CASE WHEN delivery_date >= ? AND delivery_date <= ? AND fulfillment_status = 'DELIVERED' THEN 1 ELSE 0 END) as deliveries_delivered_today", [$todayIso, $todayEnd])
+            ->selectRaw("SUM(CASE WHEN delivery_date < ? AND fulfillment_status IN ('NEW', 'PROCESSING', 'READY') THEN 1 ELSE 0 END) as deliveries_overdue", [$todayIso])
             ->selectRaw("SUM(CASE WHEN fulfillment_status = 'READY' THEN 1 ELSE 0 END) as deliveries_ready")
             ->first();
 
-        $paymentsToday = DB::table('payments')
-            ->where('status', 'POSTED')
-            ->whereDate('payment_date', $todayIso)
-            ->selectRaw('COUNT(*) as cash_in_count, COALESCE(SUM(amount), 0) as cash_in')
-            ->first();
-
-        $expensesToday = DB::table('expenses')
-            ->where('status', 'POSTED')
-            ->whereDate('expense_date', $todayIso)
-            ->selectRaw('COUNT(*) as cash_out_count, COALESCE(SUM(amount), 0) as cash_out')
-            ->first();
-
-        $paidSub = DB::table('payments')
-            ->selectRaw('order_id, SUM(amount) as paid_amount')
-            ->where('status', 'POSTED')
-            ->groupBy('order_id');
-
-        $openReceivablesCount = (int) DB::table('orders')
-            ->leftJoinSub($paidSub, 'paid_totals', function ($join): void {
-                $join->on('paid_totals.order_id', '=', 'orders.id');
-            })
-            ->whereRaw('orders.total_amount > COALESCE(paid_totals.paid_amount, 0)')
-            ->count();
-
         return [
             'today_iso' => $todayIso,
-            'orders_count' => (int) ($ordersToday->orders_count ?? 0),
-            'orders_billed' => (int) ($ordersToday->orders_billed ?? 0),
+            'orders_count' => (int) ($summaryRow->orders_count ?? 0),
+            'orders_billed' => (int) ($summaryRow->orders_billed ?? 0),
             'deliveries_total_today' => (int) ($deliveries->deliveries_total_today ?? 0),
             'deliveries_pending_today' => (int) ($deliveries->deliveries_pending_today ?? 0),
             'deliveries_delivered_today' => (int) ($deliveries->deliveries_delivered_today ?? 0),
             'deliveries_overdue' => (int) ($deliveries->deliveries_overdue ?? 0),
             'deliveries_ready' => (int) ($deliveries->deliveries_ready ?? 0),
-            'cash_in' => (int) ($paymentsToday->cash_in ?? 0),
-            'cash_in_count' => (int) ($paymentsToday->cash_in_count ?? 0),
-            'cash_out' => (int) ($expensesToday->cash_out ?? 0),
-            'cash_out_count' => (int) ($expensesToday->cash_out_count ?? 0),
-            'open_receivables_count' => $openReceivablesCount,
+            'cash_in' => (int) ($summaryRow->cash_in ?? 0),
+            'cash_in_count' => (int) ($summaryRow->cash_in_count ?? 0),
+            'cash_out' => (int) ($summaryRow->cash_out ?? 0),
+            'cash_out_count' => (int) ($summaryRow->cash_out_count ?? 0),
+            'open_receivables_count' => (int) ($summaryRow->open_receivables_count ?? 0),
         ];
     }
 

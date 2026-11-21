@@ -122,11 +122,17 @@ class UiReportTest extends TestCase
                 ->component('Reports/Index')
                 ->has('report.period')
                 ->has('report.summary')
-                ->has('report.fulfillment_breakdown')
-                ->has('report.payment_breakdown')
-                ->has('report.daily_trends')
                 ->has('report.notes')
                 ->where('report.notes.cash_diff_label', 'Selisih Kas')
+                ->loadDeferredProps('breakdowns', fn (Assert $deferred) => $deferred
+                    ->has('reportBreakdowns.fulfillment_breakdown')
+                    ->has('reportBreakdowns.payment_breakdown')
+                    ->has('reportBreakdowns.expense_breakdown')
+                )
+                ->loadDeferredProps('trends', fn (Assert $deferred) => $deferred
+                    ->has('reportTrends.daily_trends')
+                    ->has('reportTrends.chart_series')
+                )
             );
     }
 
@@ -326,7 +332,7 @@ class UiReportTest extends TestCase
                 ]))
                 ->assertOk();
 
-            $rep = $resp->viewData('page')['props']['report'];
+            $rep = $this->fetchFullReport($resp);
             $this->assertSame($granularity, $rep['chart_series']['granularity']);
             $this->assertFalse($rep['chart_series']['is_truncated']);
             $this->assertNull($rep['chart_series']['notice']);
@@ -365,14 +371,14 @@ class UiReportTest extends TestCase
         }
 
         // Verify expense breakdown sums only POSTED expenses inside period
-        $repBreakdown = $this->actingAs($this->admin)
+        $breakdownResp = $this->actingAs($this->admin)
             ->get(route('ui-reports.index', [
                 'preset' => 'custom',
                 'from' => '2026-01-01',
                 'to' => '2026-02-28',
             ]))
-            ->assertOk()
-            ->viewData('page')['props']['report']['expense_breakdown'];
+            ->assertOk();
+        $repBreakdown = $this->fetchFullReport($breakdownResp)['expense_breakdown'];
 
         $this->assertCount(2, $repBreakdown);
         $this->assertSame('Bunga Segar', $repBreakdown[0]['category']);
@@ -448,10 +454,10 @@ class UiReportTest extends TestCase
 
             foreach ($untruncatedPresets as $query) {
                 foreach (['daily', 'weekly', 'monthly', 'yearly'] as $granularity) {
-                    $rep = $this->actingAs($this->admin)
+                    $resp = $this->actingAs($this->admin)
                         ->get(route('ui-reports.index', array_merge($query, ['granularity' => $granularity])))
-                        ->assertOk()
-                        ->viewData('page')['props']['report'];
+                        ->assertOk();
+                    $rep = $this->fetchFullReport($resp);
 
                     $series = $rep['chart_series'];
                     $this->assertFalse($series['is_truncated'], "Unexpected truncation for {$query['preset']} {$granularity}");
@@ -481,10 +487,10 @@ class UiReportTest extends TestCase
             // - weekly, monthly, yearly MUST match full summary strictly
             // - daily keeps 92-day cap as an explicit, user-visible exception
             foreach (['weekly', 'monthly', 'yearly'] as $granularity) {
-                $rep = $this->actingAs($this->admin)
+                $resp = $this->actingAs($this->admin)
                     ->get(route('ui-reports.index', ['preset' => 'this_year', 'granularity' => $granularity]))
-                    ->assertOk()
-                    ->viewData('page')['props']['report'];
+                    ->assertOk();
+                $rep = $this->fetchFullReport($resp);
 
                 $this->assertFalse($rep['chart_series']['is_truncated']);
                 $this->assertNull($rep['chart_series']['notice']);
@@ -496,10 +502,10 @@ class UiReportTest extends TestCase
                 }
             }
 
-            $repDailyTruncated = $this->actingAs($this->admin)
+            $dailyResp = $this->actingAs($this->admin)
                 ->get(route('ui-reports.index', ['preset' => 'this_year', 'granularity' => 'daily']))
-                ->assertOk()
-                ->viewData('page')['props']['report'];
+                ->assertOk();
+            $repDailyTruncated = $this->fetchFullReport($dailyResp);
 
             $dailySeries = $repDailyTruncated['chart_series'];
             $this->assertTrue($dailySeries['is_truncated']);
@@ -521,6 +527,29 @@ class UiReportTest extends TestCase
         } finally {
             Carbon::setTestNow();
         }
+    }
+
+    /**
+     * Resolves core + deferred report props via Inertia partial reload.
+     *
+     * @return array<string, mixed>
+     */
+    protected function fetchFullReport(\Illuminate\Testing\TestResponse $response): array
+    {
+        $merged = $response->viewData('page')['props']['report'];
+
+        $response->assertInertia(function (Assert $page) use (&$merged): void {
+            $page->loadDeferredProps(function (Assert $deferred) use (&$merged): void {
+                $props = $deferred->toArray()['props'];
+                $merged = array_merge(
+                    $merged,
+                    $props['reportBreakdowns'] ?? [],
+                    $props['reportTrends'] ?? []
+                );
+            });
+        });
+
+        return $merged;
     }
 
     /**

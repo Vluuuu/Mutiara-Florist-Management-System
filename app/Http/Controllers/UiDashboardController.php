@@ -18,7 +18,6 @@ class UiDashboardController extends Controller
         $stats = $dashboard->stats();
         $todayStats = $dashboard->todayStats();
         $queue = $dashboard->activeDeliveryQueue();
-        $receivables = $dashboard->openReceivables();
         $nowWib = now('Asia/Jakarta');
 
         return Inertia::render('Dashboard', [
@@ -31,7 +30,12 @@ class UiDashboardController extends Controller
                 'today_count' => $queue['today_count'],
                 'ready_count' => $queue['ready_count'],
             ],
-            'receivables' => $receivables,
+            // Daftar piutang terbuka dimuat deferred agar antrean pengiriman hari ini tampil secepat mungkin.
+            'receivables' => Inertia::defer(
+                fn () => $dashboard->openReceivables(),
+                'receivables',
+                true
+            ),
             'todayIso' => $nowWib->toDateString(),
             'todayDisplay' => $nowWib->locale('id')->translatedFormat('l, d F Y'),
             'summary_formatted' => [
@@ -41,25 +45,6 @@ class UiDashboardController extends Controller
                 'expenses' => 'Rp'.number_format($stats['expenses'], 0, ',', '.'),
                 'cash_flow' => 'Rp'.number_format($stats['cash_flow'], 0, ',', '.'),
                 'zero' => 'Rp0',
-            ],
-            'nav' => [
-                'dashboard' => route('dashboard'),
-                'uiDashboard' => route('ui-dashboard'),
-                'legacyDashboard' => route('legacy.dashboard'),
-                'uiCustomers' => route('ui-customers.index'),
-                'customers' => route('customers.index'),
-                'uiOrders' => route('ui-orders.index'),
-                'uiOrdersCreate' => route('ui-orders.create'),
-                'orders' => route('orders.index'),
-                'uiPayments' => route('ui-payments.index'),
-                'payments' => route('payments.index'),
-                'uiExpenses' => route('ui-expenses.index'),
-                'expenses' => route('expenses.index'),
-                'uiExpenseCategories' => route('ui-expense-categories.index'),
-                'expenseCategories' => route('expense-categories.index'),
-                'uiReports' => route('ui-reports.index'),
-                'uiReportsExport' => route('ui-reports.export'),
-                'logout' => route('logout'),
             ],
         ]);
     }

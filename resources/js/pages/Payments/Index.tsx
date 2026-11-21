@@ -8,7 +8,6 @@ import {
     Wallet,
     X,
 } from 'lucide-react';
-import AppLayout from '@/layouts/app-layout';
 import { OrderCodeBadge } from '@/components/order-code-badge';
 import { Pagination } from '@/components/pagination';
 import { PaymentModal, type PaymentModalTarget } from '@/components/payment-modal';
@@ -16,7 +15,9 @@ import { Badge, getFulfillmentBadgeMeta } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { DataListSkeleton } from '@/components/ui/page-skeleton';
 import { ResponsiveDataList, type DataColumn } from '@/components/ui/responsive-data-list';
+import { useInstantPageGuard } from '@/lib/use-instant-page-guard';
 import { formatAmount, formatRupiah, getWibTodayIso } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type {
@@ -29,12 +30,12 @@ import type {
 type HistoryStatusFilter = '' | 'POSTED' | 'VOIDED';
 
 type PaymentsIndexProps = {
-    orders: PaginatedData<ReceivableOrder>;
-    outstanding: number;
+    orders?: PaginatedData<ReceivableOrder>;
+    outstanding?: number;
     paymentHistory?: PaginatedData<PaymentHistoryItem>;
     todayIso?: string;
-    filters: {
-        q: string;
+    filters?: {
+        q?: string;
         history_status?: string;
     };
 };
@@ -60,12 +61,13 @@ function getReceivableStatusMeta(order: ReceivableOrder): {
 
 export default function PaymentsIndex({
     orders,
-    outstanding,
+    outstanding = 0,
     paymentHistory,
     todayIso,
-    filters,
+    filters = {},
 }: PaymentsIndexProps) {
     const { errors } = usePage<AppPageProps>().props;
+    useInstantPageGuard(Boolean(orders));
     const [search, setSearch] = useState(filters.q || '');
     const [isLoading, setIsLoading] = useState(false);
     const [payTarget, setPayTarget] = useState<PaymentModalTarget | null>(null);
@@ -81,8 +83,12 @@ export default function PaymentsIndex({
     }, [filters.q]);
 
     useEffect(() => {
-        const stopStart = router.on('start', () => setIsLoading(true));
-        const stopFinish = router.on('finish', () => setIsLoading(false));
+        const stopStart = router.on('start', (e) => {
+            if (!e.detail.visit.prefetch) setIsLoading(true);
+        });
+        const stopFinish = router.on('finish', (e) => {
+            if (!e.detail.visit.prefetch) setIsLoading(false);
+        });
         return () => {
             stopStart();
             stopFinish();
@@ -133,6 +139,10 @@ export default function PaymentsIndex({
             render: (ord) => (
                 <Link
                     href={`/ui-orders/${ord.id}`}
+                    component="Orders/Show"
+                    prefetch="hover"
+                    cacheFor="10s"
+                    cacheTags={['orders']}
                     className="inline-flex min-h-[44px] flex-col justify-center gap-0.5 hover:underline"
                 >
                     <OrderCodeBadge orderNumber={ord.order_number} compact />
@@ -211,7 +221,15 @@ export default function PaymentsIndex({
                         Catat Bayar
                     </Button>
                     <Button asChild variant="ghost" className="min-w-[84px] text-[#1D3B2A]">
-                        <Link href={`/ui-orders/${ord.id}`}>Detail</Link>
+                        <Link
+                            href={`/ui-orders/${ord.id}`}
+                            component="Orders/Show"
+                            prefetch="hover"
+                            cacheFor="10s"
+                            cacheTags={['orders']}
+                        >
+                            Detail
+                        </Link>
                     </Button>
                 </div>
             ),
@@ -237,6 +255,10 @@ export default function PaymentsIndex({
                 <div>
                     <Link
                         href={`/ui-orders/${item.order_id}`}
+                        component="Orders/Show"
+                        prefetch="hover"
+                        cacheFor="10s"
+                        cacheTags={['orders']}
                         className="inline-flex min-h-[44px] items-center hover:underline"
                     >
                         <OrderCodeBadge orderNumber={item.order_number} compact />
@@ -302,7 +324,15 @@ export default function PaymentsIndex({
             cellClassName: 'whitespace-nowrap',
             render: (item) => (
                 <Button asChild variant="secondary" className="min-w-[112px]">
-                    <Link href={`/ui-orders/${item.order_id}`}>Lihat Nota</Link>
+                    <Link
+                        href={`/ui-orders/${item.order_id}`}
+                        component="Orders/Show"
+                        prefetch="hover"
+                        cacheFor="10s"
+                        cacheTags={['orders']}
+                    >
+                        Lihat Nota
+                    </Link>
                 </Button>
             ),
         },
@@ -310,8 +340,17 @@ export default function PaymentsIndex({
 
     const filterError = errors?.q ?? errors?.history_status ?? errors?.payment;
 
+    if (!orders) {
+        return (
+            <>
+                <Head title="Piutang & Pembayaran" />
+                <DataListSkeleton title="Piutang & Pembayaran" rows={6} showFilters />
+            </>
+        );
+    }
+
     return (
-        <AppLayout title="Piutang & Pembayaran">
+        <>
             <Head title="Piutang & Pembayaran" />
 
             {/* Header */}
@@ -470,6 +509,10 @@ export default function PaymentsIndex({
                                         <div className="min-w-0">
                                             <Link
                                                 href={`/ui-orders/${ord.id}`}
+                                                component="Orders/Show"
+                                                prefetch="hover"
+                                                cacheFor="10s"
+                                                cacheTags={['orders']}
                                                 className="inline-flex min-h-[44px] items-center text-base font-bold text-[#1C211E] hover:underline"
                                             >
                                                 {ord.customer_name}
@@ -515,7 +558,15 @@ export default function PaymentsIndex({
                                                 variant="ghost"
                                                 className="min-w-[80px] text-[#1D3B2A]"
                                             >
-                                                <Link href={`/ui-orders/${ord.id}`}>Detail</Link>
+                                                <Link
+                                                    href={`/ui-orders/${ord.id}`}
+                                                    component="Orders/Show"
+                                                    prefetch="hover"
+                                                    cacheFor="10s"
+                                                    cacheTags={['orders']}
+                                                >
+                                                    Detail
+                                                </Link>
                                             </Button>
                                         </div>
                                     </div>
@@ -598,6 +649,10 @@ export default function PaymentsIndex({
                                         <div className="flex flex-wrap items-center justify-between gap-2">
                                             <Link
                                                 href={`/ui-orders/${item.order_id}`}
+                                                component="Orders/Show"
+                                                prefetch="hover"
+                                                cacheFor="10s"
+                                                cacheTags={['orders']}
                                                 className="inline-flex min-h-[44px] items-center hover:underline"
                                             >
                                                 <OrderCodeBadge orderNumber={item.order_number} compact />
@@ -641,7 +696,13 @@ export default function PaymentsIndex({
 
                                         <div className="mt-3">
                                             <Button asChild variant="secondary" className="w-full">
-                                                <Link href={`/ui-orders/${item.order_id}`}>
+                                                <Link
+                                                    href={`/ui-orders/${item.order_id}`}
+                                                    component="Orders/Show"
+                                                    prefetch="hover"
+                                                    cacheFor="10s"
+                                                    cacheTags={['orders']}
+                                                >
                                                     Lihat Detail Pesanan
                                                 </Link>
                                             </Button>
@@ -673,6 +734,6 @@ export default function PaymentsIndex({
                 returnTo="payments"
                 onClose={() => setPayTarget(null)}
             />
-        </AppLayout>
+        </>
     );
 }

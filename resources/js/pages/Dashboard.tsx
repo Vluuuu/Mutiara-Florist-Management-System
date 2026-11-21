@@ -1,13 +1,20 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { useMemo, useRef, useState } from 'react';
+import { Deferred, Head, Link, router, usePage } from '@inertiajs/react';
 import { AlertCircle, CheckCircle2, ChevronRight, Plus } from 'lucide-react';
-import AppLayout from '@/layouts/app-layout';
 import { DeliveryConfirmModal, type DeliveryConfirmTarget } from '@/components/delivery-confirm-modal';
 import { LedgerSummaryStrip } from '@/components/ledger-summary-strip';
 import { PaymentModal, type PaymentModalTarget } from '@/components/payment-modal';
 import { Badge, getFulfillmentBadgeMeta, getPaymentBadgeMeta } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
+import {
+    DataListSkeleton,
+    DeferredSectionError,
+    ReceivablesSkeleton,
+    SummaryStripSkeleton,
+} from '@/components/ui/page-skeleton';
+import { useNavigationState } from '@/lib/navigation-state';
+import { useInstantPageGuard } from '@/lib/use-instant-page-guard';
 import { formatAmount, formatRupiah, getWibTodayIso } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type {
@@ -22,14 +29,14 @@ import type {
 } from '@/types';
 
 type DashboardProps = {
-    stats: DashboardStats;
+    stats?: DashboardStats;
     todayStats?: DashboardTodayStats;
     deliveryQueue?: DashboardQueueItem[];
     queueSummary?: DashboardQueueSummary;
     receivables?: DashboardReceivableItem[];
     todayIso?: string;
     todayDisplay?: string;
-    nav: DashboardNav;
+    nav?: DashboardNav;
 };
 
 type QueueFilter = 'all' | 'overdue' | 'today' | 'ready';
@@ -91,9 +98,14 @@ export default function Dashboard({
     todayDisplay,
     nav,
 }: DashboardProps) {
-    const { errors } = usePage<AppPageProps>().props;
-    const createOrderHref = nav?.uiOrdersCreate ?? '/ui-orders/create';
-    const paymentsHref = nav?.uiPayments ?? '/ui-payments';
+    const { errors, nav: sharedNav } = usePage<AppPageProps>().props;
+    const { isNavigating: isRefreshing, deferredErrors } = useNavigationState();
+    const resolvedNav = nav ?? sharedNav;
+    const createOrderHref = resolvedNav?.uiOrdersCreate ?? '/ui-orders/create';
+    const paymentsHref = resolvedNav?.uiPayments ?? '/ui-payments';
+
+    const hasCoreData = Boolean(stats);
+    useInstantPageGuard(hasCoreData);
 
     const fallbackTodayIso = todayIso ?? getWibTodayIso();
 
@@ -102,17 +114,7 @@ export default function Dashboard({
     const [deliverTarget, setDeliverTarget] = useState<DeliveryConfirmTarget | null>(null);
     const [paymentPickerOpen, setPaymentPickerOpen] = useState(false);
     const [paymentTarget, setPaymentTarget] = useState<PaymentModalTarget | null>(null);
-    const [isRefreshing, setIsRefreshing] = useState(false);
     const [queueFilter, setQueueFilter] = useState<QueueFilter>('all');
-
-    useEffect(() => {
-        const stopStart = router.on('start', () => setIsRefreshing(true));
-        const stopFinish = router.on('finish', () => setIsRefreshing(false));
-        return () => {
-            stopStart();
-            stopFinish();
-        };
-    }, []);
 
     const overdueCount =
         todayStats?.deliveries_overdue ??
@@ -226,8 +228,50 @@ export default function Dashboard({
     const queueError = errors?.target_status ?? errors?.item;
     const displayedReceivables = receivables.slice(0, 6);
 
+    if (!stats) {
+        return (
+            <>
+                <Head title="Hari Ini" />
+                <header className="mb-5 flex flex-col gap-3 border-b border-[#DED6C8] pb-4 sm:mb-6 sm:flex-row sm:items-end sm:justify-between sm:pb-5">
+                    <div>
+                        <h1 className="atelier-h1">Hari Ini</h1>
+                        <p className="mt-0.5 text-[14px] text-[#545852] sm:mt-1 sm:text-[15px]">
+                            Memuat ringkasan harian &amp; antrean pengiriman...
+                        </p>
+                    </div>
+                    <Button
+                        asChild
+                        variant="primary"
+                        className="w-full sm:w-auto sm:min-w-[164px]"
+                    >
+                        <Link
+                            href={createOrderHref}
+                            component="Orders/Create"
+                            prefetch="hover"
+                            cacheFor="10s"
+                            cacheTags={['customers', 'orders']}
+                        >
+                            <Plus className="size-4" aria-hidden="true" />
+                            Buat Pesanan
+                        </Link>
+                    </Button>
+                </header>
+
+                <div className="flex flex-col gap-5 sm:gap-7">
+                    <SummaryStripSkeleton cards={4} />
+                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.7fr)_minmax(300px,1fr)] lg:items-start">
+                        <DataListSkeleton rows={4} showFilters={false} />
+                        <div className="atelier-sheet p-5">
+                            <ReceivablesSkeleton />
+                        </div>
+                    </div>
+                </div>
+            </>
+        );
+    }
+
     return (
-        <AppLayout title="Hari Ini">
+        <>
             <Head title="Hari Ini" />
 
             {/* A. Header Sederhana */}
@@ -258,7 +302,13 @@ export default function Dashboard({
                         variant="primary"
                         className="flex-1 sm:min-w-[164px] sm:flex-none"
                     >
-                        <Link href={createOrderHref}>
+                        <Link
+                            href={createOrderHref}
+                            component="Orders/Create"
+                            prefetch="hover"
+                            cacheFor="10s"
+                            cacheTags={['customers', 'orders']}
+                        >
                             <Plus className="size-4" aria-hidden="true" />
                             Buat Pesanan
                         </Link>
@@ -444,6 +494,10 @@ export default function Dashboard({
                                                             </div>
                                                             <Link
                                                                 href={`/ui-orders/${grp.orderId}`}
+                                                                component="Orders/Show"
+                                                                prefetch="hover"
+                                                                cacheFor="10s"
+                                                                cacheTags={['orders']}
                                                                 className="inline-flex min-h-[44px] shrink-0 items-center gap-1 px-1 text-[13px] font-semibold text-[#1D3B2A] hover:underline"
                                                             >
                                                                 <span>Detail Nota</span>
@@ -561,6 +615,10 @@ export default function Dashboard({
                             </h2>
                             <Link
                                 href={paymentsHref}
+                                component="Payments/Index"
+                                prefetch="hover"
+                                cacheFor="10s"
+                                cacheTags={['payments', 'orders']}
                                 className="inline-flex min-h-[44px] items-center gap-1 px-1 text-[13px] font-semibold text-[#1D3B2A] hover:underline"
                             >
                                 <span>Lihat Semua</span>
@@ -568,57 +626,87 @@ export default function Dashboard({
                             </Link>
                         </div>
 
-                        {displayedReceivables.length === 0 ? (
-                            <div className="bg-[#FFFDF9] px-5 py-10 text-center">
-                                <p className="text-[15px] font-semibold text-[#1C211E]">
-                                    Semua tagihan sudah lunas
-                                </p>
-                            </div>
-                        ) : (
-                            <div className="divide-y divide-[#DED6C8]">
-                                {displayedReceivables.map((rec) => {
-                                    const pMeta = getPaymentBadgeMeta(rec.payment_status);
-                                    return (
-                                        <div
-                                            key={rec.id}
-                                            className="flex items-center justify-between gap-3 bg-[#FFFDF9] px-5 py-3.5"
-                                        >
-                                            <Link
-                                                href={`/ui-orders/${rec.id}`}
-                                                className="group flex min-h-[44px] min-w-0 flex-1 flex-col justify-center"
+                        <Deferred
+                            data="receivables"
+                            fallback={
+                                <div className="bg-[#FFFDF9] p-4 sm:p-5">
+                                    {deferredErrors.receivables ? (
+                                        <DeferredSectionError
+                                            title="Daftar piutang belum termuat"
+                                            message={deferredErrors.receivables}
+                                            onRetry={() => router.reload({ only: ['receivables'] })}
+                                        />
+                                    ) : (
+                                        <ReceivablesSkeleton />
+                                    )}
+                                </div>
+                            }
+                            rescue={({ reloading }) => (
+                                <div className="bg-[#FFFDF9] p-4 sm:p-5">
+                                    <DeferredSectionError
+                                        title="Daftar piutang gagal dimuat"
+                                        reloading={reloading}
+                                        onRetry={() => router.reload({ only: ['receivables'] })}
+                                    />
+                                </div>
+                            )}
+                        >
+                            {displayedReceivables.length === 0 ? (
+                                <div className="bg-[#FFFDF9] px-5 py-10 text-center">
+                                    <p className="text-[15px] font-semibold text-[#1C211E]">
+                                        Semua tagihan sudah lunas
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="divide-y divide-[#DED6C8]">
+                                    {displayedReceivables.map((rec) => {
+                                        const pMeta = getPaymentBadgeMeta(rec.payment_status);
+                                        return (
+                                            <div
+                                                key={rec.id}
+                                                className="flex items-center justify-between gap-3 bg-[#FFFDF9] px-5 py-3.5"
                                             >
-                                                <span className="text-[15px] font-bold text-[#1C211E] group-hover:underline">
-                                                    {rec.customer_name}
-                                                </span>
-                                                <span className="mt-0.5 text-[13px] text-[#545852] tabular-nums">
-                                                    Sisa{' '}
-                                                    <strong className="font-bold text-[#9A3B22]">
-                                                        {formatRupiah(rec.outstanding)}
-                                                    </strong>
-                                                    {' · '}
-                                                    <span>{pMeta.label}</span>
-                                                </span>
-                                            </Link>
-                                            <Button
-                                                type="button"
-                                                variant="secondary"
-                                                onClick={() =>
-                                                    setPaymentTarget({
-                                                        id: rec.id,
-                                                        order_number: rec.order_number,
-                                                        customer_name: rec.customer_name,
-                                                        outstanding: rec.outstanding,
-                                                    })
-                                                }
-                                                className="min-w-[112px] shrink-0"
-                                            >
-                                                Catat Bayar
-                                            </Button>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
+                                                <Link
+                                                    href={`/ui-orders/${rec.id}`}
+                                                    component="Orders/Show"
+                                                    prefetch="hover"
+                                                    cacheFor="10s"
+                                                    cacheTags={['orders']}
+                                                    className="group flex min-h-[44px] min-w-0 flex-1 flex-col justify-center"
+                                                >
+                                                    <span className="text-[15px] font-bold text-[#1C211E] group-hover:underline">
+                                                        {rec.customer_name}
+                                                    </span>
+                                                    <span className="mt-0.5 text-[13px] text-[#545852] tabular-nums">
+                                                        Sisa{' '}
+                                                        <strong className="font-bold text-[#9A3B22]">
+                                                            {formatRupiah(rec.outstanding)}
+                                                        </strong>
+                                                        {' · '}
+                                                        <span>{pMeta.label}</span>
+                                                    </span>
+                                                </Link>
+                                                <Button
+                                                    type="button"
+                                                    variant="secondary"
+                                                    onClick={() =>
+                                                        setPaymentTarget({
+                                                            id: rec.id,
+                                                            order_number: rec.order_number,
+                                                            customer_name: rec.customer_name,
+                                                            outstanding: rec.outstanding,
+                                                        })
+                                                    }
+                                                    className="min-w-[112px] shrink-0"
+                                                >
+                                                    Catat Bayar
+                                                </Button>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </Deferred>
                     </aside>
                 </div>
 
@@ -693,7 +781,15 @@ export default function Dashboard({
                 footer={
                     <>
                         <Button asChild variant="secondary">
-                            <Link href={paymentsHref}>Lihat Semua Piutang</Link>
+                            <Link
+                                href={paymentsHref}
+                                component="Payments/Index"
+                                prefetch="hover"
+                                cacheFor="10s"
+                                cacheTags={['payments', 'orders']}
+                            >
+                                Lihat Semua Piutang
+                            </Link>
                         </Button>
                         <Button
                             type="button"
@@ -751,6 +847,6 @@ export default function Dashboard({
                     })}
                 </div>
             </Modal>
-        </AppLayout>
+        </>
     );
 }

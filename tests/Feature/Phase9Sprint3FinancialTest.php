@@ -638,7 +638,11 @@ class Phase9Sprint3FinancialTest extends TestCase
         $this->assertSame(120000, $report['summary']['cash_out']);
         $this->assertSame(280000, $report['summary']['cash_diff']);
         $this->assertSame(600000, $report['summary']['current_outstanding']);
-        $this->assertCount(92, $report['daily_trends']);
+        $resp->assertInertia(fn (Assert $page) => $page
+            ->loadDeferredProps('trends', fn (Assert $deferred) => $deferred
+                ->has('reportTrends.daily_trends', 92)
+            )
+        );
     }
 
     public function test_payment_idempotency_conflict_lifecycle_prevents_duplicates_and_recovers_after_reopening_order(): void
@@ -727,22 +731,28 @@ class Phase9Sprint3FinancialTest extends TestCase
     public function test_reports_period_boundaries_for_30_45_and_123_days(): void
     {
         // 30-day preset => 30 daily rows (uncapped)
-        $resp30 = $this->actingAs($this->admin)
+        $this->actingAs($this->admin)
             ->get(route('ui-reports.index', ['preset' => '30d']))
-            ->assertOk();
-        $rep30 = $resp30->viewData('page')['props']['report'];
-        $this->assertCount(30, $rep30['daily_trends']);
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->loadDeferredProps('trends', fn (Assert $deferred) => $deferred
+                    ->has('reportTrends.daily_trends', 30)
+                )
+            );
 
         // 45-day custom range (2026-09-01 to 2026-10-15) => 45 daily rows (uncapped)
-        $resp45 = $this->actingAs($this->admin)
+        $this->actingAs($this->admin)
             ->get(route('ui-reports.index', [
                 'preset' => 'custom',
                 'from' => '2026-09-01',
                 'to' => '2026-10-15',
             ]))
-            ->assertOk();
-        $rep45 = $resp45->viewData('page')['props']['report'];
-        $this->assertCount(45, $rep45['daily_trends']);
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->loadDeferredProps('trends', fn (Assert $deferred) => $deferred
+                    ->has('reportTrends.daily_trends', 45)
+                )
+            );
 
         // 123-day custom range (2026-07-01 to 2026-10-31) => 92 daily rows (capped), full period preserved
         $resp123 = $this->actingAs($this->admin)
@@ -755,6 +765,10 @@ class Phase9Sprint3FinancialTest extends TestCase
         $rep123 = $resp123->viewData('page')['props']['report'];
         $this->assertSame('2026-07-01', $rep123['period']['from']);
         $this->assertSame('2026-10-31', $rep123['period']['to']);
-        $this->assertCount(92, $rep123['daily_trends']);
+        $resp123->assertInertia(fn (Assert $page) => $page
+            ->loadDeferredProps('trends', fn (Assert $deferred) => $deferred
+                ->has('reportTrends.daily_trends', 92)
+            )
+        );
     }
 }
