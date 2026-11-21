@@ -71,6 +71,7 @@ RUN chown -R root:www-data /var/www/html && \
     find /var/www/html -type d -exec chmod 750 {} + && \
     find /var/www/html -type f -exec chmod 640 {} + && \
     chmod 750 /var/www/html/artisan && \
+    chmod 751 /var/www/html && \
     find /var/www/html/public -type d -exec chmod 755 {} + && \
     find /var/www/html/public -type f -exec chmod 644 {} + && \
     chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache && \
