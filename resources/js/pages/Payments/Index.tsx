@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Deferred, Head, Link, router, usePage } from '@inertiajs/react';
 import {
     AlertCircle,
     CheckCircle2,
@@ -15,8 +15,13 @@ import { Badge, getFulfillmentBadgeMeta } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { DataListSkeleton } from '@/components/ui/page-skeleton';
+import {
+    DataListSkeleton,
+    DeferredSectionError,
+    ReceivablesSkeleton,
+} from '@/components/ui/page-skeleton';
 import { ResponsiveDataList, type DataColumn } from '@/components/ui/responsive-data-list';
+import { useNavigationState, useScopedFilterLoading } from '@/lib/navigation-state';
 import { useInstantPageGuard } from '@/lib/use-instant-page-guard';
 import { formatAmount, formatRupiah, getWibTodayIso } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -67,9 +72,12 @@ export default function PaymentsIndex({
     filters = {},
 }: PaymentsIndexProps) {
     const { errors } = usePage<AppPageProps>().props;
+    const { deferredErrors } = useNavigationState();
+    const isFilterLoading = useScopedFilterLoading('/ui-payments');
     useInstantPageGuard(Boolean(orders));
     const [search, setSearch] = useState(filters.q || '');
-    const [isLoading, setIsLoading] = useState(false);
+    const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+    const isLoading = isFilterLoading || isHistoryLoading;
     const [payTarget, setPayTarget] = useState<PaymentModalTarget | null>(null);
 
     const effectiveTodayIso = todayIso || getWibTodayIso();
@@ -82,26 +90,29 @@ export default function PaymentsIndex({
         setSearch(filters.q || '');
     }, [filters.q]);
 
-    useEffect(() => {
-        const stopStart = router.on('start', (e) => {
-            if (!e.detail.visit.prefetch) setIsLoading(true);
-        });
-        const stopFinish = router.on('finish', (e) => {
-            if (!e.detail.visit.prefetch) setIsLoading(false);
-        });
-        return () => {
-            stopStart();
-            stopFinish();
-        };
-    }, []);
-
-    const visitPayments = (nextQ: string, nextHistoryStatus: HistoryStatusFilter) => {
+    const visitPayments = (
+        nextQ: string,
+        nextHistoryStatus: HistoryStatusFilter,
+        historyOnly = false,
+    ) => {
         const params: Record<string, string> = {};
         if (nextQ.trim()) {
             params.q = nextQ.trim();
         }
         if (nextHistoryStatus !== '') {
             params.history_status = nextHistoryStatus;
+        }
+
+        if (historyOnly) {
+            router.get('/ui-payments', params, {
+                only: ['paymentHistory', 'filters'],
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+                onStart: () => setIsHistoryLoading(true),
+                onFinish: () => setIsHistoryLoading(false),
+            });
+            return;
         }
 
         router.get('/ui-payments', params, {
@@ -584,12 +595,50 @@ export default function PaymentsIndex({
                             to={orders.to}
                             total={orders.total}
                             itemLabel="tagihan belum lunas"
+                            only={['orders', 'outstanding', 'filters']}
                         />
                     </div>
                 )}
             </Card>
 
-            {/* Secondary Section: Read-Only Payment History */}
+            {/* Secondary Section: Read-Only Payment History (Deferred) */}
+            <Deferred
+                data="paymentHistory"
+                fallback={
+                    <Card className="overflow-hidden">
+                        <div className="flex items-center gap-2 border-b border-[#DED6C8] bg-[#EFE9DE]/55 p-5 lg:p-6">
+                            <History className="size-4 text-[#1D3B2A]" aria-hidden="true" />
+                            <h2 className="atelier-h2">Riwayat Pembayaran Terakhir</h2>
+                        </div>
+                        <div className="bg-[#FFFDF9] p-5">
+                            {deferredErrors.paymentHistory ? (
+                                <DeferredSectionError
+                                    title="Riwayat pembayaran belum termuat"
+                                    message={deferredErrors.paymentHistory}
+                                    onRetry={() => router.reload({ only: ['paymentHistory'] })}
+                                />
+                            ) : (
+                                <ReceivablesSkeleton />
+                            )}
+                        </div>
+                    </Card>
+                }
+                rescue={({ reloading }) => (
+                    <Card className="overflow-hidden">
+                        <div className="flex items-center gap-2 border-b border-[#DED6C8] bg-[#EFE9DE]/55 p-5 lg:p-6">
+                            <History className="size-4 text-[#1D3B2A]" aria-hidden="true" />
+                            <h2 className="atelier-h2">Riwayat Pembayaran Terakhir</h2>
+                        </div>
+                        <div className="bg-[#FFFDF9] p-5">
+                            <DeferredSectionError
+                                title="Riwayat pembayaran gagal dimuat"
+                                reloading={reloading}
+                                onRetry={() => router.reload({ only: ['paymentHistory'] })}
+                            />
+                        </div>
+                    </Card>
+                )}
+            >
             {paymentHistory && (
                 <Card className="overflow-hidden">
                     <div className="flex flex-col gap-3 border-b border-[#DED6C8] bg-[#EFE9DE]/55 p-5 lg:flex-row lg:items-center lg:justify-between lg:p-6">
@@ -613,7 +662,7 @@ export default function PaymentsIndex({
                                         type="button"
                                         aria-pressed={selected}
                                         disabled={isLoading}
-                                        onClick={() => visitPayments(search, chip.key)}
+                                        onClick={() => visitPayments(search, chip.key, true)}
                                         className={cn(
                                             'inline-flex min-h-[44px] items-center rounded-[8px] border px-4 py-2 text-sm font-semibold transition-colors',
                                             selected
@@ -721,11 +770,13 @@ export default function PaymentsIndex({
                                 to={paymentHistory.to}
                                 total={paymentHistory.total}
                                 itemLabel="riwayat pembayaran"
+                                only={['paymentHistory', 'filters']}
                             />
                         </div>
                     )}
                 </Card>
             )}
+            </Deferred>
 
             <PaymentModal
                 open={Boolean(payTarget)}

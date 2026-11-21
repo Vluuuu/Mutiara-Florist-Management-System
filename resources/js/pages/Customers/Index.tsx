@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { DataListSkeleton } from '@/components/ui/page-skeleton';
 import { ResponsiveDataList, type DataColumn } from '@/components/ui/responsive-data-list';
+import { useScopedFilterLoading } from '@/lib/navigation-state';
 import { useInstantPageGuard } from '@/lib/use-instant-page-guard';
 import { formatAmount } from '@/lib/format';
 import type { AppPageProps, CustomerItem, PaginatedData } from '@/types';
@@ -20,27 +21,14 @@ type CustomersIndexProps = {
 
 export default function CustomersIndex({ customers, filters = {} }: CustomersIndexProps) {
     const { errors } = usePage<AppPageProps>().props;
+    const isLoading = useScopedFilterLoading('/ui-customers');
     useInstantPageGuard(Boolean(customers));
     const [search, setSearch] = useState(filters.q ?? '');
-    const [isLoading, setIsLoading] = useState(false);
     const isSearching = (filters.q ?? '').trim() !== '';
 
     useEffect(() => {
         setSearch(filters.q ?? '');
     }, [filters.q]);
-
-    useEffect(() => {
-        const stopStart = router.on('start', (e) => {
-            if (!e.detail.visit.prefetch) setIsLoading(true);
-        });
-        const stopFinish = router.on('finish', (e) => {
-            if (!e.detail.visit.prefetch) setIsLoading(false);
-        });
-        return () => {
-            stopStart();
-            stopFinish();
-        };
-    }, []);
 
     const handleSearch = (e: FormEvent) => {
         e.preventDefault();
@@ -48,6 +36,7 @@ export default function CustomersIndex({ customers, filters = {} }: CustomersInd
             '/ui-customers',
             search.trim() ? { q: search.trim() } : {},
             {
+                only: ['customers', 'filters'],
                 preserveState: true,
                 preserveScroll: true,
                 replace: true,
@@ -61,6 +50,7 @@ export default function CustomersIndex({ customers, filters = {} }: CustomersInd
             '/ui-customers',
             {},
             {
+                only: ['customers', 'filters'],
                 preserveState: true,
                 preserveScroll: true,
                 replace: true,
@@ -374,6 +364,7 @@ export default function CustomersIndex({ customers, filters = {} }: CustomersInd
                             to={customers.to}
                             total={customers.total}
                             itemLabel="pelanggan"
+                            only={['customers', 'filters']}
                         />
                     </div>
                 )}

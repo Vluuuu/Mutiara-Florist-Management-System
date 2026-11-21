@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { DataListSkeleton } from '@/components/ui/page-skeleton';
 import { ResponsiveDataList, type DataColumn } from '@/components/ui/responsive-data-list';
+import { useScopedFilterLoading } from '@/lib/navigation-state';
 import { useInstantPageGuard } from '@/lib/use-instant-page-guard';
 import { formatAmount, formatRupiah } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -35,9 +36,9 @@ const STATUS_CHIPS: Array<{ key: StatusFilterKey; label: string }> = [
 
 export default function OrdersIndex({ orders, filters = {} }: OrdersIndexProps) {
     const { errors } = usePage<AppPageProps>().props;
+    const isLoading = useScopedFilterLoading('/ui-orders');
     useInstantPageGuard(Boolean(orders));
     const [search, setSearch] = useState(filters.q ?? '');
-    const [isLoading, setIsLoading] = useState(false);
 
     const activeStatus: StatusFilterKey =
         filters.status === 'NEW' ||
@@ -54,19 +55,6 @@ export default function OrdersIndex({ orders, filters = {} }: OrdersIndexProps) 
         setSearch(filters.q ?? '');
     }, [filters.q]);
 
-    useEffect(() => {
-        const stopStart = router.on('start', (e) => {
-            if (!e.detail.visit.prefetch) setIsLoading(true);
-        });
-        const stopFinish = router.on('finish', (e) => {
-            if (!e.detail.visit.prefetch) setIsLoading(false);
-        });
-        return () => {
-            stopStart();
-            stopFinish();
-        };
-    }, []);
-
     const applyFilters = (qValue: string, nextStatus: StatusFilterKey, nextUnpaid: boolean) => {
         const params: Record<string, string> = {};
         if (qValue.trim()) params.q = qValue.trim();
@@ -74,6 +62,7 @@ export default function OrdersIndex({ orders, filters = {} }: OrdersIndexProps) 
         if (nextUnpaid) params.payment = 'UNPAID';
 
         router.get('/ui-orders', params, {
+            only: ['orders', 'filters'],
             preserveState: true,
             preserveScroll: true,
             replace: true,
@@ -88,6 +77,7 @@ export default function OrdersIndex({ orders, filters = {} }: OrdersIndexProps) 
     const handleReset = () => {
         setSearch('');
         router.get('/ui-orders', {}, {
+            only: ['orders', 'filters'],
             preserveState: true,
             preserveScroll: true,
             replace: true,
@@ -487,6 +477,7 @@ export default function OrdersIndex({ orders, filters = {} }: OrdersIndexProps) 
                             to={orders.to}
                             total={orders.total}
                             itemLabel="pesanan"
+                            only={['orders', 'filters']}
                         />
                     </div>
                 )}

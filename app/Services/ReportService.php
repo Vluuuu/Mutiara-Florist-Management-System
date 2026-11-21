@@ -92,51 +92,70 @@ class ReportService
         $fromStr = $period['from'];
         $toEnd = $period['to'].' 23:59:59';
 
-        // 1. Operational order + cash metrics in consolidated aggregate queries
-        $orderAgg = DB::table('orders')
-            ->where('order_date', '>=', $fromStr)
-            ->where('order_date', '<=', $toEnd)
-            ->selectRaw('COUNT(*) AS orders_count, COALESCE(SUM(total_amount), 0) AS total_billed')
-            ->first();
-
-        $itemAgg = DB::table('order_items')
-            ->join('orders', 'order_items.order_id', '=', 'orders.id')
-            ->where('orders.order_date', '>=', $fromStr)
-            ->where('orders.order_date', '<=', $toEnd)
-            ->selectRaw('COALESCE(SUM(order_items.quantity * order_items.unit_price), 0) AS flower_total')
-            ->selectRaw("COALESCE(SUM(CASE WHEN order_items.shipping_mode = 'SEPARATE' THEN order_items.shipping_fee ELSE 0 END), 0) AS shipping_total")
-            ->first();
-
-        $cashAgg = DB::selectOne(
+        // Consolidated into a single scalar round-trip query for low-latency Supabase/Postgres performance.
+        $row = DB::selectOne(
             "SELECT
-                (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE status = 'POSTED' AND payment_date >= ? AND payment_date <= ?) AS cash_in,
-                (SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE status = 'POSTED' AND expense_date >= ? AND expense_date <= ?) AS cash_out",
-            [$fromStr, $toEnd, $fromStr, $toEnd]
+                o.orders_count,
+                o.total_billed,
+                i.flower_total,
+                i.shipping_total,
+                p.cash_in,
+                e.cash_out,
+                r.open_receivables_count,
+                r.current_outstanding
+            FROM (
+                SELECT COUNT(*) AS orders_count, COALESCE(SUM(total_amount), 0) AS total_billed
+                FROM orders
+                WHERE order_date >= ? AND order_date <= ?
+            ) o
+            CROSS JOIN (
+                SELECT
+                    COALESCE(SUM(order_items.quantity * order_items.unit_price), 0) AS flower_total,
+                    COALESCE(SUM(CASE WHEN order_items.shipping_mode = 'SEPARATE' THEN order_items.shipping_fee ELSE 0 END), 0) AS shipping_total
+                FROM order_items
+                INNER JOIN orders ON order_items.order_id = orders.id
+                WHERE orders.order_date >= ? AND orders.order_date <= ?
+            ) i
+            CROSS JOIN (
+                SELECT COALESCE(SUM(amount), 0) AS cash_in
+                FROM payments
+                WHERE status = 'POSTED' AND payment_date >= ? AND payment_date <= ?
+            ) p
+            CROSS JOIN (
+                SELECT COALESCE(SUM(amount), 0) AS cash_out
+                FROM expenses
+                WHERE status = 'POSTED' AND expense_date >= ? AND expense_date <= ?
+            ) e
+            CROSS JOIN (
+                SELECT
+                    COUNT(*) AS open_receivables_count,
+                    COALESCE(SUM(ord.total_amount - COALESCE(received.paid_amount, 0)), 0) AS current_outstanding
+                FROM orders ord
+                LEFT JOIN (
+                    SELECT order_id, SUM(amount) AS paid_amount
+                    FROM payments
+                    WHERE status = 'POSTED'
+                    GROUP BY order_id
+                ) received ON ord.id = received.order_id
+                WHERE ord.total_amount > COALESCE(received.paid_amount, 0)
+            ) r",
+            [
+                $fromStr, $toEnd,
+                $fromStr, $toEnd,
+                $fromStr, $toEnd,
+                $fromStr, $toEnd,
+            ]
         );
 
-        // 2. Current running receivables snapshot (all open orders) in 1 query
-        $postedPaymentsSub = DB::table('payments')
-            ->select('order_id')
-            ->selectRaw('SUM(amount) AS paid_amount')
-            ->where('status', 'POSTED')
-            ->groupBy('order_id');
-
-        $receivableAgg = DB::table('orders')
-            ->leftJoinSub($postedPaymentsSub, 'received', fn ($join) => $join->on('orders.id', '=', 'received.order_id'))
-            ->whereRaw('orders.total_amount > COALESCE(received.paid_amount, 0)')
-            ->selectRaw('COUNT(*) AS open_receivables_count')
-            ->selectRaw('COALESCE(SUM(orders.total_amount - COALESCE(received.paid_amount, 0)), 0) AS current_outstanding')
-            ->first();
-
-        $ordersCount = (int) ($orderAgg->orders_count ?? 0);
-        $totalBilled = (int) ($orderAgg->total_billed ?? 0);
-        $flowerTotal = (int) ($itemAgg->flower_total ?? 0);
-        $shippingTotal = (int) ($itemAgg->shipping_total ?? 0);
-        $cashIn = (int) ($cashAgg->cash_in ?? 0);
-        $cashOut = (int) ($cashAgg->cash_out ?? 0);
+        $ordersCount = (int) ($row->orders_count ?? 0);
+        $totalBilled = (int) ($row->total_billed ?? 0);
+        $flowerTotal = (int) ($row->flower_total ?? 0);
+        $shippingTotal = (int) ($row->shipping_total ?? 0);
+        $cashIn = (int) ($row->cash_in ?? 0);
+        $cashOut = (int) ($row->cash_out ?? 0);
         $cashDiff = $cashIn - $cashOut;
-        $currentOutstanding = (int) ($receivableAgg->current_outstanding ?? 0);
-        $openReceivablesCount = (int) ($receivableAgg->open_receivables_count ?? 0);
+        $currentOutstanding = (int) ($row->current_outstanding ?? 0);
+        $openReceivablesCount = (int) ($row->open_receivables_count ?? 0);
 
         return [
             'period' => $period,
@@ -168,41 +187,36 @@ class ReportService
     {
         $toEnd = $toStr.' 23:59:59';
 
-        $fulfillmentCounts = DB::table('orders')
-            ->select('status')
-            ->selectRaw('COUNT(*) as total')
-            ->where('order_date', '>=', $fromStr)
-            ->where('order_date', '<=', $toEnd)
-            ->groupBy('status')
-            ->pluck('total', 'status')
-            ->toArray();
-
-        $fulfillmentBreakdown = [
-            'NEW' => (int) ($fulfillmentCounts['NEW'] ?? 0),
-            'PROCESSING' => (int) ($fulfillmentCounts['PROCESSING'] ?? 0),
-            'READY' => (int) ($fulfillmentCounts['READY'] ?? 0),
-            'COMPLETED' => (int) ($fulfillmentCounts['COMPLETED'] ?? 0),
-        ];
-
         $postedPaymentsSub = DB::table('payments')
             ->select('order_id')
             ->selectRaw('SUM(amount) AS paid_amount')
             ->where('status', 'POSTED')
             ->groupBy('order_id');
 
-        $payCounts = DB::table('orders')
+        $orderCounts = DB::table('orders')
             ->leftJoinSub($postedPaymentsSub, 'received', fn ($join) => $join->on('orders.id', '=', 'received.order_id'))
             ->where('orders.order_date', '>=', $fromStr)
             ->where('orders.order_date', '<=', $toEnd)
+            ->selectRaw("SUM(CASE WHEN orders.status = 'NEW' THEN 1 ELSE 0 END) AS status_new")
+            ->selectRaw("SUM(CASE WHEN orders.status = 'PROCESSING' THEN 1 ELSE 0 END) AS status_processing")
+            ->selectRaw("SUM(CASE WHEN orders.status = 'READY' THEN 1 ELSE 0 END) AS status_ready")
+            ->selectRaw("SUM(CASE WHEN orders.status = 'COMPLETED' THEN 1 ELSE 0 END) AS status_completed")
             ->selectRaw('SUM(CASE WHEN COALESCE(received.paid_amount, 0) <= 0 THEN 1 ELSE 0 END) AS unpaid_count')
             ->selectRaw('SUM(CASE WHEN COALESCE(received.paid_amount, 0) > 0 AND COALESCE(received.paid_amount, 0) < orders.total_amount THEN 1 ELSE 0 END) AS partial_count')
             ->selectRaw('SUM(CASE WHEN COALESCE(received.paid_amount, 0) >= orders.total_amount THEN 1 ELSE 0 END) AS paid_count')
             ->first();
 
+        $fulfillmentBreakdown = [
+            'NEW' => (int) ($orderCounts->status_new ?? 0),
+            'PROCESSING' => (int) ($orderCounts->status_processing ?? 0),
+            'READY' => (int) ($orderCounts->status_ready ?? 0),
+            'COMPLETED' => (int) ($orderCounts->status_completed ?? 0),
+        ];
+
         $paymentBreakdown = [
-            'UNPAID' => (int) ($payCounts->unpaid_count ?? 0),
-            'PARTIAL' => (int) ($payCounts->partial_count ?? 0),
-            'PAID' => (int) ($payCounts->paid_count ?? 0),
+            'UNPAID' => (int) ($orderCounts->unpaid_count ?? 0),
+            'PARTIAL' => (int) ($orderCounts->partial_count ?? 0),
+            'PAID' => (int) ($orderCounts->paid_count ?? 0),
         ];
 
         $expenseBreakdown = $this->buildExpenseBreakdown($fromStr, $toEnd, $totalCashOut);

@@ -17,6 +17,7 @@ import { FormField, Input, Select, Textarea } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { DataListSkeleton } from '@/components/ui/page-skeleton';
 import { ResponsiveDataList, type DataColumn } from '@/components/ui/responsive-data-list';
+import { useScopedFilterLoading } from '@/lib/navigation-state';
 import { useInstantPageGuard } from '@/lib/use-instant-page-guard';
 import { formatRupiah } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -42,6 +43,7 @@ export default function ExpensesIndex({
     filters = {},
 }: ExpensesIndexProps) {
     const { errors } = usePage<AppPageProps>().props;
+    const isLoading = useScopedFilterLoading('/ui-expenses');
     useInstantPageGuard(Boolean(expenses));
     const [q, setQ] = useState(filters.q ?? '');
     const [categoryId, setCategoryId] = useState(
@@ -50,7 +52,6 @@ export default function ExpensesIndex({
     const [status, setStatus] = useState(filters.status ?? '');
     const [from, setFrom] = useState(filters.from ?? '');
     const [to, setTo] = useState(filters.to ?? '');
-    const [isLoading, setIsLoading] = useState(false);
 
     const [voidTarget, setVoidTarget] = useState<ExpenseItem | null>(null);
     const voidLockRef = useRef(false);
@@ -74,19 +75,6 @@ export default function ExpensesIndex({
         setTo(filters.to ?? '');
     }, [filters.q, filters.category_id, filters.status, filters.from, filters.to]);
 
-    useEffect(() => {
-        const stopStart = router.on('start', (e) => {
-            if (!e.detail.visit.prefetch) setIsLoading(true);
-        });
-        const stopFinish = router.on('finish', (e) => {
-            if (!e.detail.visit.prefetch) setIsLoading(false);
-        });
-        return () => {
-            stopStart();
-            stopFinish();
-        };
-    }, []);
-
     const isFiltered = Boolean(
         filters.q || filters.category_id || filters.status || filters.from || filters.to,
     );
@@ -101,6 +89,7 @@ export default function ExpensesIndex({
         if (to) query.to = to;
 
         router.get('/ui-expenses', query, {
+            only: ['expenses', 'postedTotal', 'filters'],
             preserveState: true,
             preserveScroll: true,
             replace: true,
@@ -114,6 +103,7 @@ export default function ExpensesIndex({
         setFrom('');
         setTo('');
         router.get('/ui-expenses', {}, {
+            only: ['expenses', 'postedTotal', 'filters'],
             preserveState: true,
             preserveScroll: true,
             replace: true,
@@ -566,6 +556,7 @@ export default function ExpensesIndex({
                             to={expenses.to}
                             total={expenses.total}
                             itemLabel="pengeluaran"
+                            only={['expenses', 'postedTotal', 'filters']}
                         />
                     </div>
                 )}

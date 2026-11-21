@@ -16,6 +16,7 @@ import { FormField, Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { DataListSkeleton } from '@/components/ui/page-skeleton';
 import { ResponsiveDataList, type DataColumn } from '@/components/ui/responsive-data-list';
+import { useScopedFilterLoading } from '@/lib/navigation-state';
 import { useInstantPageGuard } from '@/lib/use-instant-page-guard';
 import { formatAmount } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -30,10 +31,10 @@ type ExpenseCategoriesIndexProps = {
 export default function ExpenseCategoriesIndex({
     categories,
 }: ExpenseCategoriesIndexProps) {
+    const isLoading = useScopedFilterLoading('/ui-expense-categories');
     useInstantPageGuard(Boolean(categories));
     const categoryList = categories ?? [];
     const [statusFilter, setStatusFilter] = useState<CategoryFilter>('all');
-    const [isLoading, setIsLoading] = useState(false);
 
     // Add category form
     const {
@@ -66,19 +67,6 @@ export default function ExpenseCategoriesIndex({
     const [toggleProcessing, setToggleProcessing] = useState(false);
     const [toggleError, setToggleError] = useState<string | null>(null);
     const toggleLockRef = useRef(false);
-
-    useEffect(() => {
-        const stopStart = router.on('start', (e) => {
-            if (!e.detail.visit.prefetch) setIsLoading(true);
-        });
-        const stopFinish = router.on('finish', (e) => {
-            if (!e.detail.visit.prefetch) setIsLoading(false);
-        });
-        return () => {
-            stopStart();
-            stopFinish();
-        };
-    }, []);
 
     const activeCount = useMemo(
         () => categoryList.filter((c) => Boolean(c.is_active)).length,

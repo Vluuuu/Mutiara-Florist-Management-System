@@ -48,59 +48,63 @@ class UiPaymentController extends Controller
             ];
         });
 
-        $historyPaginator = Payment::query()
-            ->with([
-                'order:id,order_number,customer_id',
-                'order.customer:id,name',
-                'recordedBy:id,name',
-            ])
-            ->when($historyStatus !== '', fn ($query) => $query->where('status', $historyStatus))
-            ->when($search !== '', function ($query) use ($search) {
-                $pattern = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $search).'%';
-                $likeOp = $query->getConnection()->getDriverName() === 'pgsql' ? 'ILIKE' : 'LIKE';
-                $query->where(function ($sub) use ($pattern, $likeOp) {
-                    $sub->whereRaw("payments.reference {$likeOp} ? ESCAPE '!'", [$pattern])
-                        ->orWhereHas('order', fn ($oq) => $oq
-                            ->whereRaw("orders.order_number {$likeOp} ? ESCAPE '!'", [$pattern])
-                            ->orWhereHas('customer', fn ($cq) => $cq->whereRaw("customers.name {$likeOp} ? ESCAPE '!'", [$pattern])));
-                });
-            })
-            ->orderByDesc('payment_date')
-            ->orderByDesc('id')
-            ->paginate(10, ['*'], 'history_page')
-            ->withQueryString();
-
-        $paymentHistory = $historyPaginator->through(function (Payment $payment): array {
-            $methodLabel = match ($payment->method) {
-                'TRANSFER' => 'Transfer bank',
-                'CASH' => 'Tunai',
-                'QRIS' => 'QRIS',
-                default => 'Lainnya',
-            };
-
-            return [
-                'id' => $payment->id,
-                'order_id' => $payment->order_id,
-                'order_number' => $payment->order?->order_number ?? '-',
-                'customer_name' => $payment->order?->customer?->name ?? 'Pelanggan',
-                'payment_date' => $payment->payment_date?->format('d/m/Y') ?? '-',
-                'amount' => (int) $payment->amount,
-                'method' => $payment->method,
-                'method_label' => $methodLabel,
-                'reference' => $payment->reference,
-                'status' => $payment->status,
-                'void_reason' => $payment->void_reason,
-                'voided_at' => $payment->voided_at
-                    ? $payment->voided_at->timezone('Asia/Jakarta')->format('d/m/Y H:i').' WIB'
-                    : null,
-                'recorded_by' => $payment->recordedBy?->name ?? 'Operator',
-            ];
-        });
-
         return Inertia::render('Payments/Index', [
             'orders' => $orders,
             'outstanding' => $outstanding,
-            'paymentHistory' => $paymentHistory,
+            'paymentHistory' => Inertia::defer(
+                function () use ($search, $historyStatus) {
+                    $historyPaginator = Payment::query()
+                        ->with([
+                            'order:id,order_number,customer_id',
+                            'order.customer:id,name',
+                            'recordedBy:id,name',
+                        ])
+                        ->when($historyStatus !== '', fn ($query) => $query->where('status', $historyStatus))
+                        ->when($search !== '', function ($query) use ($search) {
+                            $pattern = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $search).'%';
+                            $likeOp = $query->getConnection()->getDriverName() === 'pgsql' ? 'ILIKE' : 'LIKE';
+                            $query->where(function ($sub) use ($pattern, $likeOp) {
+                                $sub->whereRaw("payments.reference {$likeOp} ? ESCAPE '!'", [$pattern])
+                                    ->orWhereHas('order', fn ($oq) => $oq
+                                        ->whereRaw("orders.order_number {$likeOp} ? ESCAPE '!'", [$pattern])
+                                        ->orWhereHas('customer', fn ($cq) => $cq->whereRaw("customers.name {$likeOp} ? ESCAPE '!'", [$pattern])));
+                            });
+                        })
+                        ->orderByDesc('payment_date')
+                        ->orderByDesc('id')
+                        ->paginate(10, ['*'], 'history_page')
+                        ->withQueryString();
+
+                    return $historyPaginator->through(function (Payment $payment): array {
+                        $methodLabel = match ($payment->method) {
+                            'TRANSFER' => 'Transfer bank',
+                            'CASH' => 'Tunai',
+                            'QRIS' => 'QRIS',
+                            default => 'Lainnya',
+                        };
+
+                        return [
+                            'id' => $payment->id,
+                            'order_id' => $payment->order_id,
+                            'order_number' => $payment->order?->order_number ?? '-',
+                            'customer_name' => $payment->order?->customer?->name ?? 'Pelanggan',
+                            'payment_date' => $payment->payment_date?->format('d/m/Y') ?? '-',
+                            'amount' => (int) $payment->amount,
+                            'method' => $payment->method,
+                            'method_label' => $methodLabel,
+                            'reference' => $payment->reference,
+                            'status' => $payment->status,
+                            'void_reason' => $payment->void_reason,
+                            'voided_at' => $payment->voided_at
+                                ? $payment->voided_at->timezone('Asia/Jakarta')->format('d/m/Y H:i').' WIB'
+                                : null,
+                            'recorded_by' => $payment->recordedBy?->name ?? 'Operator',
+                        ];
+                    });
+                },
+                'history',
+                true
+            ),
             'todayIso' => now('Asia/Jakarta')->toDateString(),
             'filters' => [
                 'q' => $search,

@@ -38,12 +38,12 @@ class UiReportController extends Controller
             'report' => $coreReport,
             'reportBreakdowns' => Inertia::defer(
                 fn () => $this->reportService->getBreakdowns($period['from'], $period['to'], $cashOut),
-                'breakdowns',
+                'details',
                 true
             ),
             'reportTrends' => Inertia::defer(
                 fn () => $this->reportService->getTrendSeries($period, $granularityStr),
-                'trends',
+                'details',
                 true
             ),
         ]);

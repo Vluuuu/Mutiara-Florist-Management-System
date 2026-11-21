@@ -9,6 +9,7 @@ type PaginationProps = {
     to: number | null;
     total: number;
     itemLabel?: string;
+    only?: string[];
     className?: string;
 };
 
@@ -33,7 +34,15 @@ function isNextLink(link: PaginationLink, index: number, totalLinks: number): bo
  * Kontrol paginasi kiri/kanan simetris, selalu terlihat saat ada data,
  * dan mudah ditekan operator senior (target minimal 44x44px).
  */
-export function Pagination({ links, from, to, total, itemLabel = 'data', className }: PaginationProps) {
+export function Pagination({
+    links,
+    from,
+    to,
+    total,
+    itemLabel = 'data',
+    only,
+    className,
+}: PaginationProps) {
     if (total === 0) {
         return null;
     }
@@ -117,6 +126,7 @@ export function Pagination({ links, from, to, total, itemLabel = 'data', classNa
                                 href={link.url}
                                 prefetch="hover"
                                 cacheFor="10s"
+                                only={only}
                                 preserveScroll
                                 preserveState
                                 aria-current={link.active ? 'page' : undefined}

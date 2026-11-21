@@ -3,11 +3,11 @@ import { router } from '@inertiajs/react';
 import { useNavigationState } from '@/lib/navigation-state';
 
 /**
- * Guards Instant Visit intermediate pages or restored browser history entries
- * that do not yet have page-specific props when no navigation is in flight.
+ * Recovers missing page props only when browser history navigation (popstate)
+ * lands on an intermediate instant-swap entry without an active visit in flight.
  */
 export function useInstantPageGuard(hasRequiredProps: boolean) {
-    const { isNavigating, navigationError } = useNavigationState();
+    const { isNavigating, navigationError, lastNavigateType } = useNavigationState();
     const reloadTriggeredRef = useRef(false);
 
     useEffect(() => {
@@ -16,17 +16,14 @@ export function useInstantPageGuard(hasRequiredProps: boolean) {
             return;
         }
 
-        if (isNavigating || navigationError || reloadTriggeredRef.current) {
-            return;
-        }
-
-        const timer = window.setTimeout(() => {
+        if (
+            !isNavigating &&
+            !navigationError &&
+            lastNavigateType === 'history' &&
+            !reloadTriggeredRef.current
+        ) {
             reloadTriggeredRef.current = true;
             router.reload();
-        }, 60);
-
-        return () => {
-            window.clearTimeout(timer);
-        };
-    }, [hasRequiredProps, isNavigating, navigationError]);
+        }
+    }, [hasRequiredProps, isNavigating, navigationError, lastNavigateType]);
 }

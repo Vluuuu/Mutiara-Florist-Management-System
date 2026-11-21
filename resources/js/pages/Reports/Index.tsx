@@ -18,7 +18,7 @@ import {
     SummaryStripSkeleton,
 } from '@/components/ui/page-skeleton';
 import { ResponsiveDataList, type DataColumn } from '@/components/ui/responsive-data-list';
-import { useNavigationState } from '@/lib/navigation-state';
+import { useNavigationState, useScopedFilterLoading } from '@/lib/navigation-state';
 import { useInstantPageGuard } from '@/lib/use-instant-page-guard';
 import { formatAmount, formatRupiah } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -62,6 +62,7 @@ export default function ReportsIndex({
 }: ReportsIndexProps) {
     const { errors } = usePage<AppPageProps>().props;
     const { deferredErrors } = useNavigationState();
+    const isFilterLoading = useScopedFilterLoading('/ui-reports');
     useInstantPageGuard(Boolean(report));
 
     const period = report?.period;
@@ -96,7 +97,8 @@ export default function ReportsIndex({
     const [dateRangeError, setDateRangeError] = useState<string | null>(null);
     const [tableOpen, setTableOpen] = useState(false);
     const [onlyActiveRows, setOnlyActiveRows] = useState(true);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isChartLoading, setIsChartLoading] = useState(false);
+    const isLoading = isFilterLoading || isChartLoading;
 
     useEffect(() => {
         if (!period) return;
@@ -105,23 +107,6 @@ export default function ReportsIndex({
         setCustomTo(period.to);
     }, [period?.preset, period?.from, period?.to]);
 
-    useEffect(() => {
-        const stopStart = router.on('start', (e) => {
-            if (!e.detail.visit.prefetch && !e.detail.visit.only?.length) {
-                setIsLoading(true);
-            }
-        });
-        const stopFinish = router.on('finish', (e) => {
-            if (!e.detail.visit.prefetch && !e.detail.visit.only?.length) {
-                setIsLoading(false);
-            }
-        });
-        return () => {
-            stopStart();
-            stopFinish();
-        };
-    }, []);
-
     const activeGranularity: ReportGranularity = chartSeries?.granularity ?? 'weekly';
 
     const visitReport = (
@@ -129,6 +114,7 @@ export default function ReportsIndex({
         nextFrom?: string,
         nextTo?: string,
         nextGranularity?: ReportGranularity,
+        trendsOnly = false,
     ) => {
         const params: Record<string, string> = { preset: nextPreset };
         if (nextPreset === 'custom' && nextFrom && nextTo) {
@@ -137,6 +123,16 @@ export default function ReportsIndex({
         }
         if (nextGranularity) {
             params.granularity = nextGranularity;
+        }
+        if (trendsOnly) {
+            router.get('/ui-reports', params, {
+                only: ['reportTrends'],
+                preserveState: true,
+                preserveScroll: true,
+                onStart: () => setIsChartLoading(true),
+                onFinish: () => setIsChartLoading(false),
+            });
+            return;
         }
         router.get('/ui-reports', params, { preserveState: true, preserveScroll: true });
     };
@@ -151,7 +147,7 @@ export default function ReportsIndex({
 
     const handleSelectGranularity = (granularity: ReportGranularity) => {
         if (!period) return;
-        visitReport(period.preset, period.from, period.to, granularity);
+        visitReport(period.preset, period.from, period.to, granularity, true);
     };
 
     const handleApplyCustom = (e: FormEvent) => {

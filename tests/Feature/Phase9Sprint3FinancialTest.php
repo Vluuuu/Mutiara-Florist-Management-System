@@ -88,7 +88,10 @@ class Phase9Sprint3FinancialTest extends TestCase
                 ->where('todayIso', $today)
                 ->where('outstanding', 800000)
                 ->has('orders.data', 1)
-                ->has('paymentHistory.data', 2)
+                ->missing('paymentHistory')
+                ->loadDeferredProps('history', fn (Assert $deferred) => $deferred
+                    ->has('paymentHistory.data', 2)
+                )
             );
 
         // Filter paymentHistory by POSTED only
@@ -97,9 +100,11 @@ class Phase9Sprint3FinancialTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->where('filters.history_status', 'POSTED')
-                ->has('paymentHistory.data', 1)
-                ->where('paymentHistory.data.0.id', $posted->id)
-                ->where('paymentHistory.data.0.status', 'POSTED')
+                ->loadDeferredProps('history', fn (Assert $deferred) => $deferred
+                    ->has('paymentHistory.data', 1)
+                    ->where('paymentHistory.data.0.id', $posted->id)
+                    ->where('paymentHistory.data.0.status', 'POSTED')
+                )
             );
 
         // Filter paymentHistory by VOIDED only
@@ -108,9 +113,11 @@ class Phase9Sprint3FinancialTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->where('filters.history_status', 'VOIDED')
-                ->has('paymentHistory.data', 1)
-                ->where('paymentHistory.data.0.id', $toVoid->id)
-                ->where('paymentHistory.data.0.status', 'VOIDED')
+                ->loadDeferredProps('history', fn (Assert $deferred) => $deferred
+                    ->has('paymentHistory.data', 1)
+                    ->where('paymentHistory.data.0.id', $toVoid->id)
+                    ->where('paymentHistory.data.0.status', 'VOIDED')
+                )
             );
 
         // Record installment directly from Payments/Index with return_to=payments
@@ -578,8 +585,10 @@ class Phase9Sprint3FinancialTest extends TestCase
                 ->get(route('ui-payments.index', ['q' => $needle]))
                 ->assertOk()
                 ->assertInertia(fn (Assert $page) => $page
-                    ->has('paymentHistory.data', 1)
-                    ->where('paymentHistory.data.0.id', $specialPay->id)
+                    ->loadDeferredProps('history', fn (Assert $deferred) => $deferred
+                        ->has('paymentHistory.data', 1)
+                        ->where('paymentHistory.data.0.id', $specialPay->id)
+                    )
                 );
         }
     }
@@ -639,7 +648,7 @@ class Phase9Sprint3FinancialTest extends TestCase
         $this->assertSame(280000, $report['summary']['cash_diff']);
         $this->assertSame(600000, $report['summary']['current_outstanding']);
         $resp->assertInertia(fn (Assert $page) => $page
-            ->loadDeferredProps('trends', fn (Assert $deferred) => $deferred
+            ->loadDeferredProps('details', fn (Assert $deferred) => $deferred
                 ->has('reportTrends.daily_trends', 92)
             )
         );
@@ -735,7 +744,7 @@ class Phase9Sprint3FinancialTest extends TestCase
             ->get(route('ui-reports.index', ['preset' => '30d']))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->loadDeferredProps('trends', fn (Assert $deferred) => $deferred
+                ->loadDeferredProps('details', fn (Assert $deferred) => $deferred
                     ->has('reportTrends.daily_trends', 30)
                 )
             );
@@ -749,7 +758,7 @@ class Phase9Sprint3FinancialTest extends TestCase
             ]))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->loadDeferredProps('trends', fn (Assert $deferred) => $deferred
+                ->loadDeferredProps('details', fn (Assert $deferred) => $deferred
                     ->has('reportTrends.daily_trends', 45)
                 )
             );
@@ -766,7 +775,7 @@ class Phase9Sprint3FinancialTest extends TestCase
         $this->assertSame('2026-07-01', $rep123['period']['from']);
         $this->assertSame('2026-10-31', $rep123['period']['to']);
         $resp123->assertInertia(fn (Assert $page) => $page
-            ->loadDeferredProps('trends', fn (Assert $deferred) => $deferred
+            ->loadDeferredProps('details', fn (Assert $deferred) => $deferred
                 ->has('reportTrends.daily_trends', 92)
             )
         );

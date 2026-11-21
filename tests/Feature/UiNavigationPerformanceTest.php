@@ -119,13 +119,51 @@ class UiNavigationPerformanceTest extends TestCase
                 ->where('report.summary.cash_out', $expectedFull['summary']['cash_out'])
                 ->missing('reportBreakdowns')
                 ->missing('reportTrends')
-                ->loadDeferredProps('breakdowns', fn (Assert $deferred) => $deferred
+                ->loadDeferredProps('details', fn (Assert $deferred) => $deferred
                     ->where('reportBreakdowns.fulfillment_breakdown', $expectedFull['fulfillment_breakdown'])
                     ->where('reportBreakdowns.expense_breakdown.0.amount', 75000)
-                )
-                ->loadDeferredProps('trends', fn (Assert $deferred) => $deferred
                     ->has('reportTrends.daily_trends')
                     ->has('reportTrends.chart_series.points')
+                )
+            );
+    }
+
+    public function test_payments_defers_history_and_keeps_receivables_fast(): void
+    {
+        $orderId = DB::table('orders')->insertGetId([
+            'order_number' => 'ORD-PAY-DEFER-1',
+            'customer_id' => $this->customerId,
+            'created_by' => $this->user->id,
+            'order_date' => now()->toDateString(),
+            'status' => 'NEW',
+            'total_amount' => 300000,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('payments')->insert([
+            'order_id' => $orderId,
+            'recorded_by' => $this->user->id,
+            'payment_date' => now()->toDateString(),
+            'amount' => 100000,
+            'method' => 'CASH',
+            'idempotency_key' => (string) Str::uuid(),
+            'status' => 'POSTED',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actingAs($this->user)
+            ->get(route('ui-payments.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Payments/Index')
+                ->where('outstanding', 200000)
+                ->has('orders.data', 1)
+                ->missing('paymentHistory')
+                ->loadDeferredProps('history', fn (Assert $deferred) => $deferred
+                    ->has('paymentHistory.data', 1)
+                    ->where('paymentHistory.data.0.amount', 100000)
                 )
             );
     }
@@ -163,5 +201,61 @@ class UiNavigationPerformanceTest extends TestCase
             ->get(route('dashboard'))
             ->assertOk()
             ->assertJsonPath('rescuedProps', ['receivables']);
+    }
+
+    public function test_filter_partial_reloads_return_scoped_props_only(): void
+    {
+        // Orders partial filter keeps only orders & filters
+        $this->actingAs($this->user)
+            ->get(route('ui-orders.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Orders/Index')
+                ->reload(only: ['orders', 'filters'], callback: fn (Assert $partial) => $partial
+                    ->has('orders')
+                    ->has('filters')
+                )
+            );
+
+        // Expenses partial filter omits static categories list
+        $this->actingAs($this->user)
+            ->get(route('ui-expenses.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Expenses/Index')
+                ->reload(only: ['expenses', 'postedTotal', 'filters'], callback: fn (Assert $partial) => $partial
+                    ->has('expenses')
+                    ->has('postedTotal')
+                    ->has('filters')
+                    ->missing('categories')
+                )
+            );
+
+        // Payments history chip partial filter omits receivables & outstanding
+        $this->actingAs($this->user)
+            ->get(route('ui-payments.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Payments/Index')
+                ->reload(only: ['paymentHistory', 'filters'], callback: fn (Assert $partial) => $partial
+                    ->has('paymentHistory')
+                    ->has('filters')
+                    ->missing('orders')
+                    ->missing('outstanding')
+                )
+            );
+
+        // Reports granularity toggle reloads reportTrends only
+        $this->actingAs($this->user)
+            ->get(route('ui-reports.index', ['preset' => '30d', 'granularity' => 'monthly']))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Reports/Index')
+                ->reload(only: ['reportTrends'], callback: fn (Assert $partial) => $partial
+                    ->where('reportTrends.chart_series.granularity', 'monthly')
+                    ->missing('report')
+                    ->missing('reportBreakdowns')
+                )
+            );
     }
 }

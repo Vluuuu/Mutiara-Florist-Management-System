@@ -124,12 +124,10 @@ class UiReportTest extends TestCase
                 ->has('report.summary')
                 ->has('report.notes')
                 ->where('report.notes.cash_diff_label', 'Selisih Kas')
-                ->loadDeferredProps('breakdowns', fn (Assert $deferred) => $deferred
+                ->loadDeferredProps('details', fn (Assert $deferred) => $deferred
                     ->has('reportBreakdowns.fulfillment_breakdown')
                     ->has('reportBreakdowns.payment_breakdown')
                     ->has('reportBreakdowns.expense_breakdown')
-                )
-                ->loadDeferredProps('trends', fn (Assert $deferred) => $deferred
                     ->has('reportTrends.daily_trends')
                     ->has('reportTrends.chart_series')
                 )
