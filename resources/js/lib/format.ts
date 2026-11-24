@@ -23,6 +23,17 @@ export function formatRupiah(value: number | null | undefined): string {
 }
 
 /**
+ * Format selisih kas bertanda: +Rp250.000, Rp0, atau -Rp120.000.
+ */
+export function formatSignedRupiah(value: number | null | undefined): string {
+    const num = Math.trunc(Number(value) || 0);
+    if (num > 0) {
+        return `+Rp${rupiahFormatter.format(num)}`;
+    }
+    return formatRupiah(num);
+}
+
+/**
  * Ubah input string mata uang menjadi integer bulat Rupiah (null jika kosong).
  */
 export function parseRupiahDigits(raw: string): number | null {

@@ -14,10 +14,10 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(function Inp
             ref={ref}
             aria-invalid={invalid || props['aria-invalid'] ? true : undefined}
             className={cn(
-                'min-h-[44px] w-full rounded-[8px] border-[1.5px] px-3.5 py-2 text-[15px] text-[#1C211E] placeholder:text-[#60645E] focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[#1D3B2A] disabled:bg-[#EFE9DE] disabled:text-[#545852]',
+                'min-h-[44px] w-full rounded-[8px] border-[1.5px] px-3.5 py-2 text-[15px] text-[var(--text-primary)] placeholder:text-[var(--text-placeholder)] transition-colors focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-primary)] disabled:bg-[var(--bg-sunken)] disabled:text-[var(--text-secondary)]',
                 invalid || props['aria-invalid']
-                    ? 'border-[#8A2619] bg-[#FCF0EC]/60'
-                    : 'border-[#7D776C] bg-[#FFFDF9]',
+                    ? 'border-[var(--danger-ink)] bg-[var(--brand-urgent-soft)]/60'
+                    : 'border-[var(--border-input)] bg-[var(--bg-surface)]',
                 className,
             )}
             {...props}
@@ -38,10 +38,10 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(fun
             ref={ref}
             aria-invalid={invalid || props['aria-invalid'] ? true : undefined}
             className={cn(
-                'min-h-[88px] w-full rounded-[8px] border-[1.5px] px-3.5 py-2.5 text-[15px] text-[#1C211E] placeholder:text-[#60645E] focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[#1D3B2A] disabled:bg-[#EFE9DE] disabled:text-[#545852]',
+                'min-h-[88px] w-full rounded-[8px] border-[1.5px] px-3.5 py-2.5 text-[15px] text-[var(--text-primary)] placeholder:text-[var(--text-placeholder)] transition-colors focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-primary)] disabled:bg-[var(--bg-sunken)] disabled:text-[var(--text-secondary)]',
                 invalid || props['aria-invalid']
-                    ? 'border-[#8A2619] bg-[#FCF0EC]/60'
-                    : 'border-[#7D776C] bg-[#FFFDF9]',
+                    ? 'border-[var(--danger-ink)] bg-[var(--brand-urgent-soft)]/60'
+                    : 'border-[var(--border-input)] bg-[var(--bg-surface)]',
                 className,
             )}
             {...props}
@@ -62,10 +62,10 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(function 
             ref={ref}
             aria-invalid={invalid || props['aria-invalid'] ? true : undefined}
             className={cn(
-                'min-h-[44px] w-full rounded-[8px] border-[1.5px] px-3.5 py-2 text-[15px] text-[#1C211E] focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[#1D3B2A] disabled:bg-[#EFE9DE] disabled:text-[#545852]',
+                'min-h-[44px] w-full rounded-[8px] border-[1.5px] px-3.5 py-2 text-[15px] text-[var(--text-primary)] transition-colors focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-primary)] disabled:bg-[var(--bg-sunken)] disabled:text-[var(--text-secondary)]',
                 invalid || props['aria-invalid']
-                    ? 'border-[#8A2619] bg-[#FCF0EC]/60'
-                    : 'border-[#7D776C] bg-[#FFFDF9]',
+                    ? 'border-[var(--danger-ink)] bg-[var(--brand-urgent-soft)]/60'
+                    : 'border-[var(--border-input)] bg-[var(--bg-surface)]',
                 className,
             )}
             {...props}
@@ -96,22 +96,22 @@ export function FormField({
 }: FormFieldProps) {
     return (
         <div className={cn('space-y-1.5', className)}>
-            <label htmlFor={id} className="block text-sm font-semibold text-[#1C211E]">
+            <label htmlFor={id} className="block text-sm font-semibold text-[var(--text-primary)]">
                 {label}
                 {required && (
-                    <span className="ml-0.5 text-[#9A3B22]" aria-hidden="true">
+                    <span className="ml-0.5 text-[var(--brand-urgent)]" aria-hidden="true">
                         *
                     </span>
                 )}
             </label>
             {children}
             {hint && (
-                <p id={`${id}-hint`} className="text-[13px] leading-snug text-[#545852]">
+                <p id={`${id}-hint`} className="text-[13px] leading-snug text-[var(--text-secondary)]">
                     {hint}
                 </p>
             )}
             {error && (
-                <p id={`${id}-error`} role="alert" className="text-[13px] font-semibold text-[#8A2619]">
+                <p id={`${id}-error`} role="alert" className="text-[13px] font-semibold text-[var(--danger-ink)]">
                     {error}
                 </p>
             )}

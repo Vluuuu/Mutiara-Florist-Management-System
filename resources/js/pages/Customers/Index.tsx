@@ -1,10 +1,13 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { AlertCircle, Plus, Search, Users, X } from 'lucide-react';
+import { Plus, Search, Users, X } from 'lucide-react';
 import { Pagination } from '@/components/pagination';
+import { AlertBanner } from '@/components/ui/alert-banner';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
+import { PageHeader } from '@/components/ui/page-header';
 import { DataListSkeleton } from '@/components/ui/page-skeleton';
 import { ResponsiveDataList, type DataColumn } from '@/components/ui/responsive-data-list';
 import { useScopedFilterLoading } from '@/lib/navigation-state';
@@ -70,12 +73,12 @@ export default function CustomersIndex({ customers, filters = {} }: CustomersInd
                         prefetch="hover"
                         cacheFor="10s"
                         cacheTags={['customers']}
-                        className="inline-flex min-h-[44px] items-center font-bold text-[#1D3B2A] hover:underline"
+                        className="inline-flex min-h-[44px] items-center font-bold text-[var(--brand-primary)] hover:underline"
                     >
                         {customer.name}
                     </Link>
                     {customer.notes && (
-                        <p className="mt-0.5 break-words text-[13px] text-[#545852]">
+                        <p className="mt-0.5 break-words text-[13px] text-[var(--text-secondary)]">
                             {customer.notes}
                         </p>
                     )}
@@ -87,7 +90,7 @@ export default function CustomersIndex({ customers, filters = {} }: CustomersInd
             header: 'No. Telepon / WA',
             cellClassName: 'whitespace-nowrap',
             render: (customer) => (
-                <span className="font-[var(--font-mono)] text-sm text-[#1C211E] tabular-nums">
+                <span className="font-[var(--font-mono)] text-sm text-[var(--text-primary)] tabular-nums">
                     {customer.phone || '-'}
                 </span>
             ),
@@ -98,7 +101,7 @@ export default function CustomersIndex({ customers, filters = {} }: CustomersInd
             align: 'right',
             cellClassName: 'whitespace-nowrap',
             render: (customer) => (
-                <span className="font-semibold text-[#1C211E] tabular-nums">
+                <span className="font-semibold text-[var(--text-primary)] tabular-nums">
                     {formatAmount(customer.orders_count)} pesanan
                 </span>
             ),
@@ -109,8 +112,8 @@ export default function CustomersIndex({ customers, filters = {} }: CustomersInd
             align: 'right',
             cellClassName: 'whitespace-nowrap',
             render: (customer) => (
-                <div className="inline-flex items-center justify-end gap-2.5">
-                    <Button asChild variant="secondary" className="min-w-[100px]">
+                <div className="inline-flex items-center justify-end gap-2">
+                    <Button asChild variant="subtle" size="sm" className="min-w-[92px]">
                         <Link
                             href={`/ui-orders/create?customer_id=${customer.id}`}
                             component="Orders/Create"
@@ -121,7 +124,7 @@ export default function CustomersIndex({ customers, filters = {} }: CustomersInd
                             + Pesan
                         </Link>
                     </Button>
-                    <Button asChild variant="secondary" className="min-w-[100px]">
+                    <Button asChild variant="subtle" size="sm" className="min-w-[84px]">
                         <Link
                             href={`/ui-customers/${customer.id}`}
                             component="Customers/Show"
@@ -152,13 +155,9 @@ export default function CustomersIndex({ customers, filters = {} }: CustomersInd
         <>
             <Head title="Pelanggan" />
 
-            <div className="mb-7 flex flex-col gap-3 border-b border-[#DED6C8] pb-5 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h1 className="atelier-h1">
-                        Daftar Pelanggan
-                    </h1>
-                </div>
-                <div>
+            <PageHeader
+                title="Daftar Pelanggan"
+                actions={
                     <Button asChild variant="primary" className="min-w-[180px]">
                         <Link
                             href="/ui-customers/create"
@@ -170,35 +169,31 @@ export default function CustomersIndex({ customers, filters = {} }: CustomersInd
                             Tambah Pelanggan
                         </Link>
                     </Button>
-                </div>
-            </div>
+                }
+            />
 
             {searchError && (
-                <div
-                    role="alert"
-                    className="mb-5 flex items-start gap-2.5 rounded-[8px] border border-[#E2B3AA] bg-[#FCECE9] p-4 text-sm font-medium text-[#8A2619]"
-                >
-                    <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-                    <span>{searchError}</span>
-                </div>
+                <AlertBanner tone="error" className="mb-5">
+                    {searchError}
+                </AlertBanner>
             )}
 
             <Card className="overflow-hidden">
                 <form
                     onSubmit={handleSearch}
                     role="search"
-                    className="border-b border-[#DED6C8] bg-[#EFE9DE]/55 p-5 sm:p-6"
+                    className="border-b border-[var(--border-hairline)] bg-[var(--bg-sunken)]/55 p-5 sm:p-6"
                 >
                     <label
                         htmlFor="q"
-                        className="mb-2 block text-sm font-semibold text-[#1C211E]"
+                        className="mb-2 block text-sm font-semibold text-[var(--text-primary)]"
                     >
                         Cari Pelanggan
                     </label>
                     <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
                         <div className="relative flex-1">
                             <Search
-                                className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[#545852]"
+                                className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[var(--text-secondary)]"
                                 aria-hidden="true"
                             />
                             <Input
@@ -216,7 +211,7 @@ export default function CustomersIndex({ customers, filters = {} }: CustomersInd
                                     type="button"
                                     onClick={handleReset}
                                     aria-label="Hapus kata kunci pencarian"
-                                    className="absolute right-0 top-0 inline-flex size-11 items-center justify-center rounded-[8px] text-[#545852] hover:bg-[#EFE9DE] hover:text-[#1C211E]"
+                                    className="absolute right-0 top-0 inline-flex size-11 items-center justify-center rounded-[8px] text-[var(--text-secondary)] hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)]"
                                 >
                                     <X className="size-4" aria-hidden="true" />
                                 </button>
@@ -248,7 +243,7 @@ export default function CustomersIndex({ customers, filters = {} }: CustomersInd
                 {isLoading && (
                     <div
                         aria-busy="true"
-                        className="border-b border-[#DED6C8] bg-[#EFE9DE]/70 px-5 py-2.5 text-sm font-semibold text-[#1D3B2A]"
+                        className="border-b border-[var(--border-hairline)] bg-[var(--bg-sunken)]/70 px-5 py-2.5 text-sm font-semibold text-[var(--brand-primary)]"
                     >
                         Memuat daftar pelanggan terbaru...
                     </div>
@@ -259,6 +254,7 @@ export default function CustomersIndex({ customers, filters = {} }: CustomersInd
                         items={customers.data}
                         columns={columns}
                         keyExtractor={(customer) => customer.id}
+                        tabletColumns={2}
                         tableAriaLabel="Daftar pelanggan Mutiara Florist"
                         renderMobileCard={(customer) => (
                             <article className="atelier-sheet flex flex-col gap-3 p-4">
@@ -270,27 +266,27 @@ export default function CustomersIndex({ customers, filters = {} }: CustomersInd
                                             prefetch="hover"
                                             cacheFor="10s"
                                             cacheTags={['customers']}
-                                            className="inline-flex min-h-[44px] items-center text-base font-bold text-[#1D3B2A] hover:underline"
+                                            className="inline-flex min-h-[44px] items-center text-base font-bold text-[var(--brand-primary)] hover:underline"
                                         >
                                             {customer.name}
                                         </Link>
-                                        <p className="mt-0.5 font-[var(--font-mono)] text-sm text-[#545852] tabular-nums">
+                                        <p className="mt-0.5 font-[var(--font-mono)] text-sm text-[var(--text-secondary)] tabular-nums">
                                             {customer.phone || 'Nomor telepon belum diisi'}
                                         </p>
                                     </div>
-                                    <span className="shrink-0 pt-2 text-[13px] font-bold text-[#545852] tabular-nums">
+                                    <span className="shrink-0 pt-2 text-[13px] font-bold text-[var(--text-secondary)] tabular-nums">
                                         {formatAmount(customer.orders_count)} pesanan
                                     </span>
                                 </div>
 
                                 {customer.notes && (
-                                    <p className="break-words text-sm text-[#545852]">
+                                    <p className="break-words text-sm text-[var(--text-secondary)]">
                                         {customer.notes}
                                     </p>
                                 )}
 
-                                <div className="grid grid-cols-2 gap-2.5 pt-1">
-                                    <Button asChild variant="secondary">
+                                <div className="mt-auto grid grid-cols-2 gap-2.5 pt-1">
+                                    <Button asChild variant="subtle">
                                         <Link
                                             href={`/ui-customers/${customer.id}`}
                                             component="Customers/Show"
@@ -316,25 +312,26 @@ export default function CustomersIndex({ customers, filters = {} }: CustomersInd
                             </article>
                         )}
                         emptyState={
-                            <div className="px-6 py-14 text-center">
-                                <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-[8px] border border-[#DED6C8] bg-[#EFE9DE] text-[#545852]">
-                                    {isSearching ? (
-                                        <Search className="size-6" aria-hidden="true" />
-                                    ) : (
-                                        <Users className="size-6" aria-hidden="true" />
-                                    )}
-                                </div>
-                                <h2 className="atelier-h2">
-                                    {isSearching ? 'Pelanggan tidak ditemukan' : 'Belum ada pelanggan'}
-                                </h2>
-                                <p className="mt-1.5 text-[15px] text-[#545852]">
-                                    {isSearching
+                            <EmptyState
+                                icon={isSearching ? Search : Users}
+                                title={
+                                    isSearching
+                                        ? 'Pelanggan tidak ditemukan'
+                                        : 'Belum ada pelanggan'
+                                }
+                                description={
+                                    isSearching
                                         ? 'Coba kata kunci lain atau reset filter pencarian.'
-                                        : 'Tambahkan pelanggan pertama untuk mulai mencatat pesanan.'}
-                                </p>
-                                <div className="mt-5">
-                                    {isSearching ? (
-                                        <Button type="button" variant="secondary" onClick={handleReset} className="min-w-[144px]">
+                                        : 'Tambahkan pelanggan pertama untuk mulai mencatat pesanan.'
+                                }
+                                action={
+                                    isSearching ? (
+                                        <Button
+                                            type="button"
+                                            variant="secondary"
+                                            onClick={handleReset}
+                                            className="min-w-[144px]"
+                                        >
                                             Reset Filter
                                         </Button>
                                     ) : (
@@ -349,15 +346,15 @@ export default function CustomersIndex({ customers, filters = {} }: CustomersInd
                                                 Tambah Pelanggan
                                             </Link>
                                         </Button>
-                                    )}
-                                </div>
-                            </div>
+                                    )
+                                }
+                            />
                         }
                     />
                 </div>
 
                 {customers.total > 0 && (
-                    <div className="border-t border-[#DED6C8] bg-[#EFE9DE]/45 px-5 py-4">
+                    <div className="border-t border-[var(--border-hairline)] bg-[var(--bg-sunken)]/45 px-5 py-4">
                         <Pagination
                             links={customers.links}
                             from={customers.from}

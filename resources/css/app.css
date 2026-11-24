@@ -9,37 +9,76 @@
     --font-display: 'Plus Jakarta Sans Variable', 'Plus Jakarta Sans', 'Segoe UI', ui-sans-serif, system-ui, -apple-system, sans-serif;
     --font-sans: 'Plus Jakarta Sans Variable', 'Plus Jakarta Sans', 'Segoe UI', ui-sans-serif, system-ui, -apple-system, sans-serif;
     --font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+    /* Semantic Surface & Brand Colors (Calm Botanical Workspace V2) */
+    --color-canvas: var(--bg-canvas);
+    --color-surface: var(--bg-surface);
+    --color-sunken: var(--bg-sunken);
+    --color-surface-hover: var(--bg-hover);
+    --color-rail: var(--bg-rail);
+    --color-rail-hover: var(--bg-rail-hover);
+    --color-rail-active: var(--bg-rail-active);
+
+    --color-ink-primary: var(--text-primary);
+    --color-ink-secondary: var(--text-secondary);
+    --color-ink-placeholder: var(--text-placeholder);
+    --color-ink-rail: var(--text-on-rail);
+    --color-ink-rail-muted: var(--text-on-rail-muted);
+
+    --color-brand: var(--brand-primary);
+    --color-brand-hover: var(--brand-primary-hover);
+    --color-brand-soft: var(--brand-primary-soft);
+    --color-urgent: var(--brand-urgent);
+    --color-urgent-hover: var(--brand-urgent-hover);
+    --color-urgent-soft: var(--brand-urgent-soft);
+    --color-expense: var(--expense-ink);
+    --color-expense-soft: var(--expense-soft);
+    --color-danger: var(--danger-ink);
+    --color-danger-hover: var(--danger-hover);
+
+    --color-hairline: var(--border-hairline);
+    --color-control-subtle: var(--border-subtle);
+    --color-control: var(--border-input);
 }
 
 :root {
-    /* Atelier Kertas & Terakota Tokens (WCAG AA Verified via contrast-check.py) */
-    --bg-canvas: #F7F3EC;
+    /* Calm Botanical Workspace V2 Tokens (100% WCAG AA Verified via contrast-check.py) */
+    --bg-canvas: #F6F3EC;
     --bg-surface: #FFFDF9;
-    --bg-sunken: #EFE9DE;
-    --bg-rail: #182920;
-    --bg-rail-hover: #233B2E;
-    --bg-rail-active: #F2ECE1;
+    --bg-sunken: #EFEAE0;
+    --bg-hover: #F7F4EE;
+    --bg-rail: #16261E;
+    --bg-rail-hover: #20362B;
+    --bg-rail-active: #F4F0E8;
 
-    --text-primary: #1C211E;
-    --text-secondary: #545852;
-    --text-placeholder: #60645E;
-    --text-on-rail: #F5F1E8;
-    --text-on-rail-muted: #B8C6BD;
+    --text-primary: #1B211D;
+    --text-secondary: #525750;
+    --text-placeholder: #5E635C;
+    --text-on-rail: #F5F2EB;
+    --text-on-rail-muted: #B9C7BE;
 
-    --brand-primary: #1D3B2A;
-    --brand-primary-hover: #13281C;
+    --brand-primary: #1B3B2B;
+    --brand-primary-hover: #12281D;
+    --brand-primary-soft: #EBF3EE;
     --brand-urgent: #9A3B22;
     --brand-urgent-hover: #7D2E19;
     --brand-urgent-soft: #FCF0EC;
+    --expense-ink: #8F4B1E;
+    --expense-soft: #FAF1E6;
     --danger-ink: #8A2619;
     --danger-hover: #6E1D12;
 
-    --chart-orders: #545852;
-    --chart-cash-in: #1D3B2A;
+    /* Chart Tokens: Bar fills verified >= 3.0:1 against both ivory canvas and neighboring cypress bar */
+    --chart-orders: #525750;
+    --chart-orders-bar: #858980;
+    --chart-cash-in: #1B3B2B;
     --chart-cash-out: #8F4B1E;
+    --chart-cash-out-bar: #C07624;
+    --chart-grid: #E8E2D7;
 
-    --border-hairline: #DED6C8;
-    --border-input: #7D776C;
+    --border-hairline: #E2DBD0;
+    --border-subtle: #948D81;
+    --border-input: #857F74;
 
     --status-paid-bg: #EEF5F0;
     --status-paid-border: #B8D0C0;
@@ -57,7 +96,7 @@
     --status-danger-border: #E2B3AA;
     --status-danger-fg: #8A2619;
 
-    --status-neutral-bg: #EFE9DE;
+    --status-neutral-bg: #EFEAE0;
     --status-neutral-border: #CCC3B3;
     --status-neutral-fg: #3D3A35;
 }
@@ -113,20 +152,20 @@
 
 .atelier-h1 {
     font-family: var(--font-sans);
-    font-size: clamp(1.625rem, 2.2vw, 1.875rem);
+    font-size: clamp(1.5rem, 2.1vw, 1.75rem);
     line-height: 1.25;
     font-weight: 700;
-    letter-spacing: -0.015em;
+    letter-spacing: -0.02em;
     text-wrap: balance;
     color: var(--text-primary);
 }
 
 .atelier-h2 {
     font-family: var(--font-sans);
-    font-size: 1.1875rem;
+    font-size: 1.125rem;
     line-height: 1.35;
     font-weight: 700;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.015em;
     text-wrap: balance;
     color: var(--text-primary);
 }
@@ -140,8 +179,15 @@
 .atelier-sheet {
     background-color: var(--bg-surface);
     border: 1px solid var(--border-hairline);
-    border-radius: 8px;
-    box-shadow: 0 1px 2px rgba(28, 33, 30, 0.04);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(22, 38, 30, 0.04), 0 1px 2px rgba(22, 38, 30, 0.02);
+}
+
+.atelier-elevated {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-hairline);
+    border-radius: 12px;
+    box-shadow: 0 10px 28px rgba(22, 38, 30, 0.12), 0 2px 6px rgba(22, 38, 30, 0.05);
 }
 
 .atelier-double-rule {

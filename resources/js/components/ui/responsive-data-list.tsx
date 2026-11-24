@@ -18,8 +18,13 @@ type ResponsiveDataListProps<T> = {
     emptyState?: ReactNode;
     tableAriaLabel?: string;
     rowClassName?: (row: T) => string | undefined;
+    tabletColumns?: 1 | 2;
 };
 
+/**
+ * Daftar data 3-keadaan (Mobile 1 kolom -> Tablet 1/2 kolom -> Desktop tabel ringkas)
+ * agar kartu tidak melar berlebihan di viewport tablet 768px (R-03).
+ */
 export function ResponsiveDataList<T>({
     items,
     columns,
@@ -28,6 +33,7 @@ export function ResponsiveDataList<T>({
     emptyState,
     tableAriaLabel,
     rowClassName,
+    tabletColumns = 1,
 }: ResponsiveDataListProps<T>) {
     if (items.length === 0) {
         return <>{emptyState ?? null}</>;
@@ -40,17 +46,17 @@ export function ResponsiveDataList<T>({
                 tabIndex={0}
                 role="region"
                 aria-label={tableAriaLabel ?? 'Tabel data'}
-                className="hidden overflow-x-auto rounded-[6px] focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[#1D3B2A] lg:block"
+                className="hidden overflow-x-auto focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-primary)] lg:block"
             >
-                <table className="w-full border-collapse text-[15px]" aria-label={tableAriaLabel}>
+                <table className="w-full border-collapse text-[14.5px]" aria-label={tableAriaLabel}>
                     <thead>
-                        <tr className="border-y border-[#DED6C8] bg-[#EFE9DE]/75">
+                        <tr className="border-y border-[var(--border-hairline)] bg-[var(--bg-sunken)]/65">
                             {columns.map((col) => (
                                 <th
                                     key={col.key}
                                     scope="col"
                                     className={cn(
-                                        'px-4 py-3.5 text-[13px] font-bold tracking-[0.01em] text-[#545852]',
+                                        'px-4 py-3 text-[12.5px] font-bold tracking-[0.01em] text-[var(--text-secondary)]',
                                         col.align === 'right' ? 'text-right' : 'text-left',
                                         col.headerClassName,
                                     )}
@@ -60,17 +66,20 @@ export function ResponsiveDataList<T>({
                             ))}
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#DED6C8]">
+                    <tbody className="divide-y divide-[var(--border-hairline)]">
                         {items.map((row) => (
                             <tr
                                 key={keyExtractor(row)}
-                                className={cn('align-middle transition-colors hover:bg-[#F7F3EC]/85', rowClassName?.(row))}
+                                className={cn(
+                                    'align-middle transition-colors hover:bg-[var(--bg-hover)]',
+                                    rowClassName?.(row),
+                                )}
                             >
                                 {columns.map((col) => (
                                     <td
                                         key={col.key}
                                         className={cn(
-                                            'px-4 py-4 text-[#1C211E]',
+                                            'px-4 py-3.5 text-[var(--text-primary)]',
                                             col.align === 'right' ? 'tabular-nums text-right' : 'text-left',
                                             col.cellClassName,
                                         )}
@@ -84,10 +93,17 @@ export function ResponsiveDataList<T>({
                 </table>
             </div>
 
-            {/* Mobile & Tablet Structured Cards (< 1024px) */}
-            <div className="flex flex-col gap-3.5 lg:hidden">
+            {/* Mobile (< 768px) & Tablet (768px - 1023px) Structured Cards */}
+            <div
+                className={cn(
+                    'grid grid-cols-1 gap-3.5 lg:hidden',
+                    tabletColumns === 2 && 'md:grid-cols-2',
+                )}
+            >
                 {items.map((row) => (
-                    <div key={keyExtractor(row)}>{renderMobileCard(row)}</div>
+                    <div key={keyExtractor(row)} className="min-w-0">
+                        {renderMobileCard(row)}
+                    </div>
                 ))}
             </div>
         </div>

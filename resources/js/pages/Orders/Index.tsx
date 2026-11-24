@@ -1,12 +1,15 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { AlertCircle, Plus, Search, ShoppingBag, X } from 'lucide-react';
+import { Plus, Search, ShoppingBag, X } from 'lucide-react';
 import { OrderCodeBadge } from '@/components/order-code-badge';
 import { Pagination } from '@/components/pagination';
+import { AlertBanner } from '@/components/ui/alert-banner';
 import { Badge, getFulfillmentBadgeMeta, getPaymentBadgeMeta } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
+import { PageHeader } from '@/components/ui/page-header';
 import { DataListSkeleton } from '@/components/ui/page-skeleton';
 import { ResponsiveDataList, type DataColumn } from '@/components/ui/responsive-data-list';
 import { useScopedFilterLoading } from '@/lib/navigation-state';
@@ -98,7 +101,7 @@ export default function OrdersIndex({ orders, filters = {} }: OrdersIndexProps) 
                     cacheTags={['orders']}
                     className="inline-flex min-h-[44px] items-center hover:underline"
                 >
-                    <OrderCodeBadge orderNumber={ord.order_number} />
+                    <OrderCodeBadge orderNumber={ord.order_number} compact />
                 </Link>
             ),
         },
@@ -113,11 +116,11 @@ export default function OrdersIndex({ orders, filters = {} }: OrdersIndexProps) 
                         prefetch="hover"
                         cacheFor="10s"
                         cacheTags={['customers']}
-                        className="inline-flex min-h-[44px] items-center font-bold text-[#1D3B2A] hover:underline"
+                        className="inline-flex min-h-[44px] items-center font-bold text-[var(--brand-primary)] hover:underline"
                     >
                         {ord.customer.name}
                     </Link>
-                    <p className="mt-0.5 text-[13px] text-[#545852]">
+                    <p className="mt-0.5 text-[13px] text-[var(--text-secondary)]">
                         {formatAmount(ord.items_count)} item
                         {ord.first_flower ? `: ${ord.first_flower}` : ''}
                     </p>
@@ -130,16 +133,19 @@ export default function OrdersIndex({ orders, filters = {} }: OrdersIndexProps) 
             cellClassName: 'whitespace-nowrap tabular-nums',
             render: (ord) => (
                 <div>
-                    <p className="font-semibold text-[#1C211E]">
+                    <p className="font-semibold text-[var(--text-primary)]">
                         {ord.earliest_delivery_date ?? ord.order_date}
                     </p>
-                    <p className="mt-0.5 text-[13px] text-[#545852]">Nota {ord.order_date}</p>
+                    <p className="mt-0.5 text-[13px] text-[var(--text-secondary)]">
+                        Nota {ord.order_date}
+                    </p>
                 </div>
             ),
         },
         {
             key: 'status',
             header: 'Pengerjaan',
+            cellClassName: 'whitespace-nowrap',
             render: (ord) => {
                 const meta = getFulfillmentBadgeMeta(ord.status);
                 return <Badge tone={meta.tone}>{meta.label}</Badge>;
@@ -148,6 +154,7 @@ export default function OrdersIndex({ orders, filters = {} }: OrdersIndexProps) 
         {
             key: 'payment_status',
             header: 'Pembayaran',
+            cellClassName: 'whitespace-nowrap',
             render: (ord) => {
                 const meta = getPaymentBadgeMeta(ord.payment_status);
                 return <Badge tone={meta.tone}>{meta.label}</Badge>;
@@ -162,9 +169,11 @@ export default function OrdersIndex({ orders, filters = {} }: OrdersIndexProps) 
                 const remaining = Math.max(ord.total_amount - ord.paid_amount, 0);
                 return (
                     <div className="tabular-nums">
-                        <p className="font-bold text-[#1C211E]">{formatRupiah(ord.total_amount)}</p>
+                        <p className="font-bold text-[var(--text-primary)]">
+                            {formatRupiah(ord.total_amount)}
+                        </p>
                         {remaining > 0 && (
-                            <p className="mt-0.5 text-[13px] font-semibold text-[#9A3B22]">
+                            <p className="mt-0.5 text-[13px] font-semibold text-[var(--brand-urgent)]">
                                 Sisa {formatRupiah(remaining)}
                             </p>
                         )}
@@ -178,7 +187,7 @@ export default function OrdersIndex({ orders, filters = {} }: OrdersIndexProps) 
             align: 'right',
             cellClassName: 'whitespace-nowrap',
             render: (ord) => (
-                <Button asChild variant="secondary" className="min-w-[96px]">
+                <Button asChild variant="subtle" size="sm" className="min-w-[88px]">
                     <Link
                         href={`/ui-orders/${ord.id}`}
                         component="Orders/Show"
@@ -208,40 +217,17 @@ export default function OrdersIndex({ orders, filters = {} }: OrdersIndexProps) 
         <>
             <Head title="Pesanan" />
 
-            <div className="mb-7 flex flex-col gap-3 border-b border-[#DED6C8] pb-5 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h1 className="atelier-h1">
-                        Daftar Pesanan
-                    </h1>
-                </div>
-                <div>
-                    <Button asChild variant="primary" className="min-w-[160px]">
-                        <Link
-                            href="/ui-orders/create"
-                            component="Orders/Create"
-                            prefetch="hover"
-                            cacheFor="10s"
-                            cacheTags={['customers', 'orders']}
-                        >
-                            <Plus className="size-4" aria-hidden="true" />
-                            Buat Pesanan
-                        </Link>
-                    </Button>
-                </div>
-            </div>
+            {/* AUD-04: Aksi tunggal + Pesanan Baru sudah ada di topbar/bottom nav */}
+            <PageHeader title="Daftar Pesanan" />
 
             {filterError && (
-                <div
-                    role="alert"
-                    className="mb-5 flex items-start gap-2.5 rounded-[8px] border border-[#E2B3AA] bg-[#FCECE9] p-4 text-sm font-medium text-[#8A2619]"
-                >
-                    <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-                    <span>{filterError}</span>
-                </div>
+                <AlertBanner tone="error" className="mb-5">
+                    {filterError}
+                </AlertBanner>
             )}
 
             <Card className="overflow-hidden">
-                <div className="space-y-4 border-b border-[#DED6C8] bg-[#EFE9DE]/55 p-5 sm:p-6">
+                <div className="space-y-4 border-b border-[var(--border-hairline)] bg-[var(--bg-sunken)]/50 p-5 sm:p-6">
                     <div
                         className="flex flex-nowrap gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0"
                         role="group"
@@ -259,8 +245,8 @@ export default function OrdersIndex({ orders, filters = {} }: OrdersIndexProps) 
                                     className={cn(
                                         'inline-flex min-h-[44px] shrink-0 items-center justify-center whitespace-nowrap rounded-[8px] border px-4 py-2 text-sm font-semibold transition-colors',
                                         selected
-                                            ? 'border-[#1D3B2A] bg-[#1D3B2A] text-[#FFFDF9]'
-                                            : 'border-[#7D776C] bg-[#FFFDF9] text-[#1C211E] hover:bg-[#EFE9DE]',
+                                            ? 'border-[var(--brand-primary)] bg-[var(--brand-primary)] text-[var(--bg-surface)]'
+                                            : 'border-[var(--border-subtle)] bg-[var(--bg-surface)] text-[var(--text-primary)] hover:bg-[var(--bg-sunken)]',
                                     )}
                                 >
                                     {chip.label}
@@ -275,32 +261,28 @@ export default function OrdersIndex({ orders, filters = {} }: OrdersIndexProps) 
                             className={cn(
                                 'inline-flex min-h-[44px] shrink-0 items-center justify-center whitespace-nowrap rounded-[8px] border px-4 py-2 text-sm font-semibold transition-colors',
                                 onlyUnpaid
-                                    ? 'border-[#1D3B2A] bg-[#1D3B2A] text-[#FFFDF9]'
-                                    : 'border-[#7D776C] bg-[#FFFDF9] text-[#1C211E] hover:bg-[#EFE9DE]',
+                                    ? 'border-[var(--brand-urgent)] bg-[var(--brand-urgent)] text-[var(--bg-surface)]'
+                                    : 'border-[var(--border-subtle)] bg-[var(--bg-surface)] text-[var(--text-primary)] hover:bg-[var(--bg-sunken)]',
                             )}
                         >
                             Belum Lunas
                         </button>
                     </div>
-                    <p className="text-[12px] text-[#545852] sm:hidden">
+                    <p className="text-[12px] text-[var(--text-secondary)] sm:hidden">
                         Geser daftar status ke kanan/kiri untuk filter lainnya
                     </p>
 
-                    <form
-                        onSubmit={handleSearchSubmit}
-                        role="search"
-                        className="pt-1"
-                    >
+                    <form onSubmit={handleSearchSubmit} role="search" className="pt-1">
                         <label
                             htmlFor="q"
-                            className="mb-2 block text-sm font-semibold text-[#1C211E]"
+                            className="mb-2 block text-sm font-semibold text-[var(--text-primary)]"
                         >
                             Cari Nomor Nota atau Pelanggan
                         </label>
                         <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
                             <div className="relative flex-1">
                                 <Search
-                                    className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[#545852]"
+                                    className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[var(--text-secondary)]"
                                     aria-hidden="true"
                                 />
                                 <Input
@@ -321,7 +303,7 @@ export default function OrdersIndex({ orders, filters = {} }: OrdersIndexProps) 
                                             applyFilters('', activeStatus, onlyUnpaid);
                                         }}
                                         aria-label="Hapus kata kunci pesanan"
-                                        className="absolute right-0 top-0 inline-flex size-11 items-center justify-center rounded-[8px] text-[#545852] hover:bg-[#EFE9DE] hover:text-[#1C211E]"
+                                        className="absolute right-0 top-0 inline-flex size-11 items-center justify-center rounded-[8px] text-[var(--text-secondary)] hover:bg-[var(--bg-sunken)] hover:text-[var(--text-primary)]"
                                     >
                                         <X className="size-4" aria-hidden="true" />
                                     </button>
@@ -355,7 +337,7 @@ export default function OrdersIndex({ orders, filters = {} }: OrdersIndexProps) 
                 {isLoading && (
                     <div
                         aria-busy="true"
-                        className="border-b border-[#DED6C8] bg-[#EFE9DE]/70 px-5 py-2.5 text-sm font-semibold text-[#545852]"
+                        className="border-b border-[var(--border-hairline)] bg-[var(--bg-sunken)]/70 px-5 py-2.5 text-sm font-semibold text-[var(--text-secondary)]"
                     >
                         Memuat daftar pesanan terbaru...
                     </div>
@@ -366,6 +348,7 @@ export default function OrdersIndex({ orders, filters = {} }: OrdersIndexProps) 
                         items={orders.data}
                         columns={columns}
                         keyExtractor={(ord) => ord.id}
+                        tabletColumns={2}
                         tableAriaLabel="Daftar pesanan Mutiara Florist"
                         renderMobileCard={(ord) => {
                             const fMeta = getFulfillmentBadgeMeta(ord.status);
@@ -375,7 +358,7 @@ export default function OrdersIndex({ orders, filters = {} }: OrdersIndexProps) 
                             return (
                                 <article className="atelier-sheet flex flex-col gap-3 p-4">
                                     <div className="flex flex-wrap items-center justify-between gap-2">
-                                        <OrderCodeBadge orderNumber={ord.order_number} />
+                                        <OrderCodeBadge orderNumber={ord.order_number} compact />
                                         <div className="flex flex-wrap items-center gap-1.5">
                                             <Badge tone={fMeta.tone}>{fMeta.label}</Badge>
                                             <Badge tone={pMeta.tone}>{pMeta.label}</Badge>
@@ -389,11 +372,11 @@ export default function OrdersIndex({ orders, filters = {} }: OrdersIndexProps) 
                                             prefetch="hover"
                                             cacheFor="10s"
                                             cacheTags={['customers']}
-                                            className="inline-flex min-h-[44px] items-center text-base font-bold text-[#1D3B2A] hover:underline"
+                                            className="inline-flex min-h-[44px] items-center text-base font-bold text-[var(--brand-primary)] hover:underline"
                                         >
                                             {ord.customer.name}
                                         </Link>
-                                        <p className="mt-0.5 text-sm text-[#545852] tabular-nums">
+                                        <p className="mt-0.5 text-sm text-[var(--text-secondary)] tabular-nums">
                                             {formatAmount(ord.items_count)} item
                                             {ord.first_flower ? ` (${ord.first_flower})` : ''}
                                             {' · Kirim '}
@@ -401,18 +384,18 @@ export default function OrdersIndex({ orders, filters = {} }: OrdersIndexProps) 
                                         </p>
                                     </div>
 
-                                    <div className="flex items-center justify-between gap-3 border-t border-[#DED6C8] pt-3">
+                                    <div className="mt-auto flex items-center justify-between gap-3 border-t border-[var(--border-hairline)] pt-3">
                                         <div className="tabular-nums">
-                                            <p className="text-lg font-bold text-[#1C211E]">
+                                            <p className="text-lg font-bold text-[var(--text-primary)]">
                                                 {formatRupiah(ord.total_amount)}
                                             </p>
                                             {remaining > 0 && (
-                                                <p className="text-[13px] font-semibold text-[#9A3B22]">
+                                                <p className="text-[13px] font-semibold text-[var(--brand-urgent)]">
                                                     Sisa {formatRupiah(remaining)}
                                                 </p>
                                             )}
                                         </div>
-                                        <Button asChild variant="primary" className="min-w-[124px]">
+                                        <Button asChild variant="subtle" className="min-w-[116px]">
                                             <Link
                                                 href={`/ui-orders/${ord.id}`}
                                                 component="Orders/Show"
@@ -428,25 +411,26 @@ export default function OrdersIndex({ orders, filters = {} }: OrdersIndexProps) 
                             );
                         }}
                         emptyState={
-                            <div className="px-6 py-14 text-center">
-                                <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-[8px] border border-[#DED6C8] bg-[#EFE9DE] text-[#545852]">
-                                    {isFiltered ? (
-                                        <Search className="size-6" aria-hidden="true" />
-                                    ) : (
-                                        <ShoppingBag className="size-6" aria-hidden="true" />
-                                    )}
-                                </div>
-                                <h2 className="atelier-h2">
-                                    {isFiltered ? 'Tidak ada pesanan yang cocok' : 'Belum ada pesanan'}
-                                </h2>
-                                <p className="mt-1.5 text-[15px] text-[#545852]">
-                                    {isFiltered
+                            <EmptyState
+                                icon={isFiltered ? Search : ShoppingBag}
+                                title={
+                                    isFiltered
+                                        ? 'Tidak ada pesanan yang cocok'
+                                        : 'Belum ada pesanan'
+                                }
+                                description={
+                                    isFiltered
                                         ? 'Ubah filter status atau kata kunci pencarian.'
-                                        : 'Mulai dengan membuat pesanan dari pelanggan yang sudah tercatat.'}
-                                </p>
-                                <div className="mt-5">
-                                    {isFiltered ? (
-                                        <Button type="button" variant="secondary" onClick={handleReset} className="min-w-[144px]">
+                                        : 'Mulai dengan membuat pesanan dari pelanggan yang sudah tercatat.'
+                                }
+                                action={
+                                    isFiltered ? (
+                                        <Button
+                                            type="button"
+                                            variant="secondary"
+                                            onClick={handleReset}
+                                            className="min-w-[144px]"
+                                        >
                                             Reset Filter
                                         </Button>
                                     ) : (
@@ -462,15 +446,15 @@ export default function OrdersIndex({ orders, filters = {} }: OrdersIndexProps) 
                                                 Buat Pesanan
                                             </Link>
                                         </Button>
-                                    )}
-                                </div>
-                            </div>
+                                    )
+                                }
+                            />
                         }
                     />
                 </div>
 
                 {orders.total > 0 && (
-                    <div className="border-t border-[#DED6C8] bg-[#EFE9DE]/45 px-5 py-4">
+                    <div className="border-t border-[var(--border-hairline)] bg-[var(--bg-sunken)]/45 px-5 py-4">
                         <Pagination
                             links={orders.links}
                             from={orders.from}

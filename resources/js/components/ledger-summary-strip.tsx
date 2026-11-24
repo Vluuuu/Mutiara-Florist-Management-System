@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export type LedgerSummaryCell = {
@@ -6,7 +7,8 @@ export type LedgerSummaryCell = {
     label: string;
     value: string;
     hint?: ReactNode;
-    tone?: 'default' | 'paid' | 'urgent';
+    icon?: LucideIcon;
+    tone?: 'default' | 'paid' | 'expense' | 'urgent';
     emphasis?: boolean;
     children?: ReactNode;
 };
@@ -16,18 +18,35 @@ type LedgerSummaryStripProps = {
     ariaLabel?: string;
     columns?: 2 | 3 | 4;
     mobileColumns?: 1 | 2;
+    variant?: 'cards' | 'strip';
     className?: string;
 };
 
+const ICON_CHIP_TONE: Record<NonNullable<LedgerSummaryCell['tone']>, string> = {
+    default: 'bg-[var(--bg-sunken)] text-[var(--text-secondary)]',
+    paid: 'bg-[var(--brand-primary-soft)] text-[var(--brand-primary)]',
+    expense: 'bg-[var(--expense-soft)] text-[var(--expense-ink)]',
+    urgent: 'bg-[var(--brand-urgent-soft)] text-[var(--brand-urgent)]',
+};
+
+const VALUE_TONE: Record<NonNullable<LedgerSummaryCell['tone']>, string> = {
+    default: 'text-[var(--text-primary)]',
+    paid: 'text-[var(--status-paid-fg)]',
+    expense: 'text-[var(--expense-ink)]',
+    urgent: 'text-[var(--brand-urgent)]',
+};
+
 /**
- * Strip ringkasan pembukuan dengan pemisah hairline rapi di setiap ukuran layar
- * (`gap-px bg-[#DED6C8]`) agar nominal besar tidak pernah terjepit atau terpotong di mobile.
+ * Modular KPI summary grid (Syncro + Calm Botanical V2):
+ * mendukung tampilan kartu modular terpisah ('cards') maupun strip menyatu ('strip')
+ * dengan angka Rupiah tabular dan keterbacaan WCAG AA di semua ukuran layar.
  */
 export function LedgerSummaryStrip({
     items,
     ariaLabel = 'Ringkasan angka pembukuan',
     columns,
     mobileColumns = 1,
+    variant = 'cards',
     className,
 }: LedgerSummaryStripProps) {
     const colCount = columns ?? (items.length === 3 ? 3 : items.length === 2 ? 2 : 4);
@@ -45,58 +64,100 @@ export function LedgerSummaryStrip({
                 ? 'grid-cols-2 lg:grid-cols-4'
                 : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4';
 
+    const renderCellContent = (cell: LedgerSummaryCell) => {
+        const tone = cell.tone ?? 'default';
+        const Icon = cell.icon;
+
+        return (
+            <>
+                <div>
+                    <div className="flex items-start justify-between gap-2">
+                        <p
+                            className={cn(
+                                'font-semibold leading-snug text-[var(--text-secondary)]',
+                                isTwoColMobile ? 'text-[12.5px] sm:text-[13.5px]' : 'text-[13.5px]',
+                            )}
+                        >
+                            {cell.label}
+                        </p>
+                        {Icon && (
+                            <span
+                                aria-hidden="true"
+                                className={cn(
+                                    'inline-flex size-8 shrink-0 items-center justify-center rounded-[8px]',
+                                    ICON_CHIP_TONE[tone],
+                                )}
+                            >
+                                <Icon className="size-4" />
+                            </span>
+                        )}
+                    </div>
+
+                    {cell.children ? (
+                        <div className="mt-2.5">{cell.children}</div>
+                    ) : (
+                        <p
+                            className={cn(
+                                'tabular-nums break-words font-bold leading-tight tracking-[-0.02em]',
+                                isTwoColMobile
+                                    ? 'mt-2 text-[18px] sm:mt-2.5 sm:text-2xl lg:text-[25px]'
+                                    : 'mt-2.5 text-2xl sm:text-[25px]',
+                                VALUE_TONE[tone],
+                            )}
+                        >
+                            {cell.value}
+                        </p>
+                    )}
+                </div>
+
+                {cell.hint && (
+                    <p
+                        className={cn(
+                            'leading-snug text-[var(--text-secondary)] tabular-nums',
+                            isTwoColMobile ? 'mt-1.5 text-[12px] sm:mt-2 sm:text-[13px]' : 'mt-2 text-[13px]',
+                        )}
+                    >
+                        {cell.hint}
+                    </p>
+                )}
+            </>
+        );
+    };
+
+    if (variant === 'strip') {
+        return (
+            <section aria-label={ariaLabel} className={cn('atelier-sheet overflow-hidden', className)}>
+                <div className={cn('grid gap-px bg-[var(--border-hairline)]', gridColsClass)}>
+                    {items.map((cell) => (
+                        <div
+                            key={cell.label}
+                            className={cn(
+                                'flex flex-col justify-between',
+                                isTwoColMobile ? 'p-3.5 sm:p-5' : 'p-5',
+                                cell.emphasis ? 'bg-[var(--bg-sunken)]' : 'bg-[var(--bg-surface)]',
+                            )}
+                        >
+                            {renderCellContent(cell)}
+                        </div>
+                    ))}
+                </div>
+            </section>
+        );
+    }
+
     return (
-        <section
-            aria-label={ariaLabel}
-            className={cn('atelier-sheet overflow-hidden', className)}
-        >
-            <div className={cn('grid gap-px bg-[#DED6C8]', gridColsClass)}>
+        <section aria-label={ariaLabel} className={className}>
+            <div className={cn('grid gap-3 sm:gap-4', gridColsClass)}>
                 {items.map((cell) => (
                     <div
                         key={cell.label}
                         className={cn(
-                            'flex flex-col justify-between',
+                            'atelier-sheet flex flex-col justify-between',
                             isTwoColMobile ? 'p-3.5 sm:p-5' : 'p-5',
-                            cell.emphasis ? 'bg-[#EFE9DE]' : 'bg-[#FFFDF9]',
+                            cell.emphasis && 'bg-[var(--bg-sunken)]/70',
                         )}
                     >
-                        <div>
-                            <p
-                                className={cn(
-                                    'font-semibold text-[#545852]',
-                                    isTwoColMobile ? 'text-[13px] sm:text-sm' : 'text-sm',
-                                )}
-                            >
-                                {cell.label}
-                            </p>
-                            {cell.children ? (
-                                <div className="mt-2.5">{cell.children}</div>
-                            ) : (
-                                <p
-                                    className={cn(
-                                        'tabular-nums break-words font-bold leading-tight tracking-[-0.015em]',
-                                        isTwoColMobile
-                                            ? 'mt-1.5 text-[17px] sm:mt-2 sm:text-2xl lg:text-[26px]'
-                                            : 'mt-2 text-2xl sm:text-[26px]',
-                                        cell.tone === 'paid' && 'text-[#164B2A]',
-                                        cell.tone === 'urgent' && 'text-[#9A3B22]',
-                                        (!cell.tone || cell.tone === 'default') && 'text-[#1C211E]',
-                                    )}
-                                >
-                                    {cell.value}
-                                </p>
-                            )}
-                        </div>
-                        {cell.hint && (
-                            <p
-                                className={cn(
-                                    'leading-snug text-[#545852] tabular-nums',
-                                    isTwoColMobile ? 'mt-1 text-[12px] sm:mt-2 sm:text-[13px]' : 'mt-2 text-[13px]',
-                                )}
-                            >
-                                {cell.hint}
-                            </p>
-                        )}
+                        {renderCellContent(cell)}
                     </div>
                 ))}
             </div>

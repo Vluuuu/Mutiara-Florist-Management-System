@@ -32,11 +32,56 @@ export type DashboardTodayStats = {
     deliveries_delivered_today: number;
     deliveries_overdue: number;
     deliveries_ready: number;
+    pipeline_new?: number;
+    pipeline_processing?: number;
+    pipeline_ready?: number;
+    pipeline_total?: number;
     cash_in: number;
     cash_in_count: number;
     cash_out: number;
     cash_out_count: number;
+    cash_diff?: number;
     open_receivables_count: number;
+};
+
+export type CashFlowPoint = {
+    date: string;
+    label: string;
+    full_label: string;
+    cash_in: number;
+    cash_out: number;
+    cash_diff: number;
+};
+
+export type CashFlowWindow = {
+    from: string;
+    to: string;
+    label: string;
+    cash_in: number;
+    cash_out: number;
+    cash_diff: number;
+    has_activity: boolean;
+    points: CashFlowPoint[];
+};
+
+export type DashboardCashFlowPulse = {
+    timezone: string;
+    period_7d: CashFlowWindow;
+    period_30d: CashFlowWindow;
+};
+
+export type DashboardActivityItem = {
+    key: string;
+    type: 'order' | 'payment' | 'expense';
+    label: string;
+    title: string;
+    subtitle: string;
+    order_number: string | null;
+    amount: number;
+    occurred_at: string;
+    occurred_iso: string;
+    href: string;
+    component: string;
 };
 
 export type DashboardReceivableItem = {
@@ -387,6 +432,16 @@ export type ExpenseBreakdownItem = {
     amount: number;
     count: number;
     percent: number;
+    percent_exact?: number;
+};
+
+export type PaymentMethodBreakdownItem = {
+    method: 'TRANSFER' | 'CASH' | 'QRIS' | 'OTHER';
+    label: string;
+    count: number;
+    amount: number;
+    percent: number;
+    percent_exact?: number;
 };
 
 export type DailyTrendItem = {
@@ -434,6 +489,7 @@ export type ReportCoreData = {
 export type ReportBreakdownsData = {
     fulfillment_breakdown: FulfillmentBreakdown;
     payment_breakdown: PaymentBreakdown;
+    payment_method_breakdown?: PaymentMethodBreakdownItem[];
     expense_breakdown?: ExpenseBreakdownItem[];
 };
 
@@ -447,6 +503,7 @@ export type FinancialReportData = {
     summary: ReportSummary;
     fulfillment_breakdown?: FulfillmentBreakdown;
     payment_breakdown?: PaymentBreakdown;
+    payment_method_breakdown?: PaymentMethodBreakdownItem[];
     expense_breakdown?: ExpenseBreakdownItem[];
     daily_trends?: DailyTrendItem[];
     chart_series?: ReportChartSeries;

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Services\ReportService;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -17,6 +16,9 @@ class UiReportController extends Controller
 
     /**
      * Display the financial and operational reports dashboard.
+     *
+     * Core summary is wrapped in a memoized closure so deferred partial reloads
+     * (details / reportTrends) skip re-running the 5-way summary query.
      */
     public function index(Request $request): Response
     {
@@ -30,19 +32,35 @@ class UiReportController extends Controller
         $toStr = is_string($to) ? $to : null;
         $granularityStr = is_string($granularity) ? $granularity : null;
 
-        $coreReport = $this->reportService->getSummaryReport($presetStr, $fromStr, $toStr);
-        $period = $coreReport['period'];
-        $cashOut = $coreReport['summary']['cash_out'];
+        $periodMemo = null;
+        $getPeriod = function () use ($presetStr, $fromStr, $toStr, &$periodMemo): array {
+            return $periodMemo ??= $this->reportService->resolvePeriod($presetStr, $fromStr, $toStr);
+        };
+
+        $coreMemo = null;
+        $getCore = function () use ($presetStr, $fromStr, $toStr, &$coreMemo): array {
+            return $coreMemo ??= $this->reportService->getSummaryReport($presetStr, $fromStr, $toStr);
+        };
 
         return Inertia::render('Reports/Index', [
-            'report' => $coreReport,
+            'report' => fn () => $getCore(),
             'reportBreakdowns' => Inertia::defer(
-                fn () => $this->reportService->getBreakdowns($period['from'], $period['to'], $cashOut),
+                function () use ($getPeriod, &$coreMemo): array {
+                    $period = $coreMemo ? $coreMemo['period'] : $getPeriod();
+                    $cashOut = $coreMemo ? $coreMemo['summary']['cash_out'] : null;
+                    $cashIn = $coreMemo ? $coreMemo['summary']['cash_in'] : null;
+
+                    return $this->reportService->getBreakdowns($period['from'], $period['to'], $cashOut, $cashIn);
+                },
                 'details',
                 true
             ),
             'reportTrends' => Inertia::defer(
-                fn () => $this->reportService->getTrendSeries($period, $granularityStr),
+                function () use ($getPeriod, $granularityStr, &$coreMemo): array {
+                    $period = $coreMemo ? $coreMemo['period'] : $getPeriod();
+
+                    return $this->reportService->getTrendSeries($period, $granularityStr);
+                },
                 'details',
                 true
             ),

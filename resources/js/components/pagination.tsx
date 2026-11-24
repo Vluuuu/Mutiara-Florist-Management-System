@@ -31,8 +31,8 @@ function isNextLink(link: PaginationLink, index: number, totalLinks: number): bo
 }
 
 /**
- * Kontrol paginasi kiri/kanan simetris, selalu terlihat saat ada data,
- * dan mudah ditekan operator senior (target minimal 44x44px).
+ * Kontrol paginasi simetris dan hemat ruang pada layar 390px
+ * (tidak memecah baris secara canggung sambil tetap menjaga target sentuh >= 44x44px).
  */
 export function Pagination({
     links,
@@ -61,13 +61,13 @@ export function Pagination({
             aria-label="Paginasi"
             className={cn('flex flex-col items-center justify-between gap-3 sm:flex-row', className)}
         >
-            <p className="text-sm text-[#545852] tabular-nums">
-                Menampilkan <span className="font-bold text-[#1C211E]">{from ?? 1}</span> sampai{' '}
-                <span className="font-bold text-[#1C211E]">{to ?? total}</span> dari{' '}
-                <span className="font-bold text-[#1C211E]">{total}</span> {itemLabel}
+            <p className="text-sm text-[var(--text-secondary)] tabular-nums">
+                Menampilkan <span className="font-bold text-[var(--text-primary)]">{from ?? 1}</span> sampai{' '}
+                <span className="font-bold text-[var(--text-primary)]">{to ?? total}</span> dari{' '}
+                <span className="font-bold text-[var(--text-primary)]">{total}</span> {itemLabel}
             </p>
 
-            <ul className="flex flex-wrap items-center justify-center gap-2">
+            <ul className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
                 {displayLinks.map((link, index) => {
                     const isPrev = isPrevLink(link, index);
                     const isNext = isNextLink(link, index, displayLinks.length);
@@ -80,7 +80,7 @@ export function Pagination({
                             <li key={index}>
                                 <span
                                     aria-hidden="true"
-                                    className="inline-flex min-h-[44px] min-w-[32px] items-center justify-center px-1 text-sm font-semibold text-[#545852]"
+                                    className="inline-flex min-h-[44px] min-w-[28px] items-center justify-center px-1 text-sm font-semibold text-[var(--text-secondary)]"
                                 >
                                     ...
                                 </span>
@@ -91,14 +91,16 @@ export function Pagination({
                     const content = (
                         <>
                             {isPrev && <ChevronLeft className="size-4 shrink-0" aria-hidden="true" />}
-                            <span>{text}</span>
+                            <span className={isPrev || isNext ? 'sr-only sm:not-sr-only' : undefined}>
+                                {text}
+                            </span>
                             {isNext && <ChevronRight className="size-4 shrink-0" aria-hidden="true" />}
                         </>
                     );
 
                     const baseBtnClass = cn(
-                        'inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-[8px] border text-sm font-semibold transition-colors tabular-nums',
-                        isPrev || isNext ? 'min-w-[128px] px-3.5' : 'min-w-[44px] px-3',
+                        'inline-flex min-h-[44px] items-center justify-center gap-1 rounded-[8px] border text-[13px] font-semibold transition-colors tabular-nums sm:gap-1.5 sm:text-sm',
+                        isPrev || isNext ? 'min-w-[44px] px-2.5 sm:min-w-[116px] sm:px-3.5' : 'min-w-[44px] px-2.5 sm:px-3',
                     );
 
                     if (!link.url) {
@@ -110,8 +112,8 @@ export function Pagination({
                                     className={cn(
                                         baseBtnClass,
                                         link.active
-                                            ? 'border-[#1D3B2A] bg-[#1D3B2A] font-bold text-[#FFFDF9]'
-                                            : 'cursor-not-allowed border-[#DED6C8] bg-[#EFE9DE] text-[#545852] opacity-80',
+                                            ? 'border-[var(--brand-primary)] bg-[var(--brand-primary)] font-bold text-[var(--bg-surface)]'
+                                            : 'cursor-not-allowed border-[var(--border-hairline)] bg-[var(--bg-sunken)] text-[var(--text-secondary)] opacity-80',
                                     )}
                                 >
                                     {content}
@@ -133,8 +135,8 @@ export function Pagination({
                                 className={cn(
                                     baseBtnClass,
                                     link.active
-                                        ? 'border-[#1D3B2A] bg-[#1D3B2A] font-bold text-[#FFFDF9]'
-                                        : 'border-[#7D776C] bg-[#FFFDF9] text-[#1C211E] hover:bg-[#EFE9DE]',
+                                        ? 'border-[var(--brand-primary)] bg-[var(--brand-primary)] font-bold text-[var(--bg-surface)]'
+                                        : 'border-[var(--border-subtle)] bg-[var(--bg-surface)] text-[var(--text-primary)] hover:bg-[var(--bg-sunken)]',
                                 )}
                             >
                                 {content}

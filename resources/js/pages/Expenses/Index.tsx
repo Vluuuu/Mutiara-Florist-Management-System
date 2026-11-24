@@ -1,25 +1,26 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import {
-    AlertCircle,
     AlertTriangle,
     FolderCog,
     Plus,
     ReceiptText,
     Search,
-    X,
 } from 'lucide-react';
 import { Pagination } from '@/components/pagination';
+import { AlertBanner } from '@/components/ui/alert-banner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { EmptyState } from '@/components/ui/empty-state';
 import { FormField, Input, Select, Textarea } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
+import { PageHeader } from '@/components/ui/page-header';
 import { DataListSkeleton } from '@/components/ui/page-skeleton';
 import { ResponsiveDataList, type DataColumn } from '@/components/ui/responsive-data-list';
 import { useScopedFilterLoading } from '@/lib/navigation-state';
 import { useInstantPageGuard } from '@/lib/use-instant-page-guard';
-import { formatRupiah } from '@/lib/format';
+import { formatAmount, formatRupiah } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type {
     AppPageProps,
@@ -152,13 +153,13 @@ export default function ExpensesIndex({
         {
             key: 'expense_date',
             header: 'Tanggal',
-            cellClassName: 'whitespace-nowrap text-[#1C211E] tabular-nums',
+            cellClassName: 'whitespace-nowrap text-[var(--text-primary)] tabular-nums',
             render: (exp) => exp.expense_date,
         },
         {
             key: 'category',
             header: 'Kategori',
-            cellClassName: 'font-semibold text-[#1C211E]',
+            cellClassName: 'font-semibold text-[var(--text-primary)]',
             render: (exp) => exp.category?.name ?? 'Kategori tidak tersedia',
         },
         {
@@ -166,14 +167,14 @@ export default function ExpensesIndex({
             header: 'Keterangan',
             render: (exp) => (
                 <div className="max-w-sm">
-                    <p className="whitespace-pre-wrap break-words font-medium text-[#1C211E]">
+                    <p className="whitespace-pre-wrap break-words font-medium text-[var(--text-primary)]">
                         {exp.description}
                     </p>
-                    <p className="mt-1 text-[13px] text-[#545852]">
+                    <p className="mt-1 text-[13px] text-[var(--text-secondary)]">
                         Dicatat oleh {exp.recorded_by_user?.name ?? 'Operator'}
                     </p>
                     {exp.status === 'VOIDED' && exp.void_reason && (
-                        <div className="mt-2 rounded-[8px] border border-[#DED6C8] bg-[#EFE9DE] p-2.5 text-[13px] text-[#1C211E]">
+                        <div className="mt-2 rounded-[8px] border border-[var(--border-hairline)] bg-[var(--bg-sunken)] p-2.5 text-[13px] text-[var(--text-primary)]">
                             <span className="font-bold">Alasan pembatalan:</span> {exp.void_reason}
                         </div>
                     )}
@@ -190,8 +191,8 @@ export default function ExpensesIndex({
                     className={cn(
                         'font-bold',
                         exp.status === 'VOIDED'
-                            ? 'text-[#545852] line-through'
-                            : 'text-[#1C211E]',
+                            ? 'text-[var(--text-secondary)] line-through'
+                            : 'text-[var(--expense-ink)]',
                     )}
                 >
                     {formatRupiah(exp.amount)}
@@ -220,15 +221,15 @@ export default function ExpensesIndex({
                 exp.status === 'POSTED' ? (
                     <Button
                         type="button"
-                        variant="outline"
+                        variant="subtle"
                         size="sm"
-                        className="border-[#E5B5AC] text-[#8A2619] hover:bg-[#FAE5E1]"
+                        className="border-[var(--status-danger-border)] text-[var(--danger-ink)] hover:bg-[var(--status-danger-bg)]"
                         onClick={() => openVoidModal(exp)}
                     >
                         Batalkan
                     </Button>
                 ) : (
-                    <span className="text-xs text-[#545852] tabular-nums">
+                    <span className="text-xs text-[var(--text-secondary)] tabular-nums">
                         {exp.voided_at ?? 'Dibatalkan'}
                     </span>
                 ),
@@ -248,82 +249,84 @@ export default function ExpensesIndex({
         <>
             <Head title="Pengeluaran" />
 
-            {/* Header */}
-            <div className="mb-7 flex flex-col gap-3 border-b border-[#DED6C8] pb-5 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h1 className="atelier-h1">
-                        Pengeluaran Toko
-                    </h1>
-                </div>
+            <PageHeader
+                title="Pengeluaran Toko"
+                actions={
+                    <>
+                        <Button asChild variant="secondary" className="min-w-[164px]">
+                            <Link
+                                href="/ui-expense-categories"
+                                component="ExpenseCategories/Index"
+                                prefetch="hover"
+                                cacheFor="10s"
+                                cacheTags={['expense-categories', 'expenses']}
+                            >
+                                <FolderCog className="size-4" aria-hidden="true" />
+                                Kategori Biaya
+                            </Link>
+                        </Button>
+                        <Button asChild variant="primary" className="min-w-[176px]">
+                            <Link
+                                href="/ui-expenses/create"
+                                component="Expenses/Create"
+                                prefetch="hover"
+                                cacheFor="10s"
+                                cacheTags={['expense-categories', 'expenses']}
+                            >
+                                <Plus className="size-4" aria-hidden="true" />
+                                Catat Pengeluaran
+                            </Link>
+                        </Button>
+                    </>
+                }
+            />
 
-                <div className="flex flex-wrap items-center gap-2.5">
-                    <Button asChild variant="secondary" className="min-w-[164px]">
-                        <Link
-                            href="/ui-expense-categories"
-                            component="ExpenseCategories/Index"
-                            prefetch="hover"
-                            cacheFor="10s"
-                            cacheTags={['expense-categories', 'expenses']}
-                        >
-                            <FolderCog className="size-4" aria-hidden="true" />
-                            Kategori Biaya
-                        </Link>
-                    </Button>
-                    <Button asChild variant="primary" className="min-w-[176px]">
-                        <Link
-                            href="/ui-expenses/create"
-                            component="Expenses/Create"
-                            prefetch="hover"
-                            cacheFor="10s"
-                            cacheTags={['expense-categories', 'expenses']}
-                        >
-                            <Plus className="size-4" aria-hidden="true" />
-                            Catat Pengeluaran
-                        </Link>
-                    </Button>
+            {/* Ringkasan Pengeluaran (AUD-10: menggunakan warna semantik ochre #8F4B1E, bukan hijau kas masuk) */}
+            <section
+                aria-label="Ringkasan total pengeluaran"
+                className="atelier-sheet mb-6 flex flex-col justify-between gap-3 p-5 sm:flex-row sm:items-center"
+            >
+                <div className="min-w-0">
+                    <p className="text-[13.5px] font-semibold text-[var(--text-secondary)]">
+                        Total Pengeluaran Sah {isFiltered ? '(Filter Aktif)' : ''}
+                    </p>
+                    <p className="mt-1.5 text-2xl font-bold tracking-[-0.02em] text-[var(--expense-ink)] tabular-nums sm:text-[26px]">
+                        {formatRupiah(postedTotal)}
+                    </p>
+                    <p className="mt-1 text-[13px] text-[var(--text-secondary)] tabular-nums">
+                        {formatAmount(expenses.total)} catatan biaya dalam tampilan ini (catatan dibatalkan dikecualikan dari total)
+                    </p>
                 </div>
-            </div>
-
-            {/* Sunken Ledger Strip */}
-            <div className="mb-6 rounded-[8px] border border-[#DED6C8] bg-[#EFE9DE] p-5">
-                <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-                    <div>
-                        <p className="text-sm font-semibold text-[#545852]">
-                            Total Pengeluaran Sah {isFiltered ? '(Filter Aktif)' : ''}
-                        </p>
-                        <p className="mt-1 text-2xl font-bold text-[#1D3B2A] tabular-nums">
-                            {formatRupiah(postedTotal)}
-                        </p>
-                    </div>
-                </div>
-            </div>
+                <span
+                    aria-hidden="true"
+                    className="inline-flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-[var(--expense-soft)] text-[var(--expense-ink)]"
+                >
+                    <ReceiptText className="size-5" />
+                </span>
+            </section>
 
             {filterError && (
-                <div
-                    role="alert"
-                    className="mb-5 flex items-start gap-2.5 rounded-[8px] border border-[#E2B3AA] bg-[#FCECE9] p-4 text-sm font-medium text-[#8A2619]"
-                >
-                    <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-                    <span>{filterError}</span>
-                </div>
+                <AlertBanner tone="error" className="mb-5">
+                    {filterError}
+                </AlertBanner>
             )}
 
             <Card className="overflow-hidden">
                 {/* Filters */}
                 <form
                     onSubmit={handleFilter}
-                    className="grid grid-cols-1 gap-3.5 border-b border-[#DED6C8] bg-[#EFE9DE]/45 p-5 sm:grid-cols-2 lg:grid-cols-6 sm:p-6"
+                    className="grid grid-cols-1 gap-3.5 border-b border-[var(--border-hairline)] bg-[var(--bg-sunken)]/50 p-5 sm:grid-cols-2 sm:p-6 lg:grid-cols-6"
                 >
                     <div className="sm:col-span-2">
                         <label
                             htmlFor="filter-q"
-                            className="mb-1.5 block text-[13px] font-bold text-[#545852]"
+                            className="mb-1.5 block text-[13px] font-bold text-[var(--text-secondary)]"
                         >
                             Cari Keterangan
                         </label>
                         <div className="relative">
                             <Search
-                                className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#545852]"
+                                className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[var(--text-secondary)]"
                                 aria-hidden="true"
                             />
                             <Input
@@ -340,7 +343,7 @@ export default function ExpensesIndex({
                     <div>
                         <label
                             htmlFor="filter-category"
-                            className="mb-1.5 block text-[13px] font-bold text-[#545852]"
+                            className="mb-1.5 block text-[13px] font-bold text-[var(--text-secondary)]"
                         >
                             Kategori
                         </label>
@@ -361,7 +364,7 @@ export default function ExpensesIndex({
                     <div>
                         <label
                             htmlFor="filter-status"
-                            className="mb-1.5 block text-[13px] font-bold text-[#545852]"
+                            className="mb-1.5 block text-[13px] font-bold text-[var(--text-secondary)]"
                         >
                             Status
                         </label>
@@ -379,7 +382,7 @@ export default function ExpensesIndex({
                     <div>
                         <label
                             htmlFor="filter-from"
-                            className="mb-1.5 block text-[13px] font-bold text-[#545852]"
+                            className="mb-1.5 block text-[13px] font-bold text-[var(--text-secondary)]"
                         >
                             Dari Tanggal
                         </label>
@@ -395,7 +398,7 @@ export default function ExpensesIndex({
                     <div>
                         <label
                             htmlFor="filter-to"
-                            className="mb-1.5 block text-[13px] font-bold text-[#545852]"
+                            className="mb-1.5 block text-[13px] font-bold text-[var(--text-secondary)]"
                         >
                             Sampai Tanggal
                         </label>
@@ -430,38 +433,37 @@ export default function ExpensesIndex({
                     <div
                         role="status"
                         aria-live="polite"
-                        className="border-b border-[#DED6C8] bg-[#EFE9DE] px-4 py-2 text-xs font-semibold text-[#1D3B2A]"
+                        className="border-b border-[var(--border-hairline)] bg-[var(--bg-sunken)] px-4 py-2 text-xs font-semibold text-[var(--brand-primary)]"
                     >
                         Memuat data pengeluaran...
                     </div>
                 )}
 
-                <div className="p-4 sm:p-0">
+                <div className="p-4 lg:p-0">
                     <ResponsiveDataList
                         items={expenses.data}
                         columns={columns}
                         keyExtractor={(exp) => exp.id}
+                        tabletColumns={2}
                         tableAriaLabel="Daftar pengeluaran toko"
                         rowClassName={(exp) =>
-                            exp.status === 'VOIDED' ? 'bg-[#EFE9DE]/35' : undefined
+                            exp.status === 'VOIDED' ? 'bg-[var(--bg-sunken)]/40' : undefined
                         }
                         emptyState={
-                            <div className="px-6 py-12 text-center">
-                                <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-[8px] border border-[#DED6C8] bg-[#EFE9DE] text-[#1D3B2A]">
-                                    <ReceiptText className="size-6" aria-hidden="true" />
-                                </div>
-                                <h2 className="atelier-h2">
-                                    {isFiltered
+                            <EmptyState
+                                icon={ReceiptText}
+                                title={
+                                    isFiltered
                                         ? 'Tidak ada pengeluaran yang cocok'
-                                        : 'Belum ada pengeluaran tercatat'}
-                                </h2>
-                                <p className="mx-auto mt-1 max-w-md text-sm text-[#545852]">
-                                    {isFiltered
+                                        : 'Belum ada pengeluaran tercatat'
+                                }
+                                description={
+                                    isFiltered
                                         ? 'Ubah rentang tanggal, kategori, atau kata kunci untuk melihat catatan lainnya.'
-                                        : 'Catat pengeluaran operasional pertama Anda melalui tombol di bawah ini.'}
-                                </p>
-                                <div className="mt-4 flex flex-wrap justify-center gap-2">
-                                    {isFiltered ? (
+                                        : 'Catat pengeluaran operasional pertama Anda melalui tombol di bawah ini.'
+                                }
+                                action={
+                                    isFiltered ? (
                                         <Button
                                             type="button"
                                             variant="secondary"
@@ -478,19 +480,20 @@ export default function ExpensesIndex({
                                                 cacheFor="10s"
                                                 cacheTags={['expense-categories', 'expenses']}
                                             >
-                                                + Catat Pengeluaran
+                                                <Plus className="size-4" aria-hidden="true" />
+                                                Catat Pengeluaran
                                             </Link>
                                         </Button>
-                                    )}
-                                </div>
-                            </div>
+                                    )
+                                }
+                            />
                         }
                         renderMobileCard={(exp) => {
                             const isPosted = exp.status === 'POSTED';
                             return (
-                                <div className="atelier-sheet p-4">
+                                <article className="atelier-sheet flex flex-col p-4">
                                     <div className="flex flex-wrap items-center justify-between gap-2">
-                                        <span className="text-[13px] font-bold text-[#545852] tabular-nums">
+                                        <span className="text-[13px] font-bold text-[var(--text-secondary)] tabular-nums">
                                             {exp.expense_date}
                                         </span>
                                         <Badge tone={isPosted ? 'paid' : 'neutral'}>
@@ -500,13 +503,13 @@ export default function ExpensesIndex({
 
                                     <div className="mt-2 flex items-start justify-between gap-3">
                                         <div className="min-w-0">
-                                            <p className="text-[13px] font-bold text-[#1D3B2A]">
+                                            <p className="text-[13px] font-bold text-[var(--brand-primary)]">
                                                 {exp.category?.name ?? 'Kategori tidak tersedia'}
                                             </p>
-                                            <p className="mt-0.5 break-words text-[15px] font-semibold text-[#1C211E]">
+                                            <p className="mt-0.5 break-words text-[15px] font-semibold text-[var(--text-primary)]">
                                                 {exp.description}
                                             </p>
-                                            <p className="mt-1 text-[13px] text-[#545852]">
+                                            <p className="mt-1 text-[13px] text-[var(--text-secondary)]">
                                                 Oleh {exp.recorded_by_user?.name ?? 'Operator'}
                                             </p>
                                         </div>
@@ -514,8 +517,8 @@ export default function ExpensesIndex({
                                             className={cn(
                                                 'shrink-0 text-base font-bold tabular-nums',
                                                 isPosted
-                                                    ? 'text-[#1C211E]'
-                                                    : 'text-[#545852] line-through',
+                                                    ? 'text-[var(--expense-ink)]'
+                                                    : 'text-[var(--text-secondary)] line-through',
                                             )}
                                         >
                                             {formatRupiah(exp.amount)}
@@ -523,7 +526,7 @@ export default function ExpensesIndex({
                                     </div>
 
                                     {!isPosted && exp.void_reason && (
-                                        <div className="mt-2.5 rounded-[8px] border border-[#DED6C8] bg-[#EFE9DE] p-3 text-[13px] text-[#1C211E]">
+                                        <div className="mt-2.5 rounded-[8px] border border-[var(--border-hairline)] bg-[var(--bg-sunken)] p-3 text-[13px] text-[var(--text-primary)]">
                                             <span className="font-bold">Alasan pembatalan:</span>{' '}
                                             {exp.void_reason}
                                             {exp.voided_at ? ` (${exp.voided_at})` : ''}
@@ -531,25 +534,27 @@ export default function ExpensesIndex({
                                     )}
 
                                     {isPosted && (
-                                        <div className="mt-3 border-t border-[#DED6C8] pt-3">
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                className="w-full border-[#E2B3AA] text-[#8A2619] hover:bg-[#FCECE9]"
-                                                onClick={() => openVoidModal(exp)}
-                                            >
-                                                Batalkan Catatan
-                                            </Button>
+                                        <div className="mt-auto pt-3">
+                                            <div className="border-t border-[var(--border-hairline)] pt-3">
+                                                <Button
+                                                    type="button"
+                                                    variant="subtle"
+                                                    className="w-full border-[var(--status-danger-border)] text-[var(--danger-ink)] hover:bg-[var(--status-danger-bg)]"
+                                                    onClick={() => openVoidModal(exp)}
+                                                >
+                                                    Batalkan Catatan
+                                                </Button>
+                                            </div>
                                         </div>
                                     )}
-                                </div>
+                                </article>
                             );
                         }}
                     />
                 </div>
 
                 {expenses.total > 0 && (
-                    <div className="border-t border-[#DED6C8] bg-[#EFE9DE]/45 px-4 py-3.5 sm:px-5">
+                    <div className="border-t border-[var(--border-hairline)] bg-[var(--bg-sunken)]/45 px-4 py-3.5 sm:px-5">
                         <Pagination
                             links={expenses.links}
                             from={expenses.from}
@@ -576,21 +581,21 @@ export default function ExpensesIndex({
             >
                 {voidTarget && (
                     <form onSubmit={submitVoid} noValidate className="space-y-4">
-                        <div className="rounded-[8px] border border-[#DED6C8] bg-[#EFE9DE] p-3.5 text-sm">
+                        <div className="rounded-[8px] border border-[var(--border-hairline)] bg-[var(--bg-sunken)] p-3.5 text-sm">
                             <div className="flex items-baseline justify-between gap-2">
-                                <span className="text-[13px] font-bold text-[#545852]">
+                                <span className="text-[13px] font-bold text-[var(--text-secondary)]">
                                     Nominal dicatat
                                 </span>
-                                <span className="text-lg font-bold text-[#1C211E] tabular-nums">
+                                <span className="text-lg font-bold text-[var(--expense-ink)] tabular-nums">
                                     {formatRupiah(voidTarget.amount)}
                                 </span>
                             </div>
-                            <p className="mt-1.5 break-words text-[13px] text-[#1C211E]">
+                            <p className="mt-1.5 break-words text-[13px] text-[var(--text-primary)]">
                                 {voidTarget.description}
                             </p>
                         </div>
 
-                        <div className="flex items-start gap-2.5 rounded-[8px] border border-[#DFC393] bg-[#FAF1E1] p-3.5 text-[13px] font-medium text-[#6E3D09]">
+                        <div className="flex items-start gap-2.5 rounded-[8px] border border-[var(--status-warn-border)] bg-[var(--status-warn-bg)] p-3.5 text-[13px] font-medium text-[var(--status-warn-fg)]">
                             <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
                             <span>
                                 Pembatalan hanya mencatat koreksi administratif dan tidak otomatis mengembalikan uang fisik.
@@ -619,7 +624,7 @@ export default function ExpensesIndex({
                             />
                         </FormField>
 
-                        <div className="flex flex-col-reverse gap-2.5 border-t border-[#DED6C8] pt-4 sm:flex-row sm:justify-end">
+                        <div className="flex flex-col-reverse gap-2.5 border-t border-[var(--border-hairline)] pt-4 sm:flex-row sm:justify-end">
                             <Button
                                 type="button"
                                 variant="secondary"

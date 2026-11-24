@@ -179,11 +179,11 @@ class ReportService
     }
 
     /**
-     * Gathers fulfillment, payment, and expense category breakdowns for deferred report rendering.
+     * Gathers fulfillment, payment status, payment method, and expense category breakdowns for deferred report rendering.
      *
-     * @return array{fulfillment_breakdown: array<string, int>, payment_breakdown: array<string, int>, expense_breakdown: array<int, array{category: string, amount: int, count: int, percent: int}>}
+     * @return array{fulfillment_breakdown: array<string, int>, payment_breakdown: array<string, int>, payment_method_breakdown: array<int, array{method: string, label: string, count: int, amount: int, percent: int, percent_exact: float}>, expense_breakdown: array<int, array{category: string, amount: int, count: int, percent: int, percent_exact: float}>}
      */
-    public function getBreakdowns(string $fromStr, string $toStr, ?int $totalCashOut = null): array
+    public function getBreakdowns(string $fromStr, string $toStr, ?int $totalCashOut = null, ?int $totalCashIn = null): array
     {
         $toEnd = $toStr.' 23:59:59';
 
@@ -219,11 +219,13 @@ class ReportService
             'PAID' => (int) ($orderCounts->paid_count ?? 0),
         ];
 
+        $paymentMethodBreakdown = $this->buildPaymentMethodBreakdown($fromStr, $toEnd, $totalCashIn);
         $expenseBreakdown = $this->buildExpenseBreakdown($fromStr, $toEnd, $totalCashOut);
 
         return [
             'fulfillment_breakdown' => $fulfillmentBreakdown,
             'payment_breakdown' => $paymentBreakdown,
+            'payment_method_breakdown' => $paymentMethodBreakdown,
             'expense_breakdown' => $expenseBreakdown,
         ];
     }
@@ -265,7 +267,12 @@ class ReportService
     {
         $core = $this->getSummaryReport($preset, $from, $to);
         $period = $core['period'];
-        $breakdowns = $this->getBreakdowns($period['from'], $period['to'], $core['summary']['cash_out']);
+        $breakdowns = $this->getBreakdowns(
+            $period['from'],
+            $period['to'],
+            $core['summary']['cash_out'],
+            $core['summary']['cash_in']
+        );
         $trends = $this->getTrendSeries($period, $granularity);
 
         return [
@@ -400,10 +407,17 @@ class ReportService
 
     protected function findEarliestRecordDate(Carbon $fallbackNow): Carbon
     {
+        $row = DB::selectOne(
+            "SELECT
+                (SELECT MIN(order_date) FROM orders) AS earliest_order,
+                (SELECT MIN(payment_date) FROM payments WHERE status = 'POSTED') AS earliest_payment,
+                (SELECT MIN(expense_date) FROM expenses WHERE status = 'POSTED') AS earliest_expense"
+        );
+
         $candidates = array_filter([
-            DB::table('orders')->min('order_date'),
-            DB::table('payments')->where('status', 'POSTED')->min('payment_date'),
-            DB::table('expenses')->where('status', 'POSTED')->min('expense_date'),
+            $row->earliest_order ?? null,
+            $row->earliest_payment ?? null,
+            $row->earliest_expense ?? null,
         ]);
 
         if (empty($candidates)) {
@@ -620,9 +634,72 @@ class ReportService
     }
 
     /**
+     * Breakdown of POSTED payments by method inside the active report window (1 grouped query).
+     * Legacy or non-standard methods permitted by schema are safely folded into OTHER (Lainnya)
+     * so totals reconcile 100% with summary.cash_in.
+     *
+     * @return array<int, array{method: string, label: string, count: int, amount: int, percent: int, percent_exact: float}>
+     */
+    protected function buildPaymentMethodBreakdown(string $fromStr, string $toEnd, ?int $totalCashIn = null): array
+    {
+        $rows = DB::table('payments')
+            ->where('status', 'POSTED')
+            ->where('payment_date', '>=', $fromStr)
+            ->where('payment_date', '<=', $toEnd)
+            ->selectRaw("UPPER(COALESCE(NULLIF(TRIM(method), ''), 'OTHER')) AS method_key")
+            ->selectRaw('COUNT(*) AS tx_count, COALESCE(SUM(amount), 0) AS total_amount')
+            ->groupByRaw("UPPER(COALESCE(NULLIF(TRIM(method), ''), 'OTHER'))")
+            ->get();
+
+        $buckets = [
+            'TRANSFER' => ['method' => 'TRANSFER', 'label' => 'Transfer Bank', 'count' => 0, 'amount' => 0, 'rank' => 1],
+            'CASH' => ['method' => 'CASH', 'label' => 'Tunai', 'count' => 0, 'amount' => 0, 'rank' => 2],
+            'QRIS' => ['method' => 'QRIS', 'label' => 'QRIS', 'count' => 0, 'amount' => 0, 'rank' => 3],
+            'OTHER' => ['method' => 'OTHER', 'label' => 'Lainnya', 'count' => 0, 'amount' => 0, 'rank' => 4],
+        ];
+
+        $sumFromRows = 0;
+        foreach ($rows as $row) {
+            $rawKey = strtoupper(trim((string) ($row->method_key ?? 'OTHER')));
+            $target = isset($buckets[$rawKey]) ? $rawKey : 'OTHER';
+            $amt = (int) ($row->total_amount ?? 0);
+            $cnt = (int) ($row->tx_count ?? 0);
+            $buckets[$target]['count'] += $cnt;
+            $buckets[$target]['amount'] += $amt;
+            $sumFromRows += $amt;
+        }
+
+        $resolvedTotalCashIn = $totalCashIn ?? $sumFromRows;
+
+        $list = array_values($buckets);
+        usort($list, static function (array $a, array $b): int {
+            if ($a['amount'] !== $b['amount']) {
+                return $b['amount'] <=> $a['amount'];
+            }
+
+            return $a['rank'] <=> $b['rank'];
+        });
+
+        return array_map(static function (array $item) use ($resolvedTotalCashIn): array {
+            $amt = $item['amount'];
+            $exact = $resolvedTotalCashIn > 0 ? round(($amt / $resolvedTotalCashIn) * 100, 1) : 0.0;
+            $pct = $resolvedTotalCashIn > 0 ? (int) round(($amt / $resolvedTotalCashIn) * 100) : 0;
+
+            return [
+                'method' => $item['method'],
+                'label' => $item['label'],
+                'count' => $item['count'],
+                'amount' => $amt,
+                'percent' => $pct,
+                'percent_exact' => $exact,
+            ];
+        }, $list);
+    }
+
+    /**
      * Breakdown of POSTED expenses by category inside the active report window.
      *
-     * @return array<int, array{category: string, amount: int, count: int, percent: int}>
+     * @return array<int, array{category: string, amount: int, count: int, percent: int, percent_exact: float}>
      */
     protected function buildExpenseBreakdown(string $fromStr, string $toEnd, ?int $totalCashOut = null): array
     {
@@ -641,6 +718,7 @@ class ReportService
 
         return $rows->map(function ($row) use ($resolvedTotalCashOut): array {
             $amt = (int) $row->total_amount;
+            $exact = $resolvedTotalCashOut > 0 ? round(($amt / $resolvedTotalCashOut) * 100, 1) : 0.0;
             $pct = $resolvedTotalCashOut > 0 ? (int) round(($amt / $resolvedTotalCashOut) * 100) : 0;
 
             return [
@@ -648,6 +726,7 @@ class ReportService
                 'amount' => $amt,
                 'count' => (int) $row->tx_count,
                 'percent' => $pct,
+                'percent_exact' => $exact,
             ];
         })->values()->all();
     }

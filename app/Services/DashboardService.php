@@ -2,7 +2,10 @@
 
 namespace App\Services;
 
+use Carbon\Carbon;
+use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class DashboardService
 {
@@ -119,7 +122,8 @@ class DashboardService
     }
 
     /**
-     * Ringkasan operasional & transaksi khusus tanggal hari ini (WIB).
+     * Ringkasan operasional & transaksi khusus tanggal hari ini (WIB) serta distribusi
+     * seluruh item pengerjaan aktif (NEW/PROCESSING/READY).
      * Menggabungkan seluruh agregasi dalam 1 round-trip query ke Supabase PostgreSQL.
      */
     public function todayStats(): array
@@ -140,7 +144,9 @@ class DashboardService
                 d.deliveries_pending_today,
                 d.deliveries_delivered_today,
                 d.deliveries_overdue,
-                d.deliveries_ready
+                d.deliveries_ready,
+                d.pipeline_new,
+                d.pipeline_processing
             FROM (
                 SELECT COUNT(*) AS orders_count, COALESCE(SUM(total_amount), 0) AS orders_billed
                 FROM orders
@@ -173,7 +179,9 @@ class DashboardService
                     COALESCE(SUM(CASE WHEN delivery_date >= ? AND delivery_date <= ? AND fulfillment_status IN ('NEW', 'PROCESSING', 'READY') THEN 1 ELSE 0 END), 0) AS deliveries_pending_today,
                     COALESCE(SUM(CASE WHEN delivery_date >= ? AND delivery_date <= ? AND fulfillment_status = 'DELIVERED' THEN 1 ELSE 0 END), 0) AS deliveries_delivered_today,
                     COALESCE(SUM(CASE WHEN delivery_date < ? AND fulfillment_status IN ('NEW', 'PROCESSING', 'READY') THEN 1 ELSE 0 END), 0) AS deliveries_overdue,
-                    COALESCE(SUM(CASE WHEN fulfillment_status = 'READY' THEN 1 ELSE 0 END), 0) AS deliveries_ready
+                    COALESCE(SUM(CASE WHEN fulfillment_status = 'READY' THEN 1 ELSE 0 END), 0) AS deliveries_ready,
+                    COALESCE(SUM(CASE WHEN fulfillment_status = 'NEW' THEN 1 ELSE 0 END), 0) AS pipeline_new,
+                    COALESCE(SUM(CASE WHEN fulfillment_status = 'PROCESSING' THEN 1 ELSE 0 END), 0) AS pipeline_processing
                 FROM order_items
                 WHERE fulfillment_status IN ('NEW', 'PROCESSING', 'READY')
                    OR (delivery_date >= ? AND delivery_date <= ?)
@@ -190,6 +198,12 @@ class DashboardService
             ]
         );
 
+        $cashIn = (int) ($summaryRow->cash_in ?? 0);
+        $cashOut = (int) ($summaryRow->cash_out ?? 0);
+        $pipelineNew = (int) ($summaryRow->pipeline_new ?? 0);
+        $pipelineProcessing = (int) ($summaryRow->pipeline_processing ?? 0);
+        $pipelineReady = (int) ($summaryRow->deliveries_ready ?? 0);
+
         return [
             'today_iso' => $todayIso,
             'orders_count' => (int) ($summaryRow->orders_count ?? 0),
@@ -198,11 +212,16 @@ class DashboardService
             'deliveries_pending_today' => (int) ($summaryRow->deliveries_pending_today ?? 0),
             'deliveries_delivered_today' => (int) ($summaryRow->deliveries_delivered_today ?? 0),
             'deliveries_overdue' => (int) ($summaryRow->deliveries_overdue ?? 0),
-            'deliveries_ready' => (int) ($summaryRow->deliveries_ready ?? 0),
-            'cash_in' => (int) ($summaryRow->cash_in ?? 0),
+            'deliveries_ready' => $pipelineReady,
+            'pipeline_new' => $pipelineNew,
+            'pipeline_processing' => $pipelineProcessing,
+            'pipeline_ready' => $pipelineReady,
+            'pipeline_total' => $pipelineNew + $pipelineProcessing + $pipelineReady,
+            'cash_in' => $cashIn,
             'cash_in_count' => (int) ($summaryRow->cash_in_count ?? 0),
-            'cash_out' => (int) ($summaryRow->cash_out ?? 0),
+            'cash_out' => $cashOut,
             'cash_out_count' => (int) ($summaryRow->cash_out_count ?? 0),
+            'cash_diff' => $cashIn - $cashOut,
             'open_receivables_count' => (int) ($summaryRow->open_receivables_count ?? 0),
         ];
     }
@@ -252,5 +271,266 @@ class DashboardService
                 'payment_status' => $paid === 0 ? 'UNPAID' : 'PARTIAL',
             ];
         })->values()->all();
+    }
+
+    /**
+     * Ringkasan arus kas harian 7 hari dan 30 hari terakhir (batas kalender WIB)
+     * dalam 1 query SQL read-only. Hanya catatan berstatus POSTED yang dihitung.
+     */
+    public function cashFlowPulse(): array
+    {
+        $todayWib = Carbon::now('Asia/Jakarta')->startOfDay();
+        $start30d = $todayWib->copy()->subDays(29);
+        $start7d = $todayWib->copy()->subDays(6);
+
+        $from30Str = $start30d->format('Y-m-d');
+        $toStr = $todayWib->format('Y-m-d');
+        $toEndStr = $toStr.' 23:59:59';
+
+        $rows = DB::select(
+            "SELECT 'in' AS flow_type, payment_date AS tx_date, COALESCE(SUM(amount), 0) AS total_amount
+             FROM payments
+             WHERE status = 'POSTED' AND payment_date >= ? AND payment_date <= ?
+             GROUP BY payment_date
+             UNION ALL
+             SELECT 'out' AS flow_type, expense_date AS tx_date, COALESCE(SUM(amount), 0) AS total_amount
+             FROM expenses
+             WHERE status = 'POSTED' AND expense_date >= ? AND expense_date <= ?
+             GROUP BY expense_date",
+            [$from30Str, $toEndStr, $from30Str, $toEndStr]
+        );
+
+        $dailyMap = [];
+        foreach ($rows as $row) {
+            $dateKey = substr((string) $row->tx_date, 0, 10);
+            if (! isset($dailyMap[$dateKey])) {
+                $dailyMap[$dateKey] = ['cash_in' => 0, 'cash_out' => 0];
+            }
+            if ($row->flow_type === 'in') {
+                $dailyMap[$dateKey]['cash_in'] += (int) $row->total_amount;
+            } else {
+                $dailyMap[$dateKey]['cash_out'] += (int) $row->total_amount;
+            }
+        }
+
+        $points30d = [];
+        $sum30In = 0;
+        $sum30Out = 0;
+        $has30Activity = false;
+
+        foreach (CarbonPeriod::create($start30d, $todayWib) as $date) {
+            $iso = $date->format('Y-m-d');
+            $cashIn = $dailyMap[$iso]['cash_in'] ?? 0;
+            $cashOut = $dailyMap[$iso]['cash_out'] ?? 0;
+            $cashDiff = $cashIn - $cashOut;
+
+            if ($cashIn > 0 || $cashOut > 0) {
+                $has30Activity = true;
+            }
+
+            $sum30In += $cashIn;
+            $sum30Out += $cashOut;
+
+            $points30d[] = [
+                'date' => $iso,
+                'label' => $date->format('d/m'),
+                'full_label' => $date->copy()->locale('id')->translatedFormat('D, d M Y'),
+                'cash_in' => $cashIn,
+                'cash_out' => $cashOut,
+                'cash_diff' => $cashDiff,
+            ];
+        }
+
+        $points7d = array_slice($points30d, -7);
+        $sum7In = 0;
+        $sum7Out = 0;
+        $has7Activity = false;
+
+        foreach ($points7d as $pt) {
+            $sum7In += $pt['cash_in'];
+            $sum7Out += $pt['cash_out'];
+            if ($pt['cash_in'] > 0 || $pt['cash_out'] > 0) {
+                $has7Activity = true;
+            }
+        }
+
+        return [
+            'timezone' => 'WIB (Asia/Jakarta)',
+            'period_7d' => [
+                'from' => $start7d->format('Y-m-d'),
+                'to' => $toStr,
+                'label' => $start7d->format('d/m/Y').' - '.$todayWib->format('d/m/Y').' WIB',
+                'cash_in' => $sum7In,
+                'cash_out' => $sum7Out,
+                'cash_diff' => $sum7In - $sum7Out,
+                'has_activity' => $has7Activity,
+                'points' => $points7d,
+            ],
+            'period_30d' => [
+                'from' => $from30Str,
+                'to' => $toStr,
+                'label' => $start30d->format('d/m/Y').' - '.$todayWib->format('d/m/Y').' WIB',
+                'cash_in' => $sum30In,
+                'cash_out' => $sum30Out,
+                'cash_diff' => $sum30In - $sum30Out,
+                'has_activity' => $has30Activity,
+                'points' => $points30d,
+            ],
+        ];
+    }
+
+    /**
+     * Aktivitas bisnis terbaru (maksimal $limit catatan nyata): pesanan baru,
+     * pembayaran sah (POSTED), dan pengeluaran sah (POSTED).
+     * Tidak menampilkan data sensitif atau log audit penuh.
+     */
+    public function recentActivity(int $limit = 6): array
+    {
+        $events = [];
+
+        $recentOrders = DB::table('orders')
+            ->join('customers', 'customers.id', '=', 'orders.customer_id')
+            ->select([
+                'orders.id',
+                'orders.order_number',
+                'orders.total_amount',
+                'orders.order_date',
+                'orders.created_at',
+                'customers.name as customer_name',
+            ])
+            ->orderByDesc('orders.created_at')
+            ->orderByDesc('orders.id')
+            ->limit($limit)
+            ->get();
+
+        foreach ($recentOrders as $ord) {
+            $ts = $this->parseTimestampWib($ord->created_at ?? $ord->order_date);
+            $events[] = [
+                'key' => 'order-'.$ord->id,
+                'type' => 'order',
+                'label' => 'Pesanan Baru',
+                'title' => (string) $ord->customer_name,
+                'subtitle' => 'Nota tanggal '.date('d/m/Y', strtotime((string) $ord->order_date)),
+                'order_number' => (string) $ord->order_number,
+                'amount' => (int) $ord->total_amount,
+                'occurred_at' => $ts->format('d/m/Y H:i').' WIB',
+                'occurred_iso' => $ts->toIso8601String(),
+                'href' => '/ui-orders/'.$ord->id,
+                'component' => 'Orders/Show',
+                '_sort_ts' => $ts->getTimestamp(),
+                '_sort_id' => (int) $ord->id,
+                '_sort_rank' => 1,
+            ];
+        }
+
+        $recentPayments = DB::table('payments')
+            ->join('orders', 'orders.id', '=', 'payments.order_id')
+            ->join('customers', 'customers.id', '=', 'orders.customer_id')
+            ->where('payments.status', 'POSTED')
+            ->select([
+                'payments.id',
+                'payments.order_id',
+                'payments.amount',
+                'payments.method',
+                'payments.payment_date',
+                'payments.created_at',
+                'orders.order_number',
+                'customers.name as customer_name',
+            ])
+            ->orderByDesc('payments.created_at')
+            ->orderByDesc('payments.id')
+            ->limit($limit)
+            ->get();
+
+        foreach ($recentPayments as $pay) {
+            $ts = $this->parseTimestampWib($pay->created_at ?? $pay->payment_date);
+            $methodLabel = match (strtoupper((string) $pay->method)) {
+                'TRANSFER' => 'Transfer bank',
+                'CASH' => 'Tunai',
+                'QRIS' => 'QRIS',
+                default => 'Lainnya',
+            };
+            $events[] = [
+                'key' => 'payment-'.$pay->id,
+                'type' => 'payment',
+                'label' => 'Pembayaran Masuk',
+                'title' => (string) $pay->customer_name,
+                'subtitle' => $methodLabel.' · '.date('d/m/Y', strtotime((string) $pay->payment_date)),
+                'order_number' => (string) $pay->order_number,
+                'amount' => (int) $pay->amount,
+                'occurred_at' => $ts->format('d/m/Y H:i').' WIB',
+                'occurred_iso' => $ts->toIso8601String(),
+                'href' => '/ui-orders/'.$pay->order_id,
+                'component' => 'Orders/Show',
+                '_sort_ts' => $ts->getTimestamp(),
+                '_sort_id' => (int) $pay->id,
+                '_sort_rank' => 3,
+            ];
+        }
+
+        $recentExpenses = DB::table('expenses')
+            ->leftJoin('expense_categories', 'expense_categories.id', '=', 'expenses.expense_category_id')
+            ->where('expenses.status', 'POSTED')
+            ->select([
+                'expenses.id',
+                'expenses.amount',
+                'expenses.description',
+                'expenses.expense_date',
+                'expenses.created_at',
+                'expense_categories.name as category_name',
+            ])
+            ->orderByDesc('expenses.created_at')
+            ->orderByDesc('expenses.id')
+            ->limit($limit)
+            ->get();
+
+        foreach ($recentExpenses as $exp) {
+            $ts = $this->parseTimestampWib($exp->created_at ?? $exp->expense_date);
+            $events[] = [
+                'key' => 'expense-'.$exp->id,
+                'type' => 'expense',
+                'label' => 'Pengeluaran',
+                'title' => (string) ($exp->category_name ?? 'Pengeluaran Operasional'),
+                'subtitle' => Str::limit(trim((string) $exp->description), 72),
+                'order_number' => null,
+                'amount' => (int) $exp->amount,
+                'occurred_at' => $ts->format('d/m/Y H:i').' WIB',
+                'occurred_iso' => $ts->toIso8601String(),
+                'href' => '/ui-expenses',
+                'component' => 'Expenses/Index',
+                '_sort_ts' => $ts->getTimestamp(),
+                '_sort_id' => (int) $exp->id,
+                '_sort_rank' => 2,
+            ];
+        }
+
+        usort($events, static function (array $a, array $b): int {
+            if ($a['_sort_ts'] !== $b['_sort_ts']) {
+                return $b['_sort_ts'] <=> $a['_sort_ts'];
+            }
+            if ($a['_sort_rank'] !== $b['_sort_rank']) {
+                return $b['_sort_rank'] <=> $a['_sort_rank'];
+            }
+
+            return $b['_sort_id'] <=> $a['_sort_id'];
+        });
+
+        return array_map(
+            static function (array $item): array {
+                unset($item['_sort_ts'], $item['_sort_id'], $item['_sort_rank']);
+
+                return $item;
+            },
+            array_slice($events, 0, $limit)
+        );
+    }
+
+    private function parseTimestampWib(mixed $value): Carbon
+    {
+        if (! $value) {
+            return Carbon::now('Asia/Jakarta');
+        }
+
+        return Carbon::parse((string) $value, config('app.timezone', 'UTC'))->timezone('Asia/Jakarta');
     }
 }

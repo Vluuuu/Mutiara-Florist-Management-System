@@ -57,15 +57,7 @@ class UiExpenseController extends Controller
             ->orderByDesc('id')
             ->paginate(10)
             ->withQueryString()
-            ->through(function (Expense $expense): array {
-                return array_merge($expense->toArray(), [
-                    'expense_date' => $expense->expense_date?->format('d/m/Y') ?? '',
-                    'expense_date_raw' => $expense->expense_date?->format('Y-m-d'),
-                    'voided_at' => $expense->voided_at
-                        ? $expense->voided_at->timezone('Asia/Jakarta')->format('d/m/Y H:i').' WIB'
-                        : null,
-                ]);
-            });
+            ->through(fn (Expense $expense): array => self::formatExpenseForUi($expense));
 
         $categories = ExpenseCategory::query()
             ->orderBy('name')
@@ -120,5 +112,42 @@ class UiExpenseController extends Controller
 
         return redirect()->route('ui-expenses.index')
             ->with('success', 'Kesalahan pencatatan pengeluaran telah di-void. Tidak ada uang yang otomatis dikembalikan.');
+    }
+
+    /**
+     * Explicit UI payload serializer for expenses. Preserves integer recorded_by FK
+     * while exposing only safe recorder identity fields (id, name) or null fallback.
+     *
+     * @return array<string, mixed>
+     */
+    public static function formatExpenseForUi(Expense $expense): array
+    {
+        $recorder = $expense->relationLoaded('recordedBy') ? $expense->getRelation('recordedBy') : null;
+        $category = $expense->relationLoaded('category') ? $expense->getRelation('category') : null;
+        $rawRecordedBy = $expense->getRawOriginal('recorded_by') ?? $expense->getAttributes()['recorded_by'] ?? 0;
+
+        return [
+            'id' => (int) $expense->id,
+            'expense_category_id' => (int) $expense->expense_category_id,
+            'recorded_by' => (int) $rawRecordedBy,
+            'expense_date' => $expense->expense_date?->format('d/m/Y') ?? '',
+            'expense_date_raw' => $expense->expense_date?->format('Y-m-d'),
+            'amount' => (int) $expense->amount,
+            'description' => $expense->description,
+            'idempotency_key' => $expense->idempotency_key,
+            'status' => $expense->status,
+            'void_reason' => $expense->void_reason,
+            'voided_at' => $expense->voided_at
+                ? $expense->voided_at->timezone('Asia/Jakarta')->format('d/m/Y H:i').' WIB'
+                : null,
+            'category' => $category ? [
+                'id' => (int) $category->id,
+                'name' => $category->name,
+            ] : null,
+            'recorded_by_user' => $recorder ? [
+                'id' => (int) $recorder->id,
+                'name' => $recorder->name,
+            ] : null,
+        ];
     }
 }

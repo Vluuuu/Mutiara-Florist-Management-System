@@ -51,6 +51,8 @@ type TrackedVisit = {
 
 const DEFERRED_PROP_KEYS = new Set([
     'receivables',
+    'cashFlowPulse',
+    'recentActivity',
     'reportBreakdowns',
     'reportTrends',
     'paymentHistory',

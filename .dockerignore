@@ -12,5 +12,6 @@ storage/framework/sessions/*
 storage/framework/views/*
 storage/app/backups/*
 storage/app/exports/*
+bootstrap/cache/*.php
 .phpunit.result.cache
 *.md
