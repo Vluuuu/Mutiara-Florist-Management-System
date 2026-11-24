@@ -76,8 +76,7 @@ Catatan operasional:
 
 ## 5. Lingkungan Staging & Konfigurasi Eksperimental
 
-- Lingkungan staging tersedia terpisah dari produksi untuk pengujian visual dan regresi menggunakan data sintetis.
-- Konfigurasi eksperimental Railway (`railway.json`, `nixpacks.toml`) dari fase eksplorasi awal telah dipindahkan ke `docs/archive/deployment-experiments/` karena tidak dipakai pada arsitektur produksi Ubuntu Docker saat ini.
-- File `render.yaml` masih dipertahankan sementara di root untuk verifikasi final pemilik apakah blueprint Render staging masih diperlukan atau dapat diarsipkan.
+- Lingkungan staging (`https://staging-admin.mutiaraflorist.id`) berjalan pada server Ubuntu berbasis container Docker terpisah (`mfms-staging`) menggunakan `Dockerfile` yang sama dan data sintetis, tanpa ketergantungan pada Render, Railway, maupun Nixpacks.
+- Seluruh konfigurasi eksperimental cloud PaaS dari fase eksplorasi awal (`railway.json`, `nixpacks.toml`, dan `render.yaml`) telah dipindahkan ke `docs/archive/deployment-experiments/` karena tidak ada deployment aktif yang bergantung pada ketiganya.
 
 Rujukan terkait: [ARCHITECTURE.md](ARCHITECTURE.md), [BACKUP_RESTORE.md](BACKUP_RESTORE.md), [LOCAL_SETUP.md](LOCAL_SETUP.md).

@@ -39,4 +39,4 @@ Dokumen fase awal disimpan untuk keterlacakan akademik dan sejarah keputusan rek
 - `docs/archive/phase12/`: Laporan gerbang keamanan dan persiapan pra-pilot lokal.
 - `docs/archive/phase14/`: Audit reliabilitas lokal dan eksperimen publikasi origin awal.
 - `docs/archive/phase15/`: Rencana migrasi cloud, laporan paritas PostgreSQL 15A, dan staging cloud 15B.
-- `docs/archive/deployment-experiments/`: Konfigurasi eksperimental Railway (`railway.json`, `nixpacks.toml`) yang tidak dipakai pada produksi Ubuntu Docker saat ini.
+- `docs/archive/deployment-experiments/`: Konfigurasi eksperimental cloud PaaS (`railway.json`, `nixpacks.toml`, `render.yaml`) yang tidak dipakai pada produksi maupun staging Ubuntu Docker saat ini.

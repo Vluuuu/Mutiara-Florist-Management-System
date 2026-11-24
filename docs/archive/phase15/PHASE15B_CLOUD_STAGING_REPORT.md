@@ -168,7 +168,7 @@ Untuk transparansi dan akurasi teknis arsitektur:
 
 ## 6. Audit Deployment Kesiapan Render Blueprint (`render.yaml`)
 
-File [render.yaml](../../../render.yaml) telah diperbarui dengan validasi:
+File [render.yaml](../deployment-experiments/render.yaml) telah diperbarui dengan validasi:
 1. **Branch Eksplisit**: Ditambahkan deklarasi `branch: feat/phase15a-postgres-compatibility` untuk mencegah Render Free mengambil kode dari `main`.
 2. **`APP_KEY`**: Disetel `sync: false` agar owner menyetel key sah Laravel via dashboard Render.
 3. **Port Binding**: Nginx dikonfigurasi dinamis mendengarkan port `$PORT` (default 10000).
