@@ -454,7 +454,7 @@ class CloudflareAccessMiddlewareTest extends TestCase
             'aud' => 'aud-123',
             'iss' => 'https://test-team.cloudflareaccess.com',
             'exp' => time() + 3600,
-            'email' => 'dewoxxd6@gmail.com',
+            'email' => 'operator@example.com',
         ]);
 
         $request = Request::create('/dashboard', 'GET');
@@ -463,7 +463,7 @@ class CloudflareAccessMiddlewareTest extends TestCase
 
         $middleware = new VerifyCloudflareAccessJwt();
         $response = $middleware->handle($request, function ($req) {
-            $this->assertSame('dewoxxd6@gmail.com', $req->attributes->get('cf_access_email'));
+            $this->assertSame('operator@example.com', $req->attributes->get('cf_access_email'));
             return response('OK', 200);
         });
 
