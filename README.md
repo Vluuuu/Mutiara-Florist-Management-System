@@ -5,7 +5,7 @@ Aplikasi web administrasi internal untuk operasional **Mutiara Indah Florist**. 
 - **Aplikasi Produksi:** [https://admin.mutiaraflorist.id](https://admin.mutiaraflorist.id) *(dilindungi Cloudflare Zero Trust Access & autentikasi admin)*
 - **Desain UI/UX (Figma):** [MFMS Design System & UI (Phase 13)](https://www.figma.com/design/tgjOozJg6XHMossb5IK4px)
 - **Baseline Rilis Produksi:** Branch `release/phase13-ui-bi`, commit aplikasi terpasang `0b436a9bc8e53328f633ee21a0666eaa6b3cbe6d`
-- **Catatan Versi Repository:** Commit aplikasi produksi yang aktif berjalan di server adalah `0b436a9bc8e53328f633ee21a0666eaa6b3cbe6d`. Pembaruan setelah commit tersebut pada branch pembersihan hanya mencakup penataan dokumentasi, penyegaran README, dan kebersihan konfigurasi repositori tanpa mengubah kode runtime, migrasi database, maupun dependensi aplikasi.
+- **Catatan Versi Repository:** Commit aplikasi produksi yang aktif berjalan di server tetap berada pada `0b436a9bc8e53328f633ee21a0666eaa6b3cbe6d`. Revisi repositori setelah commit tersebut mencakup penataan dokumentasi, penyegaran README, kebersihan berkas repositori, serta perbaikan hygiene konfigurasi database uji lokal dan fixture pengujian tanpa mengubah logika bisnis, perilaku runtime produksi, migrasi database, maupun dependensi aplikasi.
 
 ---
 
@@ -25,7 +25,7 @@ MFMS menyelesaikan kebutuhan tersebut dengan perhitungan total di sisi server me
 ## Fitur Utama
 
 1. **Autentikasi Admin:** Login berbasis sesi Laravel tanpa pendaftaran publik, dilindungi CSRF, rate limiting (`throttle:6,1`), dan middleware verifikasi JWT Cloudflare Access untuk produksi.
-2. **Dashboard & Intelijen Operasional:** 4 kartu KPI utama (Nilai Pesanan, Kas Masuk, Kas Keluar, Piutang Berjalan), grafik arus kas dengan pilihan rentang 7 hari dan 30 hari, alur pengerjaan pesanan (*pipeline*), antrean pengiriman operasional, ringkasan piutang per nota, serta aktivitas bisnis terbaru.
+2. **Dashboard & Intelijen Operasional:** 4 kartu KPI utama (Kas Masuk Hari Ini, Kas Keluar Hari Ini, Piutang Berjalan, Kiriman & Pesanan Hari Ini), grafik arus kas dengan pilihan rentang 7 hari dan 30 hari, alur pengerjaan pesanan (*pipeline*), antrean pengiriman operasional, ringkasan piutang per nota, serta aktivitas bisnis terbaru.
 3. **Manajemen Pelanggan:** Pencarian nama/telepon yang tidak peka huruf besar/kecil, tambah/ubah pelanggan, detail riwayat pesanan pelanggan, serta pengarsipan aman (*soft delete*) khusus pelanggan tanpa transaksi pesanan.
 4. **Manajemen Pesanan Multi-Item:** Satu pesanan memuat 1 hingga 20 item bunga dengan penerima, pengirim ucapan, tanggal kirim, lokasi pengiriman, serta mode ongkir per item (`INCLUDED` atau `SEPARATE` yang dihitung sekali per item). Status pengerjaan tiap item bergerak linier (`Baru` -> `Diproses` -> `Siap Kirim` -> `Terkirim`) dan meringkas status pesanan secara otomatis.
 5. **Pembayaran & Piutang:** Pencatatan pembayaran fleksibel (tanpa DP, DP opsional, cicilan, atau lunas penuh), daftar piutang berjalan, perlindungan anti-overpayment berbasis `lockForUpdate`, kunci idempotensi UUID, serta pembatalan catatan salah (`VOIDED`) beralasan minimal 10 karakter.
@@ -103,7 +103,7 @@ Penjelasan arsitektur lebih rinci tersedia pada [docs/ARCHITECTURE.md](docs/ARCH
 
 ```bash
 # 1. Clone repositori
-git clone https://github.com/Vluuuu/Mutiara-Florist-Management-System.git
+git clone --branch release/phase13-ui-bi --single-branch https://github.com/Vluuuu/Mutiara-Florist-Management-System.git
 cd Mutiara-Florist-Management-System
 
 # 2. Pasang dependensi backend dan frontend

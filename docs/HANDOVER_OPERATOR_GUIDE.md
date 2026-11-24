@@ -14,7 +14,7 @@ Dokumen ini menjadi panduan penggunaan harian bagi operator dan pemilik toko Mut
 1. Buka alamat sistem produksi di `https://admin.mutiaraflorist.id` (atau `http://127.0.0.1:8000` saat dijalankan secara lokal).
 2. Jika Cloudflare Zero Trust Access aktif pada domain publik, selesaikan verifikasi akses tepi terlebih dahulu, lalu masukkan email dan kata sandi akun admin MFMS.
 3. Halaman **Dashboard (`/dashboard`)** menampilkan ringkasan operasional dan keuangan:
-   - **4 Kartu KPI Utama:** Nilai Pesanan, Kas Masuk (`POSTED`), Kas Keluar (`POSTED`), dan Piutang Berjalan.
+   - **4 Kartu KPI Utama:** Kas Masuk Hari Ini, Kas Keluar Hari Ini, Piutang Berjalan, dan Kiriman & Pesanan Hari Ini.
    - **Grafik Arus Kas:** Opsi rentang **7 hari** dan **30 hari** untuk memantau perbandingan kas masuk dan kas keluar harian.
    - **Alur Pengerjaan Pesanan (Pipeline):** Ringkasan progres pengerjaan item (`Baru`, `Diproses`, `Siap Kirim`, `Terkirim`).
    - **Antrean Pengiriman Operasional:** Daftar kiriman mendesak/terjadwal beserta aksi cepat memajukan status item.

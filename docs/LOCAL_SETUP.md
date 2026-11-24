@@ -14,7 +14,7 @@ Dokumen ini menjelaskan cara menyiapkan dan menjalankan Mutiara Florist Manageme
 1. **Clone repository dan pindah ke direktori proyek:**
 
 ```bash
-git clone https://github.com/Vluuuu/Mutiara-Florist-Management-System.git
+git clone --branch release/phase13-ui-bi --single-branch https://github.com/Vluuuu/Mutiara-Florist-Management-System.git
 cd Mutiara-Florist-Management-System
 ```
 
