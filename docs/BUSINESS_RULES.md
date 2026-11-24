@@ -1,7 +1,7 @@
-# Business Rules — Mutiara Florist Management System
+# Business Rules MFMS (Mutiara Florist Management System)
 
-**Versi:** v0.6 (2 November 2026) — pembayaran fleksibel, DP opsional, pembatalan ditunda  
-**Status:** Pembayaran umumnya langsung lunas saat pesan atau dibayar belakangan; DP **opsional**. Belum ada kasus pembatalan dalam praktik yang dilaporkan, sehingga **fitur cancel/refund tidak dibuat pada MVP**. Diskon/pajak juga di luar MVP.
+**Versi:** Phase 13 (`release/phase13-ui-bi`, konsisten dengan baseline invarian sejak v0.6)  
+**Status:** Aktif di produksi. Pembayaran bersifat fleksibel (langsung lunas, lunas belakangan, atau DP opsional). Fitur pembatalan/refund, diskon, dan pajak tetap berada di luar lingkup rilis saat ini.
 
 ## A. Alur pesanan
 
@@ -24,7 +24,7 @@ Status pengerjaan **setiap item**: `NEW` → `PROCESSING` → `READY` → `DELIV
 - `order_total = Σ item_total`. Total harus positif pada MVP.
 - Dalam satu order dapat bercampur item INCLUDE dan SEPARATE. Mode dan nominal ongkir dicatat per item sesuai tanggal/tujuan. Untuk INCLUDE, harga satuan bunga yang dimasukkan operator sudah mengakomodasi ongkir.
 - Ongkir yang dibayar florist ke kurir merupakan **biaya nyata** di `expenses`, bukan pengurangan otomatis pada tagihan dan bukan selalu sama dengan ongkir yang ditagihkan pelanggan.
-- Kolom `orders.total_amount` hanya boleh diperbarui oleh service dalam transaksi MySQL yang sama dengan perubahan item.
+- Kolom `orders.total_amount` hanya boleh diperbarui oleh service dalam transaksi database (PostgreSQL/MariaDB) yang sama dengan perubahan item.
 - Setelah DP diterima, perubahan harga/jumlah/**ongkir** tidak boleh membuat total pesanan lebih kecil daripada jumlah uang yang sudah tercatat. Revisi harus terdata di audit.
 - **Diskon dan pajak sengaja tidak diterapkan pada MVP**, sesuai keputusan operator. Tidak ada kolom input, rumus potongan/PPN, atau penghitungan otomatis terkait. Pesanan gratis belum memiliki aturan khusus. Ongkir hanya tambahan jika mode `SEPARATE`, dengan nominal yang diisi operator; tidak ada tarif otomatis.
 
@@ -134,4 +134,4 @@ Jika ada kebutuhan pembatalan nyata di masa depan, tetapkan lebih dahulu: kebija
 4. Aturan koreksi data pesanan yang sudah dibayar penuh/sudah dikirim, selain pembatalan?
 5. Apakah dibutuhkan jam pengiriman spesifik (di luar tanggal) dan status kurir? **Belum diputuskan**.
 
-Rangkuman status ada di [DECISIONS.md](DECISIONS.md). Definisi harga dan ongkir: [PRICING_AND_SHIPPING.md](PRICING_AND_SHIPPING.md). Diagram alur: [WORKFLOWS.md](WORKFLOWS.md).
+Rangkuman status historis ada di [DECISIONS.md](archive/planning/DECISIONS.md). Definisi harga dan ongkir: [PRICING_AND_SHIPPING.md](PRICING_AND_SHIPPING.md). Diagram alur awal: [WORKFLOWS.md](archive/planning/WORKFLOWS.md).

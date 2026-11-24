@@ -1,127 +1,133 @@
-# Phase 1 — Menjalankan MFMS di Laptop Windows
+# Panduan Instalasi & Pengembangan Lokal MFMS
 
-**Status:** Setup awal telah dibuktikan operator pada 2 November 2026: Laravel 12 terinstal, MariaDB 10.4.32 port 3307 terhubung, 4 migration DONE, admin lokal dibuat, server menerima request `/login` dan `/dashboard`. 7 tes dasar PHPUnit telah PASS; QA visual browser dan pengujian CRUD Pelanggan Phase 2 belum dilakukan.
+Dokumen ini menjelaskan cara menyiapkan dan menjalankan Mutiara Florist Management System (MFMS) di mesin pengembangan lokal (Windows, macOS, atau Linux) tanpa menyentuh database produksi.
 
-## 1. Prasyarat
+## 1. Prasyarat Perangkat Lunak
 
-- **PHP 8.2+**, ekstensi `pdo_mysql`, `mbstring`, `fileinfo`, `openssl`, `dom`, `xml`, dll. Versi PHP XAMPP yang lebih tua tidak dapat menjalankan Laravel 12.
-- Composer 2, Node.js versi yang kompatibel dengan Vite 8 (Node.js 20.19+ atau 22.12+), npm, Git.
-- MySQL/MariaDB lokal; XAMPP yang sudah terinstal dapat digunakan **jika versi PHP memenuhi syarat**. Jangan menjalankan dua server MySQL pada port 3306 yang sama.
-- Repository GitHub bersifat **private**, jadi `git clone` memerlukan akun GitHub dengan akses.
+- **PHP:** `8.2` atau `8.3` (produksi Docker memakai PHP 8.3) dengan ekstensi `pdo_pgsql` dan/atau `pdo_mysql`, `pdo_sqlite`, `mbstring`, `openssl`, `zip`, `bcmath`, `fileinfo`, `ctype`.
+- **Composer:** versi 2.x.
+- **Node.js & npm:** Node.js `20+` (untuk Vite 8, React 19, TypeScript 5.9, dan Tailwind CSS 4).
+- **Database Lokal:** PostgreSQL `16+` (direkomendasikan agar setara produksi) atau MariaDB/MySQL `10.4+` / `8.0+`.
 
-Di PowerShell:
-```powershell
-php -v
-composer --version
-node -v
-npm -v
-git --version
-php -m
-```
-Pastikan `php -v` adalah PHP yang digunakan **Composer dan terminal**. Jika XAMPP terpasang tetapi versi PHP di PATH berbeda, selesaikan konflik PATH dahulu.
+## 2. Langkah Instalasi Awal
 
-## 2. Clone repository
+1. **Clone repository dan pindah ke direktori proyek:**
 
-Pilih folder proyek lokal yang sesuai. Contoh bila ingin meletakkannya di XAMPP:
-```powershell
-cd D:\xampp\htdocs
+```bash
 git clone https://github.com/Vluuuu/Mutiara-Florist-Management-System.git
 cd Mutiara-Florist-Management-System
 ```
 
-Jika memakai folder pengembangan lain, path dapat disesuaikan. Folder proyek **tidak perlu** menjadi virtual host dulu: `php artisan serve` sudah cukup.
+2. **Pasang dependensi backend dan frontend:**
 
-## 3. Dependensi dan konfigurasi database
-
-```powershell
+```bash
 composer install
-Copy-Item .env.example .env
+npm install
 ```
 
-Jalankan server MySQL lokal (mis. dari Control Panel XAMPP). Buat database kosong bernama **`mutiara_florist`** melalui phpMyAdmin atau SQL:
-```sql
-CREATE DATABASE mutiara_florist
-  CHARACTER SET utf8mb4
-  COLLATE utf8mb4_unicode_ci;
+3. **Buat file konfigurasi lingkungan `.env`:**
+
+```bash
+cp .env.example .env
+php artisan key:generate
 ```
 
-Konfigurasi `.env` (file ini hanya disimpan **di laptop**, tidak di GitHub):
-```dotenv
+4. **Konfigurasi database lokal di `.env`:**
+
+Contoh untuk **PostgreSQL lokal**:
+
+```env
 APP_NAME="Mutiara Florist Management System"
 APP_ENV=local
 APP_DEBUG=true
+APP_URL=http://127.0.0.1:8000
 APP_TIMEZONE=Asia/Jakarta
 APP_LOCALE=id
-DB_CONNECTION=mysql
+
+DB_CONNECTION=pgsql
 DB_HOST=127.0.0.1
-DB_PORT=3307
-DB_DATABASE=mutiara_florist
-DB_USERNAME=root
-DB_PASSWORD=ISI_PASSWORD_LOKAL_SENDIRI
+DB_PORT=5432
+DB_DATABASE=mfms_local
+DB_USERNAME=postgres
+DB_PASSWORD=ISI_PASSWORD_LOKAL_ANDA
+DB_SSLMODE=prefer
 ```
 
-Pada laptop pengembangan yang sudah dicek, MariaDB XAMPP menggunakan **port 3307** dan akun root memiliki password (tidak dicatat di repo). Sesuaikan nilai `DB_PASSWORD` lokal milikmu; string `ISI_PASSWORD_LOKAL_SENDIRI` hanyalah placeholder, bukan password nyata. Jika menggunakan instalasi lain, port dan akun juga dapat berbeda. **Jangan unggah** isi `.env`, dump SQL, atau password ke chat/repositori.
+Contoh untuk **MariaDB/MySQL lokal** (misalnya XAMPP port 3306 atau 3307):
 
-## 4. Kunci aplikasi, migrasi, dan akun admin
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=mutiara_florist_local
+DB_USERNAME=root
+DB_PASSWORD=
+```
 
-```powershell
-php artisan key:generate
+Pastikan `CLOUDFLARE_ACCESS_ENFORCE=false` (default) di lingkungan lokal agar halaman dapat diakses langsung melalui `127.0.0.1:8000` tanpa header Cloudflare Access.
+
+5. **Jalankan migrasi skema database:**
+
+```bash
 php artisan migrate
+```
+
+6. **Buat akun admin pertama:**
+
+```bash
 php artisan mfms:create-admin
 ```
 
-Perintah admin meminta nama, email, dan password **minimal 12 karakter** secara interaktif. Tidak ada password default atau halaman registrasi publik. Sistem MVP hanya mengizinkan satu akun awal; jangan gunakan `db:seed` untuk membuat akun contoh.
+Perintah ini meminta nama, email, dan password secara interaktif di terminal. Demi keamanan, registrasi publik tidak tersedia dan `mfms:create-admin` hanya membuat akun pertama saat tabel `users` masih kosong.
 
-**Jangan** menjalankan `php artisan migrate:fresh` pada database berisi data usaha nyata karena akan menghapus seluruh tabel.
+## 3. Menjalankan Aplikasi Lokal
 
-## 5. Frontend dan server
+### Mode Pengembangan (Hot Module Replacement)
 
-```powershell
-npm install
+Jalankan dua proses di terminal terpisah:
+
+```bash
+# Terminal 1: Backend Laravel
+php artisan serve --host=127.0.0.1 --port=8000
+
+# Terminal 2: Frontend Vite (React 19 + TypeScript + Tailwind 4)
+npm run dev
+```
+
+Atau jalankan aset produksi secara lokal:
+
+```bash
 npm run build
-php artisan serve
+php artisan serve --host=127.0.0.1 --port=8000
 ```
 
-Buka **http://127.0.0.1:8000/login**, lalu masuk dengan akun yang dibuat pada langkah sebelumnya. Halaman pertama adalah dashboard berisi agregat data yang benar-benar ada di database; semuanya nol saat database baru.
+Akses aplikasi melalui browser di `http://127.0.0.1:8000/login`.
 
-Jika ingin mengembangkan tampilan dengan hot-reload, jalankan `npm run dev` di terminal terpisah. `npm run build` tidak membutuhkan CDN font pihak ketiga.
+### Skrip Bantu Windows (Opsional)
 
-## 6. Verifikasi dasar
+Untuk operasional lokal Windows dengan XAMPP MariaDB, tersedia skrip bantu aman di folder `scripts/`:
 
-Hasil yang sudah dicatat pada laptop operator: `composer install` sukses, `php artisan key:generate` sukses, `php artisan migrate` sukses (4 migration), `php artisan mfms:create-admin` sukses, `php artisan serve` sukses; request ke login dan dashboard tercatat. **Output `php artisan test` dan konfirmasi tampilan browser masih diperlukan.**
+- `scripts/Start-MFMS.bat` (`scripts/start-mfms.ps1`): memeriksa kesiapan MariaDB, `.env`, dan build `public/build/manifest.json`, lalu menyalakan server lokal `127.0.0.1:8000`.
+- `scripts/Stop-MFMS.bat` (`scripts/stop-mfms.ps1`): menghentikan proses server Laravel milik MFMS secara terverifikasi tanpa memaksa berhenti layanan database.
 
-```powershell
-php artisan route:list
-php artisan migrate:status
+## 4. Menjalankan Pemeriksaan & Pengujian Lokal
+
+```bash
+# Pemeriksaan tipe TypeScript
+npm run typecheck
+
+# Build produksi aset frontend
+npm run build
+
+# Pengujian otomatis terisolasi (SQLite in-memory sesuai phpunit.xml)
 php artisan test
 ```
 
-Untuk `php artisan test` menggunakan SQLite in-memory sesuai `phpunit.xml`, PHP lokal juga membutuhkan `pdo_sqlite`. Uji integrasi khusus MySQL tetap perlu dilakukan sebelum data nyata digunakan.
+`phpunit.xml` memaksa `DB_CONNECTION=sqlite` dan `DB_DATABASE=:memory:` sehingga menjalankan `php artisan test` tidak mengubah database lokal atau produksi di `.env`.
 
-Cek manual:
-- Halaman `/login` tampil.
-- Pengunjung tanpa login diarahkan dari `/dashboard` ke `/login`.
-- Login admin berhasil; logout mengakhiri sesi.
-- Tidak ada halaman `/register`.
-- Dashboard menampilkan total pesanan, nilai order, uang diterima, piutang, pengeluaran, dan selisih kas.
-- Delapan tabel bisnis termasuk `users` dan `audit_logs` tersedia sesuai desain; Laravel juga bisa membuat tabel infrastruktur sendiri.
+## 5. Aturan Kebersihan Repository Lokal
 
-## Pengembangan Phase 2 — Pelanggan
+- Jangan pernah melakukan commit terhadap `.env`, file backup `.enc`/`.meta.json`, dump `.sql`, atau data pelanggan asli.
+- Jika ingin mencoba backup lokal: `php artisan mfms:backup` akan menyimpan arsip terenkripsi di `storage/app/backups/` yang sudah dikecualikan di `.gitignore`.
 
-Jika Phase 1 sudah terpasang, jalankan pada terminal baru yang tidak dipakai `artisan serve`:
-```powershell
-git pull --ff-only origin main
-php artisan migrate
-php artisan test
-php artisan route:list --path=customers
-```
-Migration baru **hanya menambahkan** kolom `deleted_at` ke `customers`; tidak menghapus tabel atau akun admin. Buka `http://127.0.0.1:8000/customers` setelah login. Gunakan **pelanggan sintetis** untuk QA, bukan pelanggan nyata. Lihat [CUSTOMERS_PHASE2.md](CUSTOMERS_PHASE2.md).
-
-## 7. Batas Phase 1
-
-- Dashboard/login hanya fondasi, bukan modul CRUD selesai.
-- CRUD pelanggan, pesanan multi-item, DP, pengeluaran, dan ekspor laporan masih roadmap Phase 2–4.
-- Aturan nominal tetap integer Rupiah, tanggal/tujuan/ongkir per item, DP opsional, tidak ada diskon/pajak maupun cancel/refund di MVP.
-- Data pelanggan asli belum boleh diimpor sampai validasi, backup dan restore tersedia.
-
-**Jika terjadi error**, simpan pesan error terminal, hasil `php -v` dan `php artisan migrate:status` (tanpa kredensial) untuk investigasi.
+Rujukan terkait: [DATABASE.md](DATABASE.md), [DEPLOYMENT.md](DEPLOYMENT.md), [TEST_PLAN.md](TEST_PLAN.md).

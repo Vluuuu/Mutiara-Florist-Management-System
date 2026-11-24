@@ -1,131 +1,100 @@
-# Prosedur Backup & Restore Terenkripsi — Mutiara Florist Management System (MFMS)
+# Prosedur Backup & Restore Terenkripsi MFMS
 
-Dokumen ini mendefinisikan arsitektur, mekanisme keamanan, dan panduan operasional untuk pencadangan (backup) dan pemulihan (restore) data Mutiara Florist Management System (MFMS) yang telah ditingkatkan pada Phase 4 Hardening.
+**Versi Dokumen:** Phase 13 (`release/phase13-ui-bi`, baseline rilis `0b436a9`)
+
+Dokumen ini menjelaskan mekanisme pencadangan (backup) dan uji pemulihan (restore) terenkripsi MFMS yang mendukung **PostgreSQL**, **MariaDB/MySQL**, dan **SQLite** melalui `App\Services\BackupService`.
 
 ---
 
 ## 1. Prinsip Keamanan & Integritas Data
 
-1. **Authenticated Encryption Kriptografis (AES-256-GCM):**
-   - Seluruh payload data diserialisasi secara kanonikal bertipe dan dienkripsi menggunakan sandi terotentikasi **AES-256-GCM**.
-   - Nonce / Inisialisasi vektor (IV) 12-byte acak kriptografis (`random_bytes(12)`) dihasilkan unik untuk setiap operasi pencadangan.
-   - Tag autentikasi 16-byte (`$tag`) dihasilkan langsung oleh OpenSSL GCM dan diverifikasi saat dekripsi. Jika terdapat manipulasi ciphertext 1 bit sekalipun, dekripsi langsung gagal dan melempar eksepsi.
-2. **Snapshot Transaksional Konsisten (ACID Consistency):**
-   - Proses pembacaan tabel dibungkus dalam transaksi isolasi snapshot konsisten (`SET TRANSACTION ISOLATION LEVEL REPEATABLE READ` dan `START TRANSACTION WITH CONSISTENT SNAPSHOT` pada MariaDB/MySQL InnoDB, serta `BEGIN TRANSACTION` pada SQLite).
-   - Menjamin bahwa kombinasi data antar-tabel (pesanan, pembayaran, pengeluaran, audit log) yang dicadangkan adalah titik waktu (*point-in-time*) yang 100% sinkron, bahkan jika ada transaksi kasir yang berlangsung bersamaan.
-3. **Pemisahan Kunci Enkripsi (Key Separation):**
-   - Kunci enkripsi backup dipisahkan dari `APP_KEY` melalui environment variable `BACKUP_ENCRYPTION_KEY` (fallback aman ke `APP_KEY` jika tidak didefinisikan).
-   - Opsi CLI `--ask-key` disediakan untuk memasukkan passphrase secara interaktif tanpa terekspos pada proses list OS (`ps`, `tasklist`).
-4. **Penulisan Atomik (Atomic Write):**
-   - File `.enc` dan `.meta.json` pertama kali ditulis sebagai file sementara (`.tmp`).
-   - File hanya di-*rename* menjadi file backup final setelah seluruh proses enkripsi, checksum, dan penulisan metadata selesai dengan sukses.
-   - Mencegah file parsial atau interupsi sistem dianggap sebagai backup valid.
-5. **Serialisasi Data Kanonikal & Preservasi Tipe:**
-   - Tidak menggunakan pemecahan string SQL manual atau pemisahan baris/titik koma yang rentan terpotong oleh input teks multiline pengguna.
-   - Mempertahankan tipe data secara eksak:
-     - Nomor telepon berawalan nol (misal: `08123456789`) tetap tersimpan sebagai string utuh, tidak pernah terkonversi menjadi angka tanpa nol depan.
-     - Karakter Unicode dan emoji (🌸, 🌹, 💐) tersimpan secara native UTF-8.
-     - Tanda kutip tunggal (`'`), kutip ganda (`"`), dan backslash (`\`) tersimpan tanpa distorsi.
-     - Teks multiline dengan titik koma (`;`) di tengah kalimat tidak merusak struktur data.
-     - Nilai `NULL` tersimpan sebagai null asli.
+1. **Enkripsi Terotentikasi (AES-256-GCM + AAD):**
+   - Seluruh snapshot data diserialisasi secara kanonikal bertipe (JSON) dan dienkripsi menggunakan **AES-256-GCM** dengan nonce/IV 12-byte acak kriptografis (`random_bytes(12)`), Authenticated Additional Data (`AAD`), dan tag autentikasi 16-byte.
+   - Manipulasi sekecil apa pun pada ciphertext atau metadata menyebabkan verifikasi gagal sebelum pemulihan dilakukan.
+   - Checksum `SHA-256` atas payload terdekripsi diverifikasi ulang sebelum data dipulihkan.
+2. **Snapshot Transaksional Konsisten (ACID):**
+   - **PostgreSQL:** `BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ`.
+   - **MariaDB/MySQL (InnoDB):** `SET TRANSACTION ISOLATION LEVEL REPEATABLE READ` diikuti `START TRANSACTION WITH CONSISTENT SNAPSHOT`.
+   - **SQLite:** `BEGIN TRANSACTION`.
+   - Menjamin seluruh tabel bisnis dicadangkan pada satu titik waktu konsisten meskipun ada transaksi yang sedang berlangsung.
+3. **Pemisahan Kunci Enkripsi:**
+   - Menggunakan environment variable `BACKUP_ENCRYPTION_KEY` (dengan fallback ke `APP_KEY` bila belum diset terpisah).
+   - Opsi CLI `--ask-key` memungkinkan input passphrase secara interaktif tanpa terlihat di daftar proses OS.
+4. **Penulisan Atomik & Preservasi Tipe:**
+   - File `.enc` dan `.meta.json` ditulis terlebih dahulu ke berkas sementara (`.tmp`), diberi izin file ketat (`0600` pada Unix), lalu di-*rename* secara atomik setelah selesai.
+   - Serialisasi bertipe menjaga string nomor telepon berawalan nol (`0812...`), karakter UTF-8, tanda kutip, teks multiline, dan nilai `NULL` tanpa kerusakan parsing SQL.
+5. **Restorasi Topologis & Sinkronisasi Sequence PostgreSQL:**
+   - Pembersihan dan pengisian ulang tabel dilakukan mengikuti urutan ketergantungan foreign key (`DELETE_ORDER` anak ke induk, `INSERT_ORDER` induk ke anak) tanpa perlu mematikan constraint FK.
+   - Khusus PostgreSQL, `BackupService` menjalankan `setval(pg_get_serial_sequence(...))` untuk setiap tabel pasca-restorasi agar operasi insert baru tidak bentrok dengan primary key lama.
 6. **Perlindungan Ketat Database Operasional (Safety Guard):**
-   - Restorasi **dilarang keras** dijalankan pada database operasional (`default`, `mutiara_florist`, `mfms`, `laravel`).
-   - Koneksi target harus merupakan koneksi pengujian eksplisit yang terdaftar dengan flag `is_testing => true` atau nama berakhiran `test`/`testing`.
-   - Nama database target harus memiliki penanda `test` atau `:memory:`.
-7. **Isolasi Pengujian Bersih (No Wildcard Cleanup):**
-   - Pengujian otomatis menggunakan direktori pengujian sementara yang unik dan terisolasi (`storage/framework/testing/backups_test_*`).
-   - Cleanup pengujian hanya menghapus file yang dibuat oleh sesi pengujian itu sendiri. Folder backup operasional (`storage/app/backups/`) tidak pernah disentuh atau dihapus oleh test runner.
+   - Perintah `mfms:restore-test` menolak keras koneksi operasional (`default`, `mutiara_florist`, `mutiara_florist_prod`, `mfms`, `laravel`).
+   - Target restorasi uji wajib berupa koneksi pengujian eksplisit (`is_testing => true` atau nama koneksi/database bertanda `test`/`testing` atau `:memory:`).
+7. **Isolasi Pengujian Otomatis:**
+   - Suite pengujian memakai folder sementara unik (`storage/framework/testing/backups_test_*`) dan tidak pernah menghapus folder backup operasional (`storage/app/backups/`).
 
 ---
 
-## 2. Cakupan Tabel yang Dicadangkan
-
-Pencadangan mencakup 9 tabel inti MFMS:
+## 2. Cakupan 9 Tabel yang Dicadangkan
 
 | Tabel | Keterangan |
 | --- | --- |
 | `users` | Akun operator admin |
-| `customers` | Data master pelanggan dan riwayat soft-delete |
-| `orders` | Pesanan bunga, tanggal, total tagihan, status pengerjaan |
-| `order_items` | Rincian item bunga, penerima, pengirim, lokasi, ongkir |
-| `payments` | Transaksi penerimaan kas (POSTED dan VOIDED) |
-| `expense_categories` | Kategori biaya operasional toko |
-| `expenses` | Catatan pengeluaran kas (POSTED dan VOIDED) |
-| `audit_logs` | Jejak rekam perubahan data sensitif bisnis |
-| `migrations` | Riwayat migrasi skema database Laravel |
+| `customers` | Data pelanggan termasuk riwayat `deleted_at` |
+| `orders` | Header pesanan, tanggal nota, total tagihan, status ringkasan |
+| `order_items` | Item bunga, penerima, pengirim, tanggal/lokasi kirim, ongkir |
+| `payments` | Event penerimaan kas (`POSTED` dan `VOIDED`) |
+| `expense_categories` | Kategori pengeluaran operasional |
+| `expenses` | Catatan pengeluaran kas (`POSTED` dan `VOIDED`) |
+| `audit_logs` | Jejak audit aksi kritis bisnis |
+| `migrations` | Riwayat migrasi skema Laravel |
 
 ---
 
-## 3. Format dan Struktur File Cadangan
+## 3. Struktur Berkas Cadangan
 
-Setiap operasi backup menghasilkan sepasang file di direktori backup:
+Setiap eksekusi backup menghasilkan sepasang berkas di `storage/app/backups/` (dikecualikan di `.gitignore`):
 
-### A. File Biner Terenkripsi: `mfms_backup_YYYY-MM-DD_HHmmss.enc`
-Berisi payload data snapshot kanonikal yang dienkripsi penuh menggunakan AES-256-GCM.
+1. `mfms_backup_YYYY-MM-DD_HHmmss_<uniq>.enc`: payload biner terenkripsi AES-256-GCM.
+2. `mfms_backup_YYYY-MM-DD_HHmmss_<uniq>.meta.json`: metadata verifikasi (nama berkas, waktu pembuatan WIB, cipher, IV, tag GCM, checksum SHA-256, jumlah baris per tabel, ringkasan metrik keuangan, dan sidik jari kunci).
 
-### B. File Metadata: `mfms_backup_YYYY-MM-DD_HHmmss.meta.json`
-Berisi metadata verifikasi integritas kriptografis:
-```json
-{
-  "backup_file": "mfms_backup_2026-11-16_223000.enc",
-  "created_at": "2026-11-16T22:30:00+07:00",
-  "cipher": "AES-256-GCM",
-  "iv": "3d9f...==",
-  "tag": "k8X1...==",
-  "checksum_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "size_plain": 45120,
-  "size_encrypted": 45136,
-  "tables": {
-    "users": 1,
-    "customers": 24,
-    "orders": 18,
-    "order_items": 26,
-    "payments": 19,
-    "expense_categories": 6,
-    "expenses": 14,
-    "audit_logs": 42,
-    "migrations": 6
-  },
-  "metrics": {
-    "orders_count": 18,
-    "orders_total_amount": 15450000,
-    "payments_posted_amount": 11200000,
-    "expenses_posted_amount": 3450000
-  },
-  "key_fingerprint": "a1b2c3d4e5f60718"
-}
-```
+Jangan pernah mengunggah berkas `.enc`, `.meta.json`, atau kunci enkripsi ke repository Git publik.
 
 ---
 
-## 4. Panduan Eksekusi Perintah Artisan
+## 4. Perintah Artisan Backup & Uji Restore
 
-### A. Membuat Cadangan Terenkripsi Baru
+### Membuat Backup Terenkripsi
+
 ```bash
 php artisan mfms:backup
 ```
 
-Opsi tambahan:
-- `--ask-key` : Memasukkan passphrase enkripsi secara interaktif tanpa terlihat pada proses list CLI.
-- `--key="passphrase-khusus"` : Menggunakan passphrase eksplisit (hanya disarankan di lingkungan CI/CD aman).
-- `--connection="mysql"` : Menentukan koneksi database sumber yang dicadangkan.
-- `--dir="path/ke/folder"` : Menentukan folder penyimpanan khusus.
+Opsi yang tersedia:
+- `--ask-key`: meminta passphrase enkripsi secara interaktif di terminal.
+- `--connection="pgsql"`: memilih koneksi database sumber secara eksplisit (misalnya `pgsql` atau `mysql`).
+- `--dir="/path/backup"`: menentukan direktori output khusus.
 
-### B. Menguji Pemulihan ke Database Pengujian Terisolasi
+### Menguji Pemulihan pada Database Uji Terisolasi
+
 ```bash
+# Menggunakan koneksi SQLite testing
 php artisan mfms:restore-test --connection=testing
-```
-atau pada MariaDB testing:
-```bash
+
+# Menggunakan koneksi PostgreSQL testing terisolasi
+php artisan mfms:restore-test --connection=pgsql_testing
+
+# Menggunakan koneksi MariaDB testing terisolasi
 php artisan mfms:restore-test --connection=mariadb_testing
 ```
 
+Verifikasi dianggap berhasil apabila seluruh indikator melaporkan **VALID**: Checksum SHA-256, Rekonsiliasi Baris Tabel, Integritas Metrik Keuangan, Relasi Foreign Key, dan (pada PostgreSQL) sinkronisasi sequence.
+
 ---
 
-## 5. Prosedur Disaster Recovery (Pemulihan Bencana)
+## 5. Catatan Pemulihan Bencana (Disaster Recovery)
 
-1. Siapkan database target baru kosong (misal: mesin server baru dengan MariaDB terpasang).
-2. Salin file `.enc` dan `.meta.json` dari penyimpanan cadangan terpisah (off-site storage).
-3. Pastikan kunci enkripsi (`BACKUP_ENCRYPTION_KEY`) tersedia.
-4. Jalankan verifikasi integritas menggunakan `BackupService::restoreTest` terhadap koneksi pengujian terlebih dahulu.
-5. Setelah status `SUCCESS` (Checksum VALID, Baris Tabel VALID, Metrik Keuangan VALID, Foreign Key VALID), data siap dialihkan ke operasional baru.
+1. Pada paket Supabase Free, Point-in-Time Recovery (PITR) otomatis tidak tersedia secara bawaan sehingga backup mandiri melalui `php artisan mfms:backup` dan penyimpanan salinan off-site (penyimpanan terpisah milik pemilik toko) bersifat wajib.
+2. Simpan salinan `BACKUP_ENCRYPTION_KEY` (atau `APP_KEY` bila dipakai sebagai fallback) secara terpisah di pengelola kata sandi terenkripsi milik pemilik. Tanpa kunci tersebut, arsip `.enc` tidak dapat didekripsi.
+3. Sebelum melakukan pemulihan ke database baru, selalu jalankan verifikasi `mfms:restore-test` terlebih dahulu pada koneksi pengujian terisolasi.
+
+Rujukan terkait: [DATABASE.md](DATABASE.md), [DEPLOYMENT.md](DEPLOYMENT.md), [HANDOVER_OPERATOR_GUIDE.md](HANDOVER_OPERATOR_GUIDE.md).

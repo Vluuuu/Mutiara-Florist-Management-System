@@ -1,9 +1,10 @@
 # DESIGN SYSTEM: Mutiara Florist Management System (MFMS)
 
-- **Status:** **ACTIVE DIRECTION (Calm Botanical Workspace)**
+- **Status:** **ACTIVE DIRECTION (Calm Botanical Workspace V2)**
 - **Arah Dasar:** **Calm Botanical Workspace ("Ruang Kerja Operasional Florist Mutiara")** (latar kertas hangat `#F7F3EC`, permukaan bersih `#FFFDF9`, hijau botani `#182920`/`#1D3B2A` sebagai jangkar merek dan aksi utama, warna peringatan terakota `#9A3B22` khusus kondisi mendesak, serta warna okera hangat `#8F4B1E` khusus arus biaya/kas keluar agar tidak bercampur dengan peringatan piutang).
+- **Desain Figma Tersinkronisasi:** [MFMS Figma Design System & UI (Phase 13)](https://www.figma.com/design/tgjOozJg6XHMossb5IK4px)
 - **Design Read:** Reading this as: Calm, Restrained Florist Operations & Financial Ledger for Indonesian flower shop staff and senior operators, in a Clean Warm Paper, Botanical Cypress & Typographic Hierarchy language, dial `ENERGY 2 / RHYTHM 3 / MOTION 1`.
-- **Referensi Sejarah Sebelumnya:** Diarsipkan pada `docs/phase8-2/direction-2-botanical-studio.html`, `docs/PHASE8_DESIGN_EXPLORATION.md`, dan `docs/PHASE8_2_DESIGN_COMPARISON.md`.
+- **Referensi Sejarah Sebelumnya:** Diarsipkan pada [direction-2-botanical-studio.html](archive/phase8/phase8-2/direction-2-botanical-studio.html), [PHASE8_DESIGN_EXPLORATION.md](archive/phase8/PHASE8_DESIGN_EXPLORATION.md), dan [PHASE8_2_DESIGN_COMPARISON.md](archive/phase8/PHASE8_2_DESIGN_COMPARISON.md).
 
 ---
 

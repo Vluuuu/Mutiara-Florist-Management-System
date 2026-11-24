@@ -52,6 +52,8 @@ Thumbs.db
 *.7z
 *.zip
 *.enc
+*.meta.json
+*.dump
 
 # User uploads / payment receipts
 /storage/app/private/
@@ -61,6 +63,12 @@ Thumbs.db
 /storage/app/exports/*
 !/storage/app/exports/.gitignore
 /public/storage
+
+# Local AI coding agent skills (kept locally, excluded from public repo)
+/.agents/skills/
+
+# Third-party visual references (local-only, excluded from public repo)
+/docs/phase13/references/
 
 # Avoid committing generated artifacts by default
 /coverage/

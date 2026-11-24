@@ -1,91 +1,78 @@
-# Acceptance & Test Plan — MFMS
-**Status:** Pengujian laptop 2 November 2026: **65 PASS / 469 assertions** (3,97s), termasuk 15 ExpenseManagementTest. Migrasi UUID pengeluaran dan Vite build PASS. QA browser penuh, concurrency MariaDB, dan restore masih terbuka.
+# Rencana Pengujian & Matriks Penerimaan MFMS
 
-## Pendekatan
-Unit test untuk kalkulasi nominal/status; feature test Laravel untuk controller, autentikasi, form validation, MySQL transactions dan laporan. Tambahkan tes concurrency ber-DATABASE nyata untuk pembayaran.
+**Versi Dokumen:** Phase 13 (`release/phase13-ui-bi`, baseline rilis `0b436a9`)  
+**Status Verifikasi Rilis (Bukti Phase 13E):** **236 automated tests PASS** (0 fail, 0 error) terverifikasi lintas tiga mesin database (**SQLite `:memory:`**, **PostgreSQL 17**, dan **MariaDB 10.11**), dilengkapi `npm run typecheck` (0 error), `npm run build` PASS, dan verifikasi visual lintas viewport. Detail lengkap tersedia di [PHASE13E_FULL_REGRESSION_AND_RELEASE_READINESS_REPORT.md](phase13/PHASE13E_FULL_REGRESSION_AND_RELEASE_READINESS_REPORT.md).
 
-## Matriks pengujian
+## 1. Pendekatan Pengujian
+
+1. **Automated Unit & Feature Tests (PHPUnit):** Mencakup autentikasi, proteksi tamu, CRUD pelanggan, pesanan multi-item, perhitungan server-side, status linier item, pembayaran & piutang, konkurensi baris `lockForUpdate`, idempotensi UUID, pengeluaran & kategori biaya, laporan keuangan & ekspor Excel, middleware `VerifyCloudflareAccessJwt`, `DatabaseTargetGuard`, serta backup/restore terenkripsi AES-256-GCM.
+2. **Isolasi Database Pengujian:** File `phpunit.xml` secara default memaksa `DB_CONNECTION=sqlite` dan `DB_DATABASE=:memory:` sehingga perintah `php artisan test` aman dijalankan tanpa menyentuh database lokal atau produksi pada `.env`.
+3. **Verifikasi Frontend & Visual:** `npm run typecheck` (`tsc --noEmit`), `npm run build` (Vite 8), dan inspeksi visual browser pada resolusi desktop (`1440px`), laptop (`1024px`/`1366px`), tablet (`768px`), dan mobile (`390px`) menggunakan data sintetis.
+
+## 2. Perintah Eksekusi Pengujian
+
+```bash
+# 1. Jalankan seluruh suite pengujian terisolasi (SQLite in-memory)
+php artisan test
+
+# 2. Verifikasi tipe TypeScript
+npm run typecheck
+
+# 3. Verifikasi build aset produksi Vite
+npm run build
+```
+
+Catatan: Pengujian paritas lintas mesin (PostgreSQL 17 pada koneksi `pgsql_testing` dan MariaDB 10.11 pada koneksi `mariadb_testing`) dijalankan menggunakan container/instance database uji terisolasi sebagaimana didokumentasikan pada laporan Phase 13E.
+
+## 3. Matriks Skenario Penerimaan (T-01 sampai T-38)
 
 | ID | Modul | Skenario | Ekspektasi |
 | --- | --- | --- | --- |
-| T-01 | Authentication | Pengunjung belum login membuka halaman internal | Dialihkan ke login |
+| T-01 | Authentication | Pengunjung belum login membuka halaman internal | Dialihkan ke `/login` |
 | T-02 | Customers | Tambah, cari, dan edit pelanggan | Data tersimpan dan tampil kembali |
 | T-03 | Orders | Order berisi 2 item dengan 1 pelanggan | 1 order + 2 item + total benar |
-| T-04 | Orders | Satu item tidak valid | Tidak ada header/item setengah tersimpan |
-| T-05 | Orders | Ubah harga ketika sudah DP melebihi total baru | Ditolak tanpa mutasi data |
-| T-06 | Payments | Order 800k, DP 200k | PARTIAL, sisa 600k |
-| T-07 | Payments | Pelunasan 600k | PAID, sisa 0 |
-| T-08 | Payments | Pembayaran 10k setelah lunas | Ditolak |
-| T-09 | Payments | Submit dua kali idempotency key sama | Satu pembayaran tercatat |
+| T-04 | Orders | Satu item tidak valid | Rollback penuh, tidak ada data parsial |
+| T-05 | Orders | Ubah harga ketika sudah DP melebihi total baru | Ditolak atomik tanpa mutasi data |
+| T-06 | Payments | Order Rp800.000, DP Rp200.000 | `PARTIAL`, sisa Rp600.000 |
+| T-07 | Payments | Pelunasan Rp600.000 | `PAID`, sisa Rp0 |
+| T-08 | Payments | Pembayaran Rp10.000 setelah lunas | Ditolak |
+| T-09 | Payments | Submit dua kali dengan idempotency key sama | Satu pembayaran tercatat |
 | T-10 | Payments | Submit dua pembayaran valid dengan key berbeda | Keduanya tercatat bila saldo cukup |
-| T-11 | Payments | Dua request paralel pada saldo 100k masing-masing 100k | Paling banyak satu diterima |
-| T-12 | MVP Scope | Coba mencari aksi pembatalan pada order belum dibayar | Tidak ada tombol/endpoint pembatalan pada MVP |
-| T-13 | MVP Scope | Coba mencari aksi pembatalan/refund pada order berbayar | Tidak ada tombol/endpoint pembatalan atau refund pada MVP |
-| T-14 | Audit | Void payment/expense salah input | Alasan/waktu/aktor tercatat |
-| T-15 | Expenses | Catat pengeluaran 100k | Nilai kas keluar bertambah, nilai penjualan tetap |
-| T-16 | Reports | Order tanggal A dibayar tanggal B | Masuk penjualan A, penerimaan B |
-| T-17 | Reports | Saat filter periode | Piutang diberi label snapshot saat ini |
-| T-18 | Reports | Ekspor Excel | Nilai sesuai tampilan dan format Rupiah terbaca |
-| T-19 | Data safety | File .env, SQL, data pelanggan asli | Tidak ikut commit |
-| T-20 | Restore | Backup terenkripsi diverifikasi | Restore sukses pada DB uji, row counts/checksum sesuai |
-| T-21 | Order Items | Dua bunga satu order, tanggal dan tujuan berbeda | Jadwal/tujuan setiap item tetap benar setelah edit, refresh, dan restore |
-| T-22 | Order Items | Satu bunga jenis sama dikirim dua tanggal berbeda | Dua baris item terpisah, bukan digabung otomatis |
-| T-23 | Fulfillment | Item A DELIVERED, item B belum DELIVERED | Status order bukan COMPLETED |
-| T-24 | Fulfillment | Seluruh item DELIVERED | Status order menjadi COMPLETED |
-| T-25 | Pricing | Bunga Rp800k mode INCLUDED dengan shipping_fee 0 | Total item tetap Rp800k |
-| T-26 | Pricing | 2 bunga @250k, shipping_fee 75k mode SEPARATE | Total item Rp575k; fee tidak dikalikan qty |
-| T-27 | Pricing | Order gabungan item INCLUDED 800k dan SEPARATE 575k | Total Rp1.375.000; nilai bunga Rp1.300.000; ongkir tambahan Rp75.000 |
-| T-28 | Validation | Mode INCLUDED dengan fee >0 atau SEPARATE dengan fee 0 | Input ditolak server, tidak ada penulisan parsial |
-| T-29 | Pricing | Ubah ongkir setelah DP sehingga total baru < payment POSTED | Ditolak atomik dan perubahan diaudit bila sah |
-| T-30 | Reports | Ongkir terpisah ditagihkan Rp75k; kurir dibayar Rp55k | Tagihan memuat 75k, expense 55k, uang masuk hanya dari POSTED payments |
-| T-31 | Pricing | Item sama jenis tetapi tanggal/lokasi berbeda | Masing-masing ongkir dicatat dan dihitung sekali per pengiriman |
-| T-32 | Pricing | Input pesanan normal dengan bunga dan ongkir terpisah | Total = Σ(qty × unit_price + ongkir SEPARATE), tidak ada diskon/pajak |
-| T-33 | Scope | Form dan database awal | Tidak mempunyai field diskon/pajak maupun perhitungan otomatisnya |
-| T-34 | Order & Payments | Simpan order tanpa pembayaran atau deposit | Berhasil; payments kosong, status UNPAID, piutang = total tagihan |
-| T-35 | Order & Payments | Bayar lunas bersamaan dengan pemesanan | Tepat satu payment POSTED dengan nominal penuh, status PAID |
-| T-36 | Order & Payments | Order seluruh item DELIVERED tetapi belum menerima uang | Progres order COMPLETED, payment status UNPAID, sisa tagihan tetap ada |
-| T-37 | Order & Payments | Order selesai dikirim, pembayaran penuh baru diterima kemudian | Payment berubah PAID dan sisa 0; progres delivery tetap COMPLETED |
-| T-38 | Order & Payments | Pencatatan DP dilakukan pada order tertentu, tidak pada order lain | DP bersifat opsional dan status PARTIAL hanya pada order yang benar-benar dibayar sebagian |
+| T-11 | Payments | Dua request paralel pada saldo Rp100.000 masing-masing Rp100.000 | Paling banyak satu diterima (verified `lockForUpdate`) |
+| T-12 | Scope | Cari aksi pembatalan pada order belum dibayar | Tidak ada tombol/endpoint cancel |
+| T-13 | Scope | Cari aksi pembatalan/refund pada order berbayar | Tidak ada tombol/endpoint cancel atau refund |
+| T-14 | Audit | Void payment/expense salah input | Alasan minimal 10 karakter, waktu, dan aktor tercatat di `audit_logs` |
+| T-15 | Expenses | Catat pengeluaran Rp100.000 | Kas keluar bertambah, nilai penjualan tetap |
+| T-16 | Reports | Order tanggal A dibayar tanggal B | Masuk penjualan tanggal A, penerimaan tanggal B |
+| T-17 | Reports | Filter periode laporan | Piutang diberi label snapshot berjalan saat ini |
+| T-18 | Reports | Ekspor Excel `.xlsx` | Nilai numerik sesuai tampilan, bebas formula injection |
+| T-19 | Data Safety | File `.env`, SQL dump, data pelanggan asli | Tidak masuk ke commit repository |
+| T-20 | Restore | Backup terenkripsi AES-256-GCM diverifikasi | Restore sukses ke DB uji terisolasi, checksum/row count/FK/sequence valid |
+| T-21 | Order Items | Dua bunga satu order, tanggal dan tujuan berbeda | Jadwal/tujuan setiap item konsisten pasca edit dan restore |
+| T-22 | Order Items | Satu jenis bunga sama dikirim dua tanggal berbeda | Dua baris item terpisah, tidak digabung otomatis |
+| T-23 | Fulfillment | Item A `DELIVERED`, item B belum `DELIVERED` | Status order bukan `COMPLETED` |
+| T-24 | Fulfillment | Seluruh item `DELIVERED` | Status order otomatis `COMPLETED` |
+| T-25 | Pricing | Bunga Rp800.000 mode `INCLUDED` dengan fee Rp0 | Total item Rp800.000 |
+| T-26 | Pricing | 2 bunga @Rp250.000, ongkir `SEPARATE` Rp75.000 | Total item Rp575.000; ongkir tidak dikalikan qty |
+| T-27 | Pricing | Order campuran item `INCLUDED` Rp800.000 + `SEPARATE` Rp575.000 | Total Rp1.375.000; nilai bunga Rp1.300.000; ongkir Rp75.000 |
+| T-28 | Validation | `INCLUDED` dengan fee > 0 atau `SEPARATE` dengan fee 0 | Ditolak server tanpa penulisan parsial |
+| T-29 | Pricing | Ubah ongkir setelah DP hingga total baru < payment `POSTED` | Ditolak atomik; revisi sah dicatat di audit |
+| T-30 | Reports | Ongkir ditagihkan Rp75.000; biaya kurir dibayar Rp55.000 | Tagihan memuat Rp75.000, expense Rp55.000, kas masuk dari `POSTED` payments |
+| T-31 | Pricing | Item jenis sama namun tanggal/lokasi berbeda | Ongkir dicatat sekali per pengiriman/item |
+| T-32 | Pricing | Input pesanan normal | Total = jumlah `(qty * unit_price + ongkir SEPARATE)` tanpa diskon/pajak |
+| T-33 | Scope | Form dan skema database | Tidak memiliki field atau perhitungan diskon/pajak |
+| T-34 | Order & Payments | Simpan order tanpa pembayaran atau DP | Berhasil, status `UNPAID`, piutang = total tagihan |
+| T-35 | Order & Payments | Bayar penuh segera setelah order tersimpan | Tercatat dalam dua langkah (simpan order, lalu catat payment penuh pada detail order) |
+| T-36 | Order & Payments | Order seluruh item `DELIVERED` belum dibayar | Progres `COMPLETED`, status bayar `UNPAID`, piutang tetap ada |
+| T-37 | Order & Payments | Order selesai dikirim lalu dibayar penuh | Status bayar `PAID`, sisa Rp0, progres tetap `COMPLETED` |
+| T-38 | Order & Payments | DP dicatat hanya pada order tertentu | DP opsional; status `PARTIAL` hanya pada order yang dibayar sebagian |
 
-## Tes CRUD Pelanggan (Phase 2, 10 tes PASS pada laptop)
-- Akses halaman/aksi tanpa login ditolak; nama wajib dan ukuran input dibatasi.
-- Tambah/edit pelanggan menulis audit. Nomor telepon sama boleh digunakan oleh pelanggan berbeda.
-- Pencarian nama/telepon, pagination 10 baris, dan HTML escaping.
-- Pengarsipan pelanggan tanpa pesanan memakai soft delete; pelanggan dengan pesanan ditolak dan riwayat tetap utuh.
-- Jalankan setelah `php artisan migrate` lokal. Uji memakai database SQLite in-memory terpisah dari data operasional.
+## 4. Cakupan Suite Otomatis Phase 13 (236 Tests)
 
-## Tes Pesanan Multi-Item (Phase 2.2, 17 tes PASS di laptop)
-- 17 skenario di `tests/Feature/OrderManagementTest.php`: proteksi akses dan tanpa route delete; dua bunga beda tanggal/lokasi; total Rp1.375.000 dengan ongkir hanya satu kali; rollback form tidak valid; biaya kirim INCLUDED/SEPARATE; nilai positif dan batas input; pelanggan arsip ditolak; edit menjaga ID item; piutang dan alasan revisi harga setelah DP; pelanggan berbayar tidak dapat dipindahkan; ID item lintas order ditolak; status bertahap dan COMPLETED hanya setelah semua item terkirim; penghapusan item diproses ditolak; filter daftar; ULID; ID item duplikat.
-- PHPUnit menggunakan SQLite in-memory sesuai `phpunit.xml`; seluruh 17 tes pesanan PASS di laptop, total suite 34 PASS / 193 assertions. Operator juga melaporkan halaman pesanan berfungsi di browser dengan MariaDB lokal, tetapi belum ada verifikasi lengkap concurrency pembayaran pada MariaDB.
+Berdasarkan laporan [Phase 13E](phase13/PHASE13E_FULL_REGRESSION_AND_RELEASE_READINESS_REPORT.md), 236 pengujian otomatis mencakup kelompok berikut:
 
-## Tes Pembayaran & Piutang (Phase 3.1, 16 tes PASS)
-- 16 skenario pada `tests/Feature/PaymentManagementTest.php`: otorisasi, DP lalu pelunasan, bayar penuh langsung setelah order tersimpan, pembayaran setelah delivery, penolakan overpay/nominal negatif, penolakan pembayaran pada order lunas, retry identik satu event, key sama dengan payload berbeda/order lain ditolak, cicilan berbeda key, void dengan alasan, void ganda, key void tidak dapat dihidupkan lagi, payment order lain 404, penggantian entri sesudah void, filter piutang, validasi metode/key.
-- Pemeriksaan saldo menggunakan lock baris order yang sama dengan `OrderService::update` dan constraint unik pada `payments.idempotency_key`. **Tes SQLite tidak membuktikan serialisasi nyata MariaDB**; skenario T-11 concurrency dengan proses/request terpisah dan database MariaDB khusus uji masih OPEN.
-- T-35 (payment saat satu request create order secara atomik) belum diimplementasikan: pengguna dapat menyimpan order lalu langsung membuka detail dan membayarnya sebagai dua langkah.
+- **Keamanan & Infrastruktur:** `AdminAccessTest`, `CloudflareAccessMiddlewareTest` (21 skenario RS256 JWKS & fail-closed), `DatabaseBackupTest` (17+ skenario AES-256-GCM, tamper detection, PostgreSQL/MariaDB/SQLite restore & sequence sync), `StagingMigrationAndAdminCommandTest` (`DatabaseTargetGuard`), `PaymentConcurrencyLockTest` (uji konkurensi nyata).
+- **Domain & Layanan Inti:** `CustomerManagementTest`, `OrderManagementTest`, `PaymentManagementTest`, `ExpenseManagementTest`, `DashboardTest`, `PostgresStagingEndToEndTest`.
+- **Antarmuka React/Inertia & BI Phase 13:** `UiAuthTest`, `UiCustomerTest`, `UiDashboardTest`, `UiOrderTest`, `UiOrderMutationTest`, `UiPaymentTest`, `UiExpenseTest`, `UiExpenseCategoryTest`, `UiReportTest`, `Phase9Sprint1LocalizationTest`, `Phase9Sprint2OperationsTest`, `Phase9Sprint3FinancialTest`, `Phase13BFoundationRegressionTest`, `Phase13CDashboardBiTest`, `Phase13DFinancialReportsTest`.
 
-## Tes Pengeluaran (Phase 3.2, 15 skenario PASS)
-- Pengelolaan kategori: nama unik, rename, nonaktif/aktif kembali, riwayat pengeluaran tetap ada.
-- Pencatatan nominal positif, tanggal, kategori aktif, keterangan, idempotency UUID unik; replay identik tidak membuat catatan kedua.
-- Koreksi dengan VOIDED (alasan wajib, audit, tanpa hard delete), penolakan void ganda; dampak dashboard tepat tanpa mengubah nilai order/pembayaran.
-- Filter tanggal/kategori/status/keterangan, larangan edit/delete dan penolakan guest.
-- Migration `2026_11_02_000003_add_idempotency_key_to_expenses.php` wajib dijalankan lokal; kolom nullable untuk data lama. **15 tes baru telah PASS; total 65 PASS / 469 assertions.**
-
-## Implementasi tes awal
-- `tests/Feature/ExampleTest.php` — redirect dari / ke /login.
-- `tests/Feature/AdminAccessTest.php` — proteksi dashboard, registrasi publik 404, login, logout dan kredensial salah.
-- `tests/Feature/DashboardTest.php` — total pesanan 1.000.000, pembayaran POSTED 250.000, piutang 750.000, pengeluaran 50.000.
-- Ketiga file tes di atas berhasil dijalankan bersama tes unit bawaan, total **7 PASS / 23 assertions**. PHPUnit menggunakan SQLite in-memory melalui `phpunit.xml`; migrasi MariaDB lokal telah berhasil dijalankan terpisah. Belum ada bukti uji rollback pada database uji terpisah, concurrency MySQL, maupun QA visual browser.
-
-## Exit gate Phase 0
-- Rancangan ERD, aturan pembayaran dan kriteria penerimaan konsisten.
-- Pengiriman berbeda tanggal/tujuan dan ongkir termasuk/terpisah per item sudah disetujui. Pembayaran penuh awal/akhir dan DP opsional adalah pola utama. **Cancel/refund (termasuk bagi order belum bayar) dan diskon/pajak tidak termasuk MVP.**
-- Hal yang belum disetujui tetap diberi label OPEN; tidak diam-diam ditambahkan ke MVP.
-
-## Exit gate sebelum data usaha nyata dimasukkan
-- Semua T-01 s.d. T-38 yang relevan pada scope rilis lulus.
-- Restore teruji, rahasia tidak ada di Git, migrasi dari nol berhasil, UI divalidasi operator.
-- SOP backup dan penanganan kesalahan input tersedia.
-
-Rincian contoh dan invariant ongkir lihat [PRICING_AND_SHIPPING.md](PRICING_AND_SHIPPING.md).
-
-Status pengujian selanjutnya harus membedakan PASS tes otomatis dasar dari skenario penerimaan T-01–T-38 yang belum semuanya memiliki implementasi.
+Rujukan terkait: [BUSINESS_RULES.md](BUSINESS_RULES.md), [PRICING_AND_SHIPPING.md](PRICING_AND_SHIPPING.md), [PHASE13E_FULL_REGRESSION_AND_RELEASE_READINESS_REPORT.md](phase13/PHASE13E_FULL_REGRESSION_AND_RELEASE_READINESS_REPORT.md).

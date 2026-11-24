@@ -1,6 +1,6 @@
-# Harga dan Ongkos Kirim — MFMS
+# Harga dan Ongkos Kirim MFMS
 
-**Rancangan:** v0.5 · 2 November 2026  
+**Status:** Aktif pada rilis Phase 13 (`release/phase13-ui-bi`)  
 **Keputusan pengguna yang dikonfirmasi:** ongkos kirim **kadang sudah termasuk harga bunga**, kadang **ditagihkan terpisah**. Item bunga dalam satu pesanan dapat memiliki tanggal dan tujuan kirim berbeda.
 
 ## 1. Keputusan desain
@@ -97,4 +97,4 @@ Tidak ada perhitungan tarif otomatis pada MVP. Operator memasukkan ongkir berdas
 - **Perluasan fitur masa depan:** penambahan diskon atau pajak hanya setelah ada permintaan baru dan perancangan ulang rumus tagihan.
 - **Harga bunga termasuk ongkir:** tidak ada breakdown nominal ongkir tersembunyi tanpa data tambahan yang memang dicatat.
 
-Rujukan: [DATABASE](DATABASE.md), [BUSINESS_RULES](BUSINESS_RULES.md), [TEST_PLAN](TEST_PLAN.md), dan [DECISIONS](DECISIONS.md).
+Rujukan: [DATABASE.md](DATABASE.md), [BUSINESS_RULES.md](BUSINESS_RULES.md), [TEST_PLAN.md](TEST_PLAN.md), dan [DECISIONS.md](archive/planning/DECISIONS.md).

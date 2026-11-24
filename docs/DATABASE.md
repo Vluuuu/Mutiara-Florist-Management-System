@@ -1,20 +1,22 @@
-# Database Design & ERD — MFMS
+# Desain Database & ERD MFMS
 
-**Versi rancangan:** v0.6 (2 November 2026) — ongkir per item, DP opsional, pembatalan ditunda  
-**Status:** Enam migrasi DONE di MariaDB lokal, termasuk `customers.deleted_at` dan `expenses.idempotency_key` UUID unik nullable. Data usaha asli tidak disimpan di GitHub.
+**Versi Dokumen:** Phase 13 (`release/phase13-ui-bi`, baseline rilis `0b436a9`)  
+**Status Mesin Database:** Teruji paritas penuh pada **PostgreSQL (Supabase produksi & PG 17/18 lokal)**, **MariaDB 10.11**, dan **SQLite `:memory:`** (PHPUnit).
 
-## 1. Konteks dan prinsip
+## 1. Prinsip Desain Data
 
-- **Database:** MySQL lokal, Laravel migrations + Eloquent ORM.
-- **Grain:** satu pelanggan memiliki banyak pesanan; satu pesanan memiliki satu atau banyak item bunga; **setiap item memiliki tanggal, lokasi pengiriman, serta mode dan biaya ongkir sendiri**; satu pesanan memiliki nol atau banyak transaksi pembayaran.
-- **Nominal:** semua uang disimpan dalam **Rupiah bulat** memakai BIGINT non-negatif. Dilarang menggunakan FLOAT/DOUBLE untuk nominal uang. Validasi batas perkalian untuk mencegah overflow.
-- **Tanggal:** `orders.order_date` adalah tanggal transaksi; `order_items.delivery_date` adalah tanggal kirim tiap rangkaian; `payments.payment_date` dan `expenses.expense_date` adalah tanggal arus kas. Timezone aplikasi Asia/Jakarta. Simpan `created_at` dan `updated_at` untuk jejak sistem.
-- **Status pesanan** dan **status bayar** terpisah. Status bayar dihitung dari nilai tagihan dan pembayaran POSTED, bukan dua checkbox. Order boleh disimpan **tanpa pembayaran**; bisa langsung lunas saat pesan, lunas kemudian, atau DP opsional. Order COMPLETED tidak otomatis lunas.
-- **Delete:** jangan menghapus permanen pesanan yang memiliki riwayat pembayaran; jangan menghapus permanen pembayaran atau pengeluaran. Void/koreksi wajib memiliki alasan dan jejak audit.
-- **Data contoh:** seed sintetis saja, tidak memasukkan identitas asli pelanggan ke repository.
-- **CRUD pelanggan:** nama wajib, telepon/catatan opsional. Pengarsipan hanya diizinkan bila `orders` tidak ada. Gunakan `deleted_at` (soft delete), bukan hard delete, supaya ada jejak pemulihan jika diperlukan. Catat create/update/archive di `audit_logs` tanpa menyalin nomor telepon atau catatan ke log.
+- **Portabilitas RDBMS:** Migrasi Laravel dan query aplikasi kompatibel lintas PostgreSQL, MariaDB/MySQL, dan SQLite. Pencarian teks menggunakan operator dinamis (`ILIKE` untuk `pgsql`, `LIKE` untuk `mysql`/`sqlite`) dengan literal escaping karakter wildcard.
+- **Grain Relasional:** Satu pelanggan memiliki nol atau banyak pesanan; satu pesanan memiliki 1 sampai 20 item bunga; setiap item memiliki `delivery_date`, `delivery_location`, `recipient`, `sender_name`, `fulfillment_status`, `shipping_mode`, dan `shipping_fee` sendiri; satu pesanan memiliki nol atau banyak event pembayaran.
+- **Nominal Rupiah Bulat:** Seluruh nilai uang disimpan dalam tipe `BIGINT` non-negatif (Rupiah bulat tanpa desimal). Tipe `FLOAT`/`DOUBLE` dilarang untuk nominal uang.
+- **Basis Tanggal Terpisah (`Asia/Jakarta`):**
+  - `orders.order_date`: tanggal nota pesanan.
+  - `order_items.delivery_date`: tanggal pengiriman per rangkaian bunga.
+  - `payments.payment_date` dan `expenses.expense_date`: tanggal arus kas masuk dan keluar.
+- **Pemisahan Status Operasional & Pembayaran:** Status pengerjaan (`orders.status` turunan dari `order_items.fulfillment_status`) terpisah dari status pembayaran (`UNPAID`, `PARTIAL`, `PAID` yang dihitung dari `payments` berstatus `POSTED`). Order boleh disimpan tanpa DP atau pembayaran awal, dan order `COMPLETED` tidak otomatis lunas.
+- **Integritas Audit & Anti Hard-Delete:** Transaksi keuangan (`payments`, `expenses`) tidak dihapus fisik. Koreksi dilakukan lewat status `VOIDED` beserta `void_reason` dan `voided_at`. Pelanggan hanya boleh diarsipkan (`deleted_at` soft delete) jika belum memiliki pesanan.
+- **Privasi Data:** Repository hanya memuat skema migrasi dan data sintetis pengujian. Data pelanggan dan keuangan nyata tidak pernah disimpan di GitHub.
 
-## 2. ERD
+## 2. Entity Relationship Diagram (ERD)
 
 ```mermaid
 erDiagram
@@ -32,17 +34,17 @@ erDiagram
     varchar name
     varchar email UK
     varchar password
-    datetime created_at
-    datetime updated_at
+    timestamp created_at
+    timestamp updated_at
   }
   CUSTOMERS {
     bigint id PK
     varchar name
     varchar phone "nullable, not unique"
     text notes "nullable"
-    datetime deleted_at "nullable; soft delete"
-    datetime created_at
-    datetime updated_at
+    timestamp deleted_at "nullable, soft delete"
+    timestamp created_at
+    timestamp updated_at
   }
   ORDERS {
     bigint id PK
@@ -53,8 +55,8 @@ erDiagram
     varchar status
     bigint total_amount
     text notes "nullable"
-    datetime created_at
-    datetime updated_at
+    timestamp created_at
+    timestamp updated_at
   }
   ORDER_ITEMS {
     bigint id PK
@@ -68,10 +70,10 @@ erDiagram
     int quantity
     bigint unit_price
     varchar shipping_mode "INCLUDED or SEPARATE"
-    bigint shipping_fee "zero if INCLUDED"
+    bigint shipping_fee "0 if INCLUDED"
     text notes "nullable"
-    datetime created_at
-    datetime updated_at
+    timestamp created_at
+    timestamp updated_at
   }
   PAYMENTS {
     bigint id PK
@@ -84,16 +86,16 @@ erDiagram
     varchar idempotency_key UK
     varchar status
     text void_reason "nullable"
-    datetime voided_at "nullable"
-    datetime created_at
-    datetime updated_at
+    timestamp voided_at "nullable"
+    timestamp created_at
+    timestamp updated_at
   }
   EXPENSE_CATEGORIES {
     bigint id PK
     varchar name UK
     boolean is_active
-    datetime created_at
-    datetime updated_at
+    timestamp created_at
+    timestamp updated_at
   }
   EXPENSES {
     bigint id PK
@@ -102,11 +104,12 @@ erDiagram
     date expense_date
     bigint amount
     text description
+    varchar idempotency_key UK "nullable for legacy rows"
     varchar status
     text void_reason "nullable"
-    datetime voided_at "nullable"
-    datetime created_at
-    datetime updated_at
+    timestamp voided_at "nullable"
+    timestamp created_at
+    timestamp updated_at
   }
   AUDIT_LOGS {
     bigint id PK
@@ -115,89 +118,62 @@ erDiagram
     varchar subject_type
     bigint subject_id
     json change_summary "minimal, no secrets"
-    datetime created_at
+    timestamp created_at
   }
 ```
 
-**Catatan:** relasi ORDERS–ORDER_ITEMS wajib memiliki minimal satu item pada saat order dinyatakan tersimpan; syarat jumlah minimal 1 ditegakkan di service/transaction, bukan oleh FK semata. Relasi actor audit bersifat internal dan perlu kebijakan jika akun user dinonaktifkan.
+## 3. Ringkasan 8 Tabel Bisnis Inti
 
-## 3. Tabel final untuk core flow
+Di luar tabel bawaan framework Laravel (`sessions`, `cache`, `jobs`, `migrations`), MFMS memiliki 8 tabel bisnis:
 
-| Tabel | Fungsi | Kunci dan aturan |
+| Tabel | Fungsi | Aturan & Indeks Utama |
 | --- | --- | --- |
-| `users` | Operator login | email unik; password di-hash |
-| `customers` | Data nama/kontak pemesan | telepon boleh kosong/tidak unik; `deleted_at` nullable ditambahkan lewat migration terpisah untuk arsip aman |
-| `orders` | Header pesanan dan ringkasan status pengerjaan | order_number unik; customer_id wajib; total_amount dihitung backend; **tidak mempunyai tanggal kirim tunggal** |
-| `order_items` | Rangkaian bunga dan pengiriman masing-masing | quantity > 0; unit_price >= 0; **delivery_date, delivery_location, shipping_mode dan shipping_fee per item**; pengirim/penerima dan fulfillment_status per item |
-| `payments` | Penerimaan uang **opsional**: lunas awal, lunas kemudian, atau DP jika ada | 0..N per order; amount > 0; POSTED/VOIDED; idempotency_key unik per submit |
-| `expense_categories` | Kelompok biaya | nama unik; nonaktifkan alih-alih hapus jika sudah dipakai |
-| `expenses` | Pengeluaran kas usaha | amount > 0, POSTED/VOIDED, category FK; idempotency_key nullable unik (Phase 3.2, wajib UUID untuk entri baru) |
-| `audit_logs` | Riwayat aksi kritis | append-only, actor dan waktu; tidak simpan password atau data sensitif berlebihan |
+| `users` | Akun operator/admin | `email` unik, password hash bcrypt. |
+| `customers` | Master pelanggan | `name` wajib, `phone` tidak harus unik, arsip menggunakan `deleted_at` (diblokir jika memiliki order). |
+| `orders` | Header pesanan | `order_number` unik berbasis ULID (`MF-YYMMDD-<ULID>`), `total_amount` dihitung server, indeks `(order_date, status)` dan `customer_id`. |
+| `order_items` | Rangkaian bunga & jadwal pengiriman | `quantity > 0`, `unit_price >= 0`, `shipping_mode` (`INCLUDED`/`SEPARATE`), `shipping_fee` sekali per item, indeks `(delivery_date, fulfillment_status)`. |
+| `payments` | Event penerimaan kas | 0..N per order, `amount > 0`, `POSTED`/`VOIDED`, `idempotency_key` UUID unik, indeks `(order_id, payment_date, status)`. |
+| `expense_categories` | Kategori pengeluaran operasional | `name` unik, `is_active` boolean (nonaktifkan alih-alih hapus). |
+| `expenses` | Catatan pengeluaran kas | `amount > 0`, `POSTED`/`VOIDED`, `idempotency_key` UUID unik nullable, indeks `(expense_date, status)`. |
+| `audit_logs` | Jejak audit aksi kritis | Append-only, mencatat aktor, jenis subjek, ID subjek, dan ringkasan perubahan tanpa kredensial/PII sensitif. |
 
-Model awal menggunakan **8 tabel bisnis/pendukung** (di luar tabel framework Laravel seperti sessions/cache/jobs jika dibuat). Belum memerlukan `products`, `invoices`, `refunds`, ataupun `attachments` karena aturan atau kebutuhan detailnya belum disepakati.
+## 4. Enumerasi & Perhitungan Total
 
-## 4. Enumerasi yang disarankan
-
-- `order_items.fulfillment_status`: `NEW` → `PROCESSING` → `READY` → `DELIVERED`. Tidak ada pembatalan parsial item pada MVP sebelum aturan refund/pembayaran disepakati.
-- `orders.status`: ringkasan turunan dari status item (`NEW` jika semua NEW; `READY` jika semua READY; `COMPLETED` jika semua DELIVERED; selain itu `PROCESSING`), dapat dimaterialisasi dan dihitung ulang atomik. **Tidak ada status/fitur `CANCELLED` pada MVP**. Jangan menandai order selesai bila baru sebagian item DELIVERED.
-- `payments.status` dan `expenses.status`: `POSTED` / `VOIDED`.
-- **Payment status** bukan field input/tabel terpisah: `UNPAID`, `PARTIAL`, `PAID` dihitung dari pembayaran POSTED. **Tidak perlu DP atau payment awal saat membuat order.**
-
-Pada MVP, pembatalan/refund tidak diimplementasikan **baik untuk order berbayar maupun belum dibayar**; `CANCELLED` ditunda. Perubahan dari COMPLETED ke tahap sebelumnya tetap harus ditangani sebagai koreksi terkontrol dan diaudit, bukan pembatalan.
-
-## 5. Sumber kebenaran dan konsistensi total
+- `order_items.fulfillment_status`: `NEW` -> `PROCESSING` -> `READY` -> `DELIVERED` (linier, tidak boleh melompati tahap).
+- `orders.status`: ringkasan turunan atomik (`NEW` jika semua `NEW`, `READY` jika semua `READY`, `COMPLETED` jika semua `DELIVERED`, selain itu `PROCESSING`). Tidak ada status `CANCELLED`.
+- `payments.status` & `expenses.status`: `POSTED` atau `VOIDED`.
+- Status pembayaran turunan: `UNPAID`, `PARTIAL`, `PAID`.
 
 ```text
 product_subtotal(item) = quantity * unit_price
 shipping_charge(item)  = 0 jika INCLUDED; shipping_fee jika SEPARATE
 item_billable_total    = product_subtotal(item) + shipping_charge(item)
-orders.total_amount    = SUM(item_billable_total)    (materialisasi, hanya backend yang menulis)
-# Tidak ada pengurangan diskon atau penambahan pajak pada MVP
-paid_amount       = SUM(payments.amount WHERE status='POSTED' AND order_id = ?)
-outstanding       = orders.total_amount - paid_amount
-payment_status    = UNPAID jika paid_amount = 0 dan total > 0
-                    PARTIAL jika 0 < paid_amount < total
-                    PAID jika paid_amount = total dan total > 0
+orders.total_amount    = SUM(item_billable_total)    # ditulis hanya oleh OrderService
+
+paid_amount            = SUM(payments.amount WHERE status = 'POSTED' AND order_id = ?)
+outstanding            = max(orders.total_amount - paid_amount, 0)
 ```
 
-- Pesanan baru harus memiliki total > 0 pada MVP. Pesanan gratis/kompensasi perlu aturan tersendiri. **Penyimpanan pesanan tidak mensyaratkan pembayaran atau DP**; relasi payments adalah 0..N. Pembayaran dapat terjadi sebelum atau setelah seluruh item dikirim.
-- `shipping_mode` wajib `INCLUDED` atau `SEPARATE`; `shipping_fee` bernilai **0 untuk INCLUDED** dan **> 0 untuk SEPARATE**. Ongkir adalah **sekali per baris pengiriman**, tidak dikalikan quantity. Per baris item memiliki satu tanggal/lokasi; beda tanggal/lokasi berarti item berbeda.
-- `shipping_fee` adalah ongkir **yang ditagihkan kepada pelanggan** (bukan ongkos aktual yang dibayarkan florist kepada kurir). Ongkos aktual yang dibayar dicatat tersendiri di `expenses` jika ada.
-- Untuk `INCLUDED`, ongkir diasumsikan sudah terserap dalam harga produk yang dimasukkan operator. Jangan menambah ongkir kedua kali.
-- Mode campuran diizinkan dalam satu order karena tanggal/tujuan kirim dapat berbeda.
-- `orders.total_amount` dan item (termasuk ongkir) diperbarui dalam **satu database transaction** dengan penguncian baris order sebelum memeriksa pembayaran POSTED. Baik edit harga/ongkir maupun posting pembayaran memakai urutan lock yang konsisten pada order untuk menghindari race. Jangan izinkan total baru < sudah dibayar. Perubahan nominal penting harus masuk audit.
-- Validasi pembayaran dilakukan di transaction yang mengunci baris order (`SELECT ... FOR UPDATE` melalui Eloquent `lockForUpdate`), supaya dua submit simultan tidak melebihi tagihan. Unik `idempotency_key` membatasi pengulangan satu aksi; bukan melarang dua pembayaran sah dengan jumlah sama.
-- DB index: `orders(order_date, status)`, `orders(customer_id)`, **`order_items(delivery_date, fulfillment_status)`**, `payments(order_id, payment_date, status)`, `expenses(expense_date, status)`. FK dan indeks ditentukan secara konsisten di migration.
+Baik `OrderService::update` maupun `PaymentService::recordPayment` mengunci baris `orders` dengan `lockForUpdate()` dalam transaksi ACID agar total tagihan baru tidak pernah lebih kecil dari total pembayaran `POSTED` dan request pembayaran paralel tidak dapat menyebabkan overpayment.
 
-## 6. Batas definisi laporan
+## 5. Keamanan PostgreSQL di Supabase
 
-| Metrik | Sumber | Basis tanggal |
+Pada lingkungan produksi berbasis Supabase PostgreSQL:
+
+1. Koneksi Laravel menggunakan PDO langsung (SSL wajib `DB_SSLMODE=require`) melalui connection pooler atau direct PostgreSQL, bukan PostgREST HTTP Data API.
+2. **Row Level Security (RLS)** diaktifkan pada seluruh tabel di skema `public`, dan hak akses role `anon` serta `authenticated` dicabut (`REVOKE ALL`) sehingga tidak ada data yang dapat diakses melalui endpoint Data API publik Supabase.
+3. Setelah restorasi data dengan ID eksplisit pada PostgreSQL, `BackupService` otomatis menyinkronkan sequence primary key (`pg_get_serial_sequence` + `setval`).
+
+## 6. Basis Metrik Laporan
+
+| Metrik | Sumber Data | Basis Tanggal |
 | --- | --- | --- |
-| Total nilai pesanan (termasuk ongkir tambahan) | SUM total_amount semua orders MVP | order_date |
-| Nilai bunga tercatat | SUM(quantity * unit_price) dari order_items | order_date |
-| Ongkir ditagihkan | SUM(shipping_fee) item SEPARATE | order_date |
-| Uang masuk | SUM payments POSTED | payment_date |
-| Uang keluar | SUM expenses POSTED | expense_date |
-| Selisih arus kas sederhana | uang masuk - uang keluar | periode pembayaran/pengeluaran |
-| Piutang saat ini | SUM outstanding semua orders MVP termasuk COMPLETED belum dibayar | **snapshot saat laporan dibuka**, bukan otomatis piutang historis akhir bulan |
+| Total nilai pesanan | `SUM(orders.total_amount)` | `orders.order_date` |
+| Nilai bunga tercatat | `SUM(quantity * unit_price)` | `orders.order_date` |
+| Ongkir ditagihkan | `SUM(shipping_fee)` untuk item `SEPARATE` | `orders.order_date` |
+| Uang masuk (Kas Masuk) | `SUM(payments.amount)` berstatus `POSTED` | `payments.payment_date` |
+| Uang keluar (Kas Keluar) | `SUM(expenses.amount)` berstatus `POSTED` | `expenses.expense_date` |
+| Arus kas bersih (Selisih Kas) | Uang masuk dikurangi uang keluar | Periode arus kas (bukan laba/rugi akuntansi) |
+| Piutang berjalan | `SUM(outstanding)` seluruh pesanan belum lunas | Snapshot saat laporan dibuka |
 
-Angka penjualan di sini adalah nilai order tercatat, **bukan laporan laba/rugi akuntansi**. Void/koreksi mengubah tampilan laporan periode asal; jejak pembetulannya harus tersedia di audit log. Bila membutuhkan laporan historis *as-of*, diperlukan ledger/snapshot terpisah dan keputusan produk baru.
-
-## 7. Migrasi dan strategi pengembangan
-
-1. Siapkan migration users (bawaan auth), customers, orders, order_items, payments, expense_categories, expenses, audit_logs.
-2. Foreign key memakai pembatasan yang melindungi riwayat; jangan cascade delete untuk data finansial.
-3. Gunakan Laravel FormRequest dan layanan khusus untuk membuat order, mencatat pembayaran, dan melakukan void.
-4. Seed hanya contoh sintetis; uji fresh migrate, transaksi atomik, hubungan antar tabel, dan indeks.
-
-## 8. Keputusan bisnis belum final (jangan asumsi)
-
-- **Telah dikonfirmasi operator:** satu order bisa berisi beberapa item dengan tanggal dan lokasi kirim berbeda. `delivery_date` dan `delivery_location` disimpan pada setiap `order_items`. Bila satu jenis bunga yang sama dikirim ke tanggal/lokasi berbeda, catat sebagai **item terpisah**.
-- Waktu kirim spesifik (jam), jasa kurir, dan bukti serah terima belum menjadi scope MVP; dapat ditambahkan nanti.
-- **Ongkir telah disepakati:** tergantung pesanan, bisa sudah termasuk harga bunga atau ditagihkan terpisah. Implementasi menggunakan mode dan biaya ongkir pada **setiap item** supaya beberapa tujuan/tanggal dalam satu pesanan tidak kehilangan rincian. Lihat [PRICING_AND_SHIPPING.md](PRICING_AND_SHIPPING.md).
-- **Diskon dan pajak secara eksplisit di luar cakupan MVP (keputusan operator).** Tidak menambahkan kolom `discount_amount`, `tax_amount`, tarif pajak, tabel diskon, atau kalkulasi terkait. Jika diperlukan di masa depan, rancang melalui perubahan skema dan keputusan bisnis baru.
-- Belum ada kebutuhan pembatalan dalam praktik yang dilaporkan; **pembatalan/refund dan kebijakan DP hangus ditunda ke versi selanjutnya**. Jangan membuat tombol, endpoint atau penghapusan order sebagai jalan pintas. Tidak memblokir migrasi inti.
-- Koreksi pembayaran yang salah input boleh di-void dengan alasan dan audit; **bukan** refund uang yang sudah dikembalikan ke pelanggan.
-- Syarat nomor pesanan, metode pembayaran, serta privasi/retensi lampiran belum dipastikan.
-
-Lihat [BUSINESS_RULES.md](BUSINESS_RULES.md), [PRICING_AND_SHIPPING.md](PRICING_AND_SHIPPING.md), [WORKFLOWS.md](WORKFLOWS.md), dan [DECISIONS.md](DECISIONS.md).
+Rujukan terkait: [BUSINESS_RULES.md](BUSINESS_RULES.md), [PRICING_AND_SHIPPING.md](PRICING_AND_SHIPPING.md), [BACKUP_RESTORE.md](BACKUP_RESTORE.md).
