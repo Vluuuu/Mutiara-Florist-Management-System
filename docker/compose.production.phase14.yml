@@ -1,0 +1,99 @@
+# ==============================================================================
+# MFMS Phase 14B Production Dual-Runtime Compose (Ubuntu Host Reconciled)
+#
+# Target Host Directory : ~/apps/mfms-production
+# Target Config Dir     : ~/apps/mfms-config/production.env & production-demo.env
+# Target Loopback Port  : 127.0.0.1:10001 (unchanged for cloudflared tunnel)
+# Target Public Domain  : https://admin.mutiaraflorist.id
+#
+# Production Gate:
+# - DO NOT deploy until staging QA and admin authentication pass 100%.
+# - Preserves existing Phase 13 images, volumes, and ~/apps/mfms-config/production.env.
+# ==============================================================================
+
+services:
+  mfms-production-router:
+    image: nginx:1.27-alpine
+    container_name: mfms-production-router
+    restart: unless-stopped
+    depends_on:
+      - mfms-production-app
+      - mfms-production-demo
+    ports:
+      - "127.0.0.1:10001:10000"
+    environment:
+      NGINX_ENVSUBST_FILTER: "^MFMS_"
+      MFMS_PRIMARY_UPSTREAM: "mfms-production-app:10000"
+      MFMS_DEMO_UPSTREAM: "mfms-production-demo:10000"
+      MFMS_SERVER_NAMES: "admin.mutiaraflorist.id"
+    volumes:
+      - ./nginx-router.conf.template:/etc/nginx/templates/default.conf.template:ro
+    networks:
+      - mfms-production-net
+    mem_limit: 48m
+    cpus: 0.25
+    pids_limit: 32
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:10000/up"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mfms-production-app:
+    image: ${MFMS_IMAGE:-mfms:phase14b}
+    container_name: mfms-production-app
+    restart: unless-stopped
+    env_file:
+      - ${MFMS_PROD_ENV_FILE:-/home/ubuntu/apps/mfms-config/production.env}
+    environment:
+      PORT: "10000"
+      MFMS_RUNTIME_MODE: "production"
+      SESSION_COOKIE: "mfms_prod_session"
+    networks:
+      - mfms-production-net
+    mem_limit: 512m
+    cpus: 1.00
+    pids_limit: 64
+    security_opt:
+      - no-new-privileges:true
+
+  mfms-production-demo:
+    image: ${MFMS_IMAGE:-mfms:phase14b}
+    container_name: mfms-production-demo
+    restart: unless-stopped
+    entrypoint: ["/usr/local/bin/entrypoint-demo.sh"]
+    env_file:
+      - ${MFMS_PROD_DEMO_ENV_FILE:-/home/ubuntu/apps/mfms-config/production-demo.env}
+    environment:
+      PORT: "10000"
+      MFMS_RUNTIME_MODE: "demo"
+      DB_CONNECTION: "sqlite"
+      DB_DATABASE: "/var/lib/mfms-demo/demo.sqlite"
+      DEMO_SQLITE_PATH: "/var/lib/mfms-demo/demo.sqlite"
+      DEMO_KILL_SWITCH_FILE: "/var/lib/mfms-demo/demo.disabled"
+      DEMO_RESET_LOCK_FILE: "/var/lib/mfms-demo/reset.lock"
+      DEMO_RESETTING_FLAG_FILE: "/var/lib/mfms-demo/resetting.flag"
+      SESSION_DRIVER: "file"
+      SESSION_COOKIE: "mfms_demo_session"
+      CACHE_STORE: "file"
+      QUEUE_CONNECTION: "sync"
+      CLOUDFLARE_ACCESS_ENFORCE: "false"
+    volumes:
+      - mfms-production-demo-data:/var/lib/mfms-demo
+    networks:
+      - mfms-production-net
+    mem_limit: 256m
+    cpus: 0.50
+    pids_limit: 48
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  mfms-production-net:
+    driver: bridge
+
+volumes:
+  mfms-production-demo-data:
+    driver: local

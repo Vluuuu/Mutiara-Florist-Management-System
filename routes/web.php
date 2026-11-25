@@ -27,7 +27,8 @@ Route::get('/', fn () => redirect()->route(Auth::check() ? 'dashboard' : 'login'
 Route::get('/admin-entry', function (DemoAccessManager $demo) {
     return redirect()
         ->route(Auth::check() ? 'dashboard' : 'login')
-        ->withCookie(Cookie::forget($demo->routingCookieName(), '/'));
+        ->withCookie(Cookie::forget($demo->routingCookieName(), '/'))
+        ->withCookie(Cookie::forget('mfms_demo_session', '/'));
 })->name('admin-entry');
 
 Route::get('/demo', function (Request $request, DemoAccessManager $demo) {

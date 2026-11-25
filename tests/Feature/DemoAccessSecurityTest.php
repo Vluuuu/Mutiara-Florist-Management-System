@@ -436,11 +436,78 @@ class DemoAccessSecurityTest extends TestCase
             'idempotency_key' => (string) Str::uuid(),
         ])->assertRedirect();
 
-        // Download Excel report (.xlsx) and verify OpenXML ZIP signature
+        // Download Excel report (.xlsx) and verify OpenXML ZIP signature + no-store cache headers
         $exportResponse = $this->get('/ui-reports/export?preset=30d');
         $exportResponse->assertOk();
         $exportResponse->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $this->assertStringContainsString('no-store', strtolower((string) $exportResponse->headers->get('Cache-Control')));
+        $this->assertStringContainsString('private', strtolower((string) $exportResponse->headers->get('Cache-Control')));
         $binary = $exportResponse->streamedContent();
         $this->assertStringStartsWith('PK', $binary);
+    }
+
+    public function test_authenticated_and_financial_responses_emit_no_store_cache_headers_in_both_runtimes(): void
+    {
+        // Production runtime check
+        Config::set('demo.runtime_mode', 'production');
+        $admin = User::factory()->create([
+            'email' => 'owner-cache@mutiaraflorist.id',
+            'password' => Hash::make('OwnerCachePass123!'),
+        ]);
+
+        $this->post(route('login.store'), [
+            'email' => $admin->email,
+            'password' => 'OwnerCachePass123!',
+        ])->assertRedirect(route('dashboard'));
+
+        foreach (['/dashboard', '/ui-orders', '/ui-reports'] as $uri) {
+            $resp = $this->get($uri)->assertOk();
+            $cc = strtolower((string) $resp->headers->get('Cache-Control'));
+            $this->assertStringContainsString('no-store', $cc);
+            $this->assertStringContainsString('no-cache', $cc);
+            $this->assertStringContainsString('private', $cc);
+            $this->assertStringContainsString('Cookie', (string) $resp->headers->get('Vary'));
+        }
+    }
+
+    public function test_demo_resource_quotas_prevent_storage_exhaustion_without_affecting_production(): void
+    {
+        $password = 'Mutiara-Quota-7b2W4';
+        $this->enableDemoRuntime($password);
+        Config::set('demo.max_customers', 2);
+
+        $demoUser = User::factory()->create([
+            'email' => 'demo@mutiaraflorist.id',
+            'password' => Hash::make($password),
+        ]);
+
+        $this->actingAs($demoUser)
+            ->withSession(['mfms_runtime_mode' => 'demo']);
+
+        $this->post('/ui-customers', ['name' => 'Pelanggan Quota 1'])->assertRedirect();
+        $this->post('/ui-customers', ['name' => 'Pelanggan Quota 2'])->assertRedirect();
+
+        // 3rd customer hits demo quota limit cleanly with validation error
+        $this->post('/ui-customers', ['name' => 'Pelanggan Quota 3'])
+            ->assertSessionHasErrors('name');
+        $this->assertSame(2, Customer::query()->count());
+    }
+
+    public function test_stale_resetting_flag_from_interrupted_reset_self_heals_automatically(): void
+    {
+        $this->enableDemoRuntime('Mutiara-Heal-5t9M1');
+        $lockFile = dirname($this->tempResetFlag).'/heal_'.uniqid().'.lock';
+        Config::set('demo.reset_lock_file', $lockFile);
+
+        file_put_contents($this->tempResetFlag, 'interrupted-reset');
+        // Backdate flag by 120 seconds (> 30s stale threshold) with no live flock held
+        touch($this->tempResetFlag, time() - 120);
+
+        $this->get(route('login'))->assertOk();
+        $this->assertFileDoesNotExist($this->tempResetFlag);
+
+        if (is_file($lockFile)) {
+            @unlink($lockFile);
+        }
     }
 }

@@ -37,10 +37,12 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->encryptCookies(except: [
             'mfms_runtime',
+            'CF_Authorization',
         ]);
 
+        $middleware->append(\App\Http\Middleware\VerifyCloudflareAccessJwt::class);
+
         $middleware->web(append: [
-            \App\Http\Middleware\VerifyCloudflareAccessJwt::class,
             \App\Http\Middleware\EnforceDemoAccessLifecycle::class,
         ]);
     })

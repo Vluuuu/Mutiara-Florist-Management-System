@@ -1,0 +1,150 @@
+# ==============================================================================
+# MFMS Phase 14B Same-Domain Edge Router Template (nginx:1.27-alpine)
+# Mounted at /etc/nginx/templates/default.conf.template
+#
+# Environment variables substituted at container start (Nginx official envsubst):
+#   MFMS_PRIMARY_UPSTREAM : e.g. mfms-staging-app:10000 or mfms-production-app:10000
+#   MFMS_DEMO_UPSTREAM    : e.g. mfms-staging-demo:10000 or mfms-production-demo:10000
+#   MFMS_SERVER_NAMES     : e.g. staging-admin.mutiaraflorist.id or admin.mutiaraflorist.id
+#
+# Security & Resilience Invariants:
+# 1. Uses Docker embedded DNS resolver (127.0.0.11) for dynamic upstream resolution
+#    so stopping/restarting one runtime container never crashes or blocks the router.
+# 2. Primary (admin/production) upstream is ONLY selected when a Cloudflare Access
+#    JWT is present via EITHER Cf-Access-Jwt-Assertion header OR CF_Authorization
+#    cookie AND mfms_runtime != demo.
+# 3. Any forged/expired CF_Authorization cookie or Cf-Access-Jwt-Assertion header
+#    is cryptographically rejected (403 fail-closed) by VerifyCloudflareAccessJwt
+#    on the primary runtime.
+# 4. Requests without any Cloudflare Access token NEVER reach the primary runtime.
+# 5. Cf-Access-Jwt-Assertion and X-MFMS-Edge-Secret are stripped before proxying
+#    to the demo runtime.
+# 6. Dynamic/authenticated/financial responses are NEVER cached by the router.
+# ==============================================================================
+
+limit_req_zone $binary_remote_addr zone=mfms_login:5m rate=10r/m;
+limit_req_zone $binary_remote_addr zone=mfms_general:10m rate=60r/m;
+
+map "$http_cf_access_jwt_assertion|$cookie_CF_Authorization" $has_cf_token {
+    "|"     0;
+    default 1;
+}
+
+map "${has_cf_token}:${cookie_mfms_runtime}" $mfms_upstream {
+    "1:demo"  "${MFMS_DEMO_UPSTREAM}";
+    "1:"      "${MFMS_PRIMARY_UPSTREAM}";
+    ~^1:      "${MFMS_PRIMARY_UPSTREAM}";
+    default   "${MFMS_DEMO_UPSTREAM}";
+}
+
+# Never forward Cloudflare Zero Trust assertion headers or edge secrets to demo runtime
+map $mfms_upstream $forwarded_cf_jwt {
+    "${MFMS_PRIMARY_UPSTREAM}" $http_cf_access_jwt_assertion;
+    default                    "";
+}
+
+map $mfms_upstream $forwarded_edge_secret {
+    "${MFMS_PRIMARY_UPSTREAM}" $http_x_mfms_edge_secret;
+    default                    "";
+}
+
+server {
+    listen 10000 default_server;
+    listen [::]:10000 default_server;
+    server_name ${MFMS_SERVER_NAMES} _;
+
+    resolver 127.0.0.11 valid=10s ipv6=off;
+    resolver_timeout 5s;
+
+    server_tokens off;
+    client_max_body_size 2m;
+
+    # Router liveness check
+    location = /up {
+        access_log off;
+        add_header Content-Type text/plain;
+        add_header Cache-Control "no-store";
+        return 200 "ok\n";
+    }
+
+    # Content-hashed Vite static assets (identical across both containers, zero sensitive data)
+    location ^~ /build/ {
+        proxy_pass http://$mfms_upstream;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Cf-Access-Jwt-Assertion $forwarded_cf_jwt;
+        proxy_set_header X-MFMS-Edge-Secret $forwarded_edge_secret;
+    }
+
+    # Dedicated Cloudflare-Access-OTP-protected admin entry -> ALWAYS primary runtime
+    location = /admin-entry {
+        set $primary_target "${MFMS_PRIMARY_UPSTREAM}";
+        proxy_no_cache 1;
+        proxy_cache_bypass 1;
+        proxy_pass http://$primary_target;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $http_host;
+    }
+
+    # Explicit switch into demo login (strips CF JWT & edge secret)
+    location = /demo {
+        set $demo_target "${MFMS_DEMO_UPSTREAM}";
+        proxy_no_cache 1;
+        proxy_cache_bypass 1;
+        proxy_pass http://$demo_target;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $http_host;
+        proxy_set_header Cf-Access-Jwt-Assertion "";
+        proxy_set_header X-MFMS-Edge-Secret "";
+    }
+
+    # Rate-limited login endpoint
+    location = /login {
+        limit_req zone=mfms_login burst=10 nodelay;
+        limit_req_status 429;
+        proxy_no_cache 1;
+        proxy_cache_bypass 1;
+
+        proxy_pass http://$mfms_upstream;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $http_host;
+        proxy_set_header Cf-Access-Jwt-Assertion $forwarded_cf_jwt;
+        proxy_set_header X-MFMS-Edge-Secret $forwarded_edge_secret;
+    }
+
+    # All dynamic application routes (zero shared proxy caching)
+    location / {
+        limit_req zone=mfms_general burst=40 nodelay;
+        limit_req_status 429;
+        proxy_no_cache 1;
+        proxy_cache_bypass 1;
+
+        proxy_pass http://$mfms_upstream;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $http_host;
+        proxy_set_header Cf-Access-Jwt-Assertion $forwarded_cf_jwt;
+        proxy_set_header X-MFMS-Edge-Secret $forwarded_edge_secret;
+    }
+}

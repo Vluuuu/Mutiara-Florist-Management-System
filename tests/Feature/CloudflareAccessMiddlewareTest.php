@@ -691,4 +691,61 @@ class CloudflareAccessMiddlewareTest extends TestCase
         $middleware = new VerifyCloudflareAccessJwt();
         $middleware->handle($request, fn () => response('OK', 200));
     }
+
+    public function test_accepts_valid_jwt_from_cf_authorization_cookie_when_assertion_header_absent(): void
+    {
+        config([
+            'services.cloudflare.access_enforce' => true,
+            'services.cloudflare.access_team_domain' => 'test-team',
+            'services.cloudflare.access_aud' => 'aud-root-old,aud-admin-entry',
+        ]);
+
+        $this->mockJwks('test-team', 'test-kid');
+
+        $jwt = $this->createJwt([
+            'aud' => ['aud-admin-entry'],
+            'iss' => 'https://test-team.cloudflareaccess.com',
+            'exp' => time() + 3600,
+            'email' => 'owner@mutiaraflorist.id',
+        ]);
+
+        // Simulates a same-domain request hitting a Bypass-covered route where Cloudflare omits
+        // Cf-Access-Jwt-Assertion header and the browser presents the RS256-signed CF_Authorization cookie.
+        $request = Request::create('/dashboard', 'GET', [], ['CF_Authorization' => $jwt]);
+
+        $middleware = new VerifyCloudflareAccessJwt();
+        $response = $middleware->handle($request, function ($req) {
+            $this->assertSame('owner@mutiaraflorist.id', $req->attributes->get('cf_access_email'));
+
+            return response('OK', 200);
+        });
+
+        $this->assertSame(200, $response->getStatusCode());
+    }
+
+    public function test_rejects_forged_or_expired_cf_authorization_cookie(): void
+    {
+        config([
+            'services.cloudflare.access_enforce' => true,
+            'services.cloudflare.access_team_domain' => 'test-team',
+            'services.cloudflare.access_aud' => 'aud-admin-entry',
+        ]);
+
+        $this->mockJwks('test-team', 'test-kid');
+
+        $expiredJwt = $this->createJwt([
+            'aud' => 'aud-admin-entry',
+            'iss' => 'https://test-team.cloudflareaccess.com',
+            'exp' => time() - 60,
+            'email' => 'owner@mutiaraflorist.id',
+        ]);
+
+        $request = Request::create('/dashboard', 'GET', [], ['CF_Authorization' => $expiredJwt]);
+
+        $this->expectException(HttpException::class);
+        $this->expectExceptionMessage('Sesi Cloudflare Access telah kedaluwarsa');
+
+        $middleware = new VerifyCloudflareAccessJwt();
+        $middleware->handle($request, fn () => response('OK', 200));
+    }
 }

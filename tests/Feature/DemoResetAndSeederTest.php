@@ -156,4 +156,86 @@ class DemoResetAndSeederTest extends TestCase
         $this->artisan('mfms:demo-generate-password')
             ->assertSuccessful();
     }
+
+    public function test_reset_recovers_from_orphaned_staging_files_and_handles_concurrent_readers_safely(): void
+    {
+        $sqlitePath = $this->tempDir.'/demo_concurrent.sqlite';
+        $lockPath = $this->tempDir.'/reset.lock';
+        $flagPath = $this->tempDir.'/resetting.flag';
+
+        Config::set('demo.runtime_mode', 'demo');
+        Config::set('demo.enabled', true);
+        Config::set('demo.email', 'demo@mutiaraflorist.id');
+        Config::set('demo.password', 'Mutiara-Conc-3x8R5');
+        Config::set('demo.activated_at', Carbon::now('Asia/Jakarta')->toIso8601String());
+        Config::set('demo.reset_lock_file', $lockPath);
+        Config::set('demo.resetting_flag_file', $flagPath);
+
+        // Initial seed
+        app(DemoResetService::class)->reset(targetSqlitePath: $sqlitePath, flushSessions: false);
+
+        // Simulate crash-interrupted leftovers (orphaned staging file + stale resetting flag)
+        $orphanStaging = $sqlitePath.'.staging.99999.deadbeef';
+        file_put_contents($orphanStaging, 'corrupt-partial-bytes');
+        file_put_contents($flagPath, 'stale-crash');
+        touch($flagPath, time() - 90);
+
+        // Launch a real parallel PHP worker reading & writing the SQLite DB concurrently while reset swaps
+        $workerScript = $this->tempDir.'/worker.php';
+        file_put_contents($workerScript, <<<'PHP'
+<?php
+$path = $argv[1];
+$ok = 0;
+$busy = 0;
+for ($i = 0; $i < 12; $i++) {
+    try {
+        $pdo = new PDO('sqlite:'.$path);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->exec('PRAGMA busy_timeout=2000');
+        $cnt = (int) $pdo->query('SELECT COUNT(*) FROM orders')->fetchColumn();
+        if ($cnt >= 18) {
+            $ok++;
+        }
+        $pdo = null;
+    } catch (Throwable $e) {
+        $busy++;
+    }
+    usleep(25000);
+}
+echo json_encode(['ok' => $ok, 'busy' => $busy]);
+PHP);
+
+        $descriptors = [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
+        ];
+        $proc = proc_open([PHP_BINARY, $workerScript, $sqlitePath], $descriptors, $pipes);
+        $this->assertIsResource($proc);
+        fclose($pipes[0]);
+
+        // Run atomic reset concurrently with the active reader process
+        $summary = app(DemoResetService::class)->reset(targetSqlitePath: $sqlitePath, flushSessions: false);
+
+        $stdout = stream_get_contents($pipes[1]);
+        $stderr = stream_get_contents($pipes[2]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        $exitCode = proc_close($proc);
+
+        $this->assertSame(0, $exitCode, "Concurrent reader worker failed: {$stderr}");
+        $workerStats = json_decode((string) $stdout, true);
+        $this->assertIsArray($workerStats);
+        $this->assertGreaterThan(0, $workerStats['ok']);
+
+        // Confirm orphaned staging file & flag are gone, integrity is 100% ok, and counts are clean
+        $this->assertFileDoesNotExist($orphanStaging);
+        $this->assertFileDoesNotExist($flagPath);
+        $this->assertSame(18, $summary['counts']['orders']);
+
+        $pdoVerify = new PDO('sqlite:'.$sqlitePath);
+        $this->assertSame('ok', strtolower((string) $pdoVerify->query('PRAGMA integrity_check')->fetchColumn()));
+        $this->assertSame(18, (int) $pdoVerify->query('SELECT COUNT(*) FROM orders')->fetchColumn());
+        $pdoVerify = null;
+    }
 }

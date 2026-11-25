@@ -82,6 +82,13 @@ class DemoResetService
         $originalStagingConfig = Config::get('database.connections.demo_staging');
 
         try {
+            // 0. Crash recovery: remove any orphaned staging artifacts left by an interrupted prior reset
+            foreach (glob($targetPath.'.staging.*') ?: [] as $orphanStaging) {
+                if (is_file($orphanStaging)) {
+                    @unlink($orphanStaging);
+                }
+            }
+
             // 1. Build a brand-new SQLite database completely out-of-band (zero downtime during seed)
             if (touch($stagingPath) === false) {
                 throw new RuntimeException("Gagal membuat file staging SQLite: {$stagingPath}");

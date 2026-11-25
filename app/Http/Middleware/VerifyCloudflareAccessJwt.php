@@ -55,10 +55,15 @@ class VerifyCloudflareAccessJwt
             }
         }
 
-        // 3. Cloudflare Access JWT Assertion Header check
+        // 3. Cloudflare Access JWT check: prefer Cf-Access-Jwt-Assertion header, fallback to CF_Authorization cookie
+        //    (required when same-domain Bypass paths omit the assertion header while preserving the RS256-signed cookie).
         $jwt = $request->header('Cf-Access-Jwt-Assertion');
+        if (! is_string($jwt) || trim($jwt) === '') {
+            $cookieJwt = $request->cookie('CF_Authorization');
+            $jwt = is_string($cookieJwt) ? $cookieJwt : null;
+        }
         if (! $jwt || ! is_string($jwt) || trim($jwt) === '') {
-            Log::warning('Cloudflare Access verification failed: Missing Cf-Access-Jwt-Assertion header.', [
+            Log::warning('Cloudflare Access verification failed: Missing Cf-Access-Jwt-Assertion header and CF_Authorization cookie.', [
                 'ip' => $request->ip(),
                 'path' => $request->path(),
             ]);
@@ -114,9 +119,11 @@ class VerifyCloudflareAccessJwt
             abort(403, 'Akses Ditolak: Penerbit (issuer) token Cloudflare Access tidak valid.');
         }
 
-        // 9. Audience Tag (AUD) verification
+        // 9. Audience Tag (AUD) verification (supports single AUD or comma-separated list for path-app transitions)
+        $allowedAuds = array_values(array_filter(array_map('trim', explode(',', (string) $expectedAud))));
         $aud = $payload['aud'] ?? null;
-        $audMatches = is_array($aud) ? in_array($expectedAud, $aud, true) : ($aud === $expectedAud);
+        $tokenAuds = is_array($aud) ? $aud : (is_string($aud) ? [$aud] : []);
+        $audMatches = count(array_intersect($allowedAuds, $tokenAuds)) > 0;
         if (! $audMatches) {
             Log::warning('Cloudflare Access verification failed: AUD mismatch.', [
                 'expected' => $expectedAud,

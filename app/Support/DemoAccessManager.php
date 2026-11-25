@@ -189,7 +189,29 @@ class DemoAccessManager
     {
         $flagPath = (string) Config::get('demo.resetting_flag_file', storage_path('app/demo/resetting.flag'));
 
-        return $flagPath !== '' && is_file($flagPath);
+        if ($flagPath === '' || ! is_file($flagPath)) {
+            return false;
+        }
+
+        // Self-healing crash recovery: if resetting.flag is stale (> 30s) and no active
+        // reset process holds reset.lock, clear the orphaned flag so traffic resumes cleanly.
+        $mtime = @filemtime($flagPath);
+        if ($mtime !== false && (time() - $mtime) > 30) {
+            $lockPath = (string) Config::get('demo.reset_lock_file', dirname($flagPath).'/reset.lock');
+            $lockHandle = @fopen($lockPath, 'c+');
+            if ($lockHandle !== false) {
+                if (flock($lockHandle, LOCK_EX | LOCK_NB)) {
+                    @unlink($flagPath);
+                    flock($lockHandle, LOCK_UN);
+                    fclose($lockHandle);
+
+                    return false;
+                }
+                fclose($lockHandle);
+            }
+        }
+
+        return true;
     }
 
     public function routingCookieName(): string

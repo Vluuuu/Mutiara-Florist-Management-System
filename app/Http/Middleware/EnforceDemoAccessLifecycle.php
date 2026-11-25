@@ -64,7 +64,9 @@ class EnforceDemoAccessLifecycle
             abort(403, 'Akses Ditolak: Sesi demo tidak diizinkan pada lingkungan produksi.');
         }
 
-        return $next($request);
+        $response = $next($request);
+
+        return $this->applyNoStoreCacheHeaders($response);
     }
 
     private function handleDemoRuntime(Request $request, Closure $next): Response
@@ -84,9 +86,11 @@ class EnforceDemoAccessLifecycle
 
         // 2. Atomic daily reset quiesce window (brief 503 with Retry-After)
         if ($this->demo->isResetting()) {
-            return response('Data demo sedang diperbarui otomatis. Silakan muat ulang dalam beberapa detik.', 503)
-                ->header('Retry-After', '3')
-                ->header('X-Robots-Tag', 'noindex, nofollow');
+            return $this->applyNoStoreCacheHeaders(
+                response('Data demo sedang diperbarui otomatis. Silakan muat ulang dalam beberapa detik.', 503)
+                    ->header('Retry-After', '3')
+                    ->header('X-Robots-Tag', 'noindex, nofollow')
+            );
         }
 
         // 3. Block sensitive/legacy/admin-only paths in demo runtime
@@ -119,15 +123,19 @@ class EnforceDemoAccessLifecycle
                 $expiredRoutingCookie = Cookie::forget($this->demo->routingCookieName(), '/');
 
                 if ($request->expectsJson() && ! $request->header('X-Inertia')) {
-                    return response()
-                        ->json(['message' => $reason], 403)
-                        ->withCookie($expiredRoutingCookie);
+                    return $this->applyNoStoreCacheHeaders(
+                        response()
+                            ->json(['message' => $reason], 403)
+                            ->withCookie($expiredRoutingCookie)
+                    );
                 }
 
-                return redirect()
-                    ->route('login')
-                    ->withErrors(['email' => $reason])
-                    ->withCookie($expiredRoutingCookie);
+                return $this->applyNoStoreCacheHeaders(
+                    redirect()
+                        ->route('login')
+                        ->withErrors(['email' => $reason])
+                        ->withCookie($expiredRoutingCookie)
+                );
             }
         }
 
@@ -135,6 +143,20 @@ class EnforceDemoAccessLifecycle
 
         // Prevent search engines from indexing demo pages
         $response->headers->set('X-Robots-Tag', 'noindex, nofollow');
+
+        return $this->applyNoStoreCacheHeaders($response);
+    }
+
+    /**
+     * Prevents browsers, reverse proxies, and CDN edges from caching dynamic,
+     * authenticated, or financial responses across shared-origin admin/demo runtimes.
+     */
+    private function applyNoStoreCacheHeaders(Response $response): Response
+    {
+        $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate, private, max-age=0');
+        $response->headers->set('Pragma', 'no-cache');
+        $response->headers->set('Expires', '0');
+        $response->headers->set('Vary', 'Cookie, X-Inertia, Cf-Access-Jwt-Assertion');
 
         return $response;
     }

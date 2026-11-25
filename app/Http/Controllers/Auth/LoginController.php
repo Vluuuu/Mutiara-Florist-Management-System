@@ -83,7 +83,8 @@ class LoginController extends Controller
 
         return redirect()
             ->intended($target)
-            ->withCookie(Cookie::forget($this->demo->routingCookieName(), '/'));
+            ->withCookie(Cookie::forget($this->demo->routingCookieName(), '/'))
+            ->withCookie(Cookie::forget('mfms_demo_session', '/'));
     }
 
     private function authenticateDemoRuntime(Request $request, array $credentials): RedirectResponse
@@ -148,6 +149,7 @@ class LoginController extends Controller
 
         return redirect()
             ->route('login')
-            ->withCookie(Cookie::forget($this->demo->routingCookieName(), '/'));
+            ->withCookie(Cookie::forget($this->demo->routingCookieName(), '/'))
+            ->withCookie(Cookie::forget('XSRF-TOKEN', '/'));
     }
 }

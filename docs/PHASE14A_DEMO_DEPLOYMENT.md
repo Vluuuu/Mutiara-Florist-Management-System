@@ -1,166 +1,197 @@
-# MFMS Phase 14A: Panduan Deployment, Cloudflare Access & Rollback Akses Demo Sementara
+# MFMS Phase 14B: Panduan Reconciled Deployment, Cloudflare Access & Rollback (Ubuntu Host)
 
-**Target Domain:** `https://admin.mutiaraflorist.id` (tanpa subdomain tambahan)  
-**Durasi Aktif Demo:** 14 hari kalender sejak `DEMO_ACTIVATED_AT` (WIB)  
-**Reset Otomatis:** Setiap 24 jam pukul `03:00 WIB` via scheduler bawaan container `mfms-demo`
+**Staging Target:** `https://staging-admin.mutiaraflorist.id` (`127.0.0.1:10000`, `~/apps/mfms-staging`)  
+**Production Target:** `https://admin.mutiaraflorist.id` (`127.0.0.1:10001`, `~/apps/mfms-production`)  
+**Environment Directory:** `~/apps/mfms-config` (`staging.env`, `staging-demo.env`, `production.env`, `production-demo.env`)  
+**Durasi Demo Produksi:** 14 hari kalender sejak `DEMO_ACTIVATED_AT` (dimulai HANYA saat aktivasi produksi resmi)  
+**Reset Otomatis:** Setiap 24 jam pukul `03:00 WIB` via scheduler bawaan container demo
 
-> **Status:** Disiapkan untuk staging dan aktivasi terkontrol. Belum diterapkan ke produksi maupun Cloudflare live.
+> **Production Gate:** JANGAN aktifkan demo produksi maupun ubah kebijakan Cloudflare produksi sebelum staging QA dan autentikasi admin terverifikasi lulus 100%.
 
 ---
 
-## 1. Arsitektur Isolasi Dual-Runtime pada Domain Tunggal
+## 1. Arsitektur Autentikasi Domain Tunggal & Cloudflare Access (Terverifikasi)
+
+Berdasarkan dokumentasi resmi Cloudflare Zero Trust (`developers.cloudflare.com`):
+- Ketika sebuah jalur dicakup kebijakan **Bypass**, Cloudflare Edge **tidak selalu menyuntikkan header `Cf-Access-Jwt-Assertion`**, namun browser admin yang telah lulus Email OTP di `/admin-entry` tetap menyimpan dan mengirim cookie **`CF_Authorization`** (`HttpOnly; Secure; Path=/; SameSite=Lax`, bertanda tangan kriptografi **RS256**).
+- Oleh karena itu, baik `nginx-router.conf.template` maupun `VerifyCloudflareAccessJwt` memverifikasi token dari **`Cf-Access-Jwt-Assertion` header ATAU `CF_Authorization` cookie** secara ketat (*fail-closed* RS256 + JWKS `cdn-cgi/access/certs` + Issuer + AUD + `exp` + `nbf`).
 
 ```text
-Browser Evaluator (Dosen / Asisten)          Browser Admin Florist (Produksi)
-                |                                            |
-                | HTTPS admin.mutiaraflorist.id              | HTTPS admin.mutiaraflorist.id/admin-entry
-                | (tanpa Cf-Access-Jwt-Assertion)            | (Cloudflare Access Email OTP -> CF_Authorization)
-                v                                            v
-                   Cloudflare Global Edge + Outbound Tunnel (cloudflared)
+Pengunjung Publik (Dosen / Asisten)           Admin Florist (Terlindungi OTP)
+               |                                            |
+               | GET https://<domain>/login                 | 1. GET https://<domain>/admin-entry
+               | (tanpa CF_Authorization)                   |    -> Cloudflare Access Email OTP (Allow)
+               |                                            |    -> Browser menerima CF_Authorization (RS256)
+               |                                            | 2. Redirect ke /login & /dashboard (Cookie CF_Authorization)
+               v                                            v
+                    Cloudflare Global Edge + Cache Rule (Bypass Cache) + cloudflared
                                             |
-                                            | http://127.0.0.1:10000
+                      Staging: 127.0.0.1:10000  |  Production: 127.0.0.1:10001
                                             v
-                      mfms-router (nginx:1.27-alpine, 48 MB RAM, 0.25 CPU)
-                       /                                             \
-   No CF JWT or mfms_runtime=demo                             Valid CF JWT (no demo cookie)
-   (strips CF JWT & Edge Secret)                                      |
-                      v                                               v
-        mfms-demo (256 MB RAM, 0.5 CPU)                 mfms-prod (512 MB RAM, 1.0 CPU)
-        - MFMS_RUNTIME_MODE=demo                        - MFMS_RUNTIME_MODE=production
-        - APP_KEY terpisah (demo-only)                  - APP_KEY produksi
-        - SESSION_COOKIE=mfms_demo_session              - SESSION_COOKIE=mfms_prod_session
-        - DB_CONNECTION=sqlite (WAL mode)               - DB_CONNECTION=pgsql (Supabase TLS)
-        - Volume lokal /var/lib/mfms-demo               - CLOUDFLARE_ACCESS_ENFORCE=true
-        - TANPA kredensial DB/Backup produksi           - Menolak login demo@mutiaraflorist.id
+                            mfms-*-router (nginx:1.27-alpine, 48 MB RAM)
+                           /                                           \
+    Tanpa CF token ATAU mfms_runtime=demo                   Ada CF token (Header/Cookie) & bukan demo
+    (strip Cf-Access-Jwt-Assertion & Edge Secret)                       |
+                          v                                             v
+         mfms-*-demo (256 MB RAM, 0.5 CPU)            mfms-*-app (512 MB RAM, 1.0 CPU)
+         - MFMS_RUNTIME_MODE=demo                     - MFMS_RUNTIME_MODE=production
+         - APP_KEY demo terpisah                      - APP_KEY produksi/staging
+         - SESSION_COOKIE=mfms_demo_session           - SESSION_COOKIE=mfms_*_session
+         - DB_CONNECTION=sqlite (/var/lib/mfms-demo)  - DB_CONNECTION=pgsql (Supabase TLS)
+         - Tanpa kredensial DB/Backup produksi        - VerifyCloudflareAccessJwt FAIL-CLOSED (RS256)
+         - Cache-Control: no-store, private           - Cache-Control: no-store, private
 ```
 
-### Mengapa Isolasi Ini Fail-Closed
-1. **Container terpisah, rahasia terpisah:** `mfms-demo` tidak memiliki `DB_HOST`, `DB_PASSWORD`, `DB_URL`, `APP_KEY` produksi, maupun `BACKUP_ENCRYPTION_KEY`. Script `docker/entrypoint-demo.sh` menolak menyala bila salah satu variabel produksi terdeteksi.
-2. **Routing tidak dapat dibypass lewat cookie:** `mfms-router` hanya mengarahkan trafik ke `mfms-prod` bila header `Cf-Access-Jwt-Assertion` dari Cloudflare Edge ada. Permintaan tanpa header tersebut selalu diarahkan ke `mfms-demo`.
-3. **Verifikasi kriptografi produksi tetap utuh:** `mfms-prod` tetap menjalankan `VerifyCloudflareAccessJwt` secara fail-closed (RS256 + JWKS + AUD + Issuer + Expiry). Header `Cf-Access-Jwt-Assertion` palsu ditolak `403 Forbidden`.
-4. **Anti session confusion:** Nama cookie berbeda (`mfms_prod_session` vs `mfms_demo_session`), `APP_KEY` berbeda, backend sesi berbeda (PostgreSQL vs file lokal demo), dan payload sesi mengunci `mfms_runtime_mode`.
+### Persiapan Kebijakan Cloudflare Zero Trust & Caching (Staging dulu, Produksi setelah GO)
+Untuk domain target (`staging-admin.mutiaraflorist.id` saat staging QA; `admin.mutiaraflorist.id` saat produksi aktif):
+1. **Aplikasi Cloudflare Access #1 (Gerbang Admin OTP):**
+   - Path: `<domain>/admin-entry`
+   - Policy: **Allow** hanya email pemilik/operator florist (Email OTP).
+   - Catat **AUD Tag** aplikasi ini dan pastikan nilai tersebut tercantum pada `CLOUDFLARE_ACCESS_AUD` di `staging.env` / `production.env` (mendukung daftar koma `AUD_LAMA,AUD_ADMIN_ENTRY` untuk transisi tanpa downtime).
+2. **Aplikasi Cloudflare Access #2 (Bypass Sementara 14 Hari pada Root):**
+   - Path: `<domain>` (root / wildcard selain `/admin-entry`)
+   - Policy: **Bypass** -> `Everyone`.
+3. **Cloudflare Cache Rule (Wajib):**
+   - Rule: Hostname equals `<domain>` -> **Bypass Cache** (melengkapi header `Cache-Control: no-store, no-cache, must-revalidate, private` dari aplikasi & `proxy_no_cache 1` dari Nginx router).
+4. **Cloudflare Tunnel (`cloudflared`):**
+   - Tidak perlu perubahan: staging tetap `http://127.0.0.1:10000`, produksi tetap `http://127.0.0.1:10001`.
 
 ---
 
-## 2. Estimasi Overhead Sumber Daya pada Server Ubuntu
+## 2. Prosedur Deployment Staging Ubuntu (`~/apps/mfms-staging`, `127.0.0.1:10000`)
 
-Kedua container aplikasi memakai **satu Docker image yang sama (`mfms:phase14a`)** sehingga tidak menggandakan penyimpanan image pada disk Ubuntu.
+Semua perintah di bawah ini **aman terhadap aset Phase 13** (tidak menghapus image lama, tidak menghapus `staging.env`, tidak menyentuh `~/apps/mfms-production` maupun port `10001`).
 
-| Komponen | Image | Batas RAM | Estimasi RAM Idle / Aktif | Batas CPU | Disk Tambahan |
-| --- | --- | --- | --- | --- | --- |
-| `mfms-prod` (eksisting) | `mfms:phase14a` | `512 MB` | ~110 - 180 MB | `1.00 vCPU` | 0 MB (shared image) |
-| `mfms-demo` (baru) | `mfms:phase14a` | `256 MB` | ~65 - 110 MB (`pm.max_children=3`) | `0.50 vCPU` | ~1 - 5 MB (`demo.sqlite` + sessions) |
-| `mfms-router` (baru) | `nginx:1.27-alpine` | `48 MB` | ~8 - 18 MB | `0.25 vCPU` | ~45 MB (image Alpine Nginx) |
-| **Total Overhead Baru** | | **+304 MB limit** | **~75 - 130 MB aktual** | **+0.75 vCPU cap** | **< 55 MB disk** |
-
----
-
-## 3. Persiapan Cloudflare Zero Trust Access (Belum Diterapkan)
-
-Saat jendela evaluasi 14 hari siap diaktifkan di produksi:
-
-1. **Pertahankan aplikasi Access khusus admin pada jalur `/admin-entry`:**
-   - Buat/perbarui Cloudflare Access Self-Hosted Application untuk `admin.mutiaraflorist.id/admin-entry` dengan kebijakan **Allow** eksklusif ke email pemilik/operator florist (OTP Email yang sudah ada).
-   - Pastikan durasi sesi Access sesuai kebijakan operasional (mis. 12 atau 24 jam) sehingga cookie `CF_Authorization` tetap aktif pada domain `admin.mutiaraflorist.id` (path `/`) setelah admin melewati `/admin-entry`.
-   - Salin nilai **AUD Tag** aplikasi ini ke `CLOUDFLARE_ACCESS_AUD` milik `mfms-prod`.
-2. **Ubah kebijakan jalur root `admin.mutiaraflorist.id` (selama 14 hari saja):**
-   - Tambahkan kebijakan **Bypass** untuk `Everyone` pada aplikasi root `admin.mutiaraflorist.id` (kecuali `/admin-entry` yang memiliki aplikasi Access tersendiri yang lebih spesifik).
-   - Cloudflare Zero Trust tetap melampirkan header `Cf-Access-Jwt-Assertion` otomatis untuk admin yang sudah membawa cookie `CF_Authorization` valid dari `/admin-entry`, sementara pengunjung dosen/asisten tanpa cookie Access akan langsung mencapai `mfms-router` -> `mfms-demo`.
-3. **Verifikasi Cloudflare Tunnel (`cloudflared`):**
-   - Tidak perlu perubahan konfigurasi `cloudflared` karena `mfms-router` tetap mendengarkan di `http://127.0.0.1:10000`.
-4. **Setelah 14 hari berakhir:**
-   - Hapus aturan Bypass root dan kembalikan kebijakan Cloudflare Access **Allow (Email Admin)** pada seluruh `admin.mutiaraflorist.id/*`.
-
----
-
-## 4. Langkah Deployment Staging / Produksi Terkontrol
-
-### Langkah 1: Siapkan Environment Demo di Luar Git (`/etc/mfms/demo.env`)
 ```bash
-sudo mkdir -p /etc/mfms
-sudo cp docker/env/demo.env.example /etc/mfms/demo.env
-sudo chmod 600 /etc/mfms/demo.env
+# ------------------------------------------------------------------
+# STEP 1: Inspeksi kondisi saat ini & cadangkan compose staging lama
+# ------------------------------------------------------------------
+docker ps --filter "name=mfms-" --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
+mkdir -p ~/apps/mfms-staging/backups
+cp -a ~/apps/mfms-staging/compose.yaml ~/apps/mfms-staging/backups/compose.yaml.pre-phase14.$(date +%Y%m%d%H%M%S) 2>/dev/null || true
 
-# Hasilkan APP_KEY khusus demo (WAJIB BERBEDA dari prod.env)
-docker run --rm mfms:phase14a php artisan key:generate --show
+# ------------------------------------------------------------------
+# STEP 2: Ambil revisi Phase 14B & build image tunggal mfms:phase14b
+# ------------------------------------------------------------------
+mkdir -p ~/builds
+git clone --branch feat/phase14a-temporary-demo-access https://github.com/Vluuuu/Mutiara-Florist-Management-System.git ~/builds/mfms-phase14b || (cd ~/builds/mfms-phase14b && git fetch origin && git checkout feat/phase14a-temporary-demo-access && git pull --ff-only)
+cd ~/builds/mfms-phase14b
+PHASE14_SHA=$(git rev-parse --short HEAD)
+docker build \
+  --label "org.opencontainers.image.revision=$(git rev-parse HEAD)" \
+  -t "mfms:phase14b-${PHASE14_SHA}" \
+  -t mfms:phase14b .
 
-# Hasilkan password demo khusus yang kuat
-docker run --rm mfms:phase14a php artisan mfms:demo-generate-password
+# ------------------------------------------------------------------
+# STEP 3: Siapkan ~/apps/mfms-config/staging-demo.env (tanpa rahasia prod)
+# ------------------------------------------------------------------
+if [ ! -f ~/apps/mfms-config/staging-demo.env ]; then
+  cp ~/builds/mfms-phase14b/docker/env/demo.env.example ~/apps/mfms-config/staging-demo.env
+  chmod 600 ~/apps/mfms-config/staging-demo.env
+  DEMO_APP_KEY=$(docker run --rm --entrypoint php mfms:phase14b /var/www/html/artisan key:generate --show)
+  DEMO_PASS=$(docker run --rm --entrypoint php mfms:phase14b /var/www/html/artisan mfms:demo-generate-password)
+  NOW_WIB=$(TZ=Asia/Jakarta date +%Y-%m-%dT%H:%M:%S+07:00)
+  sed -i "s|^APP_KEY=.*|APP_KEY=${DEMO_APP_KEY}|" ~/apps/mfms-config/staging-demo.env
+  sed -i "s|^APP_URL=.*|APP_URL=https://staging-admin.mutiaraflorist.id|" ~/apps/mfms-config/staging-demo.env
+  sed -i "s|^DEMO_PASSWORD=.*|DEMO_PASSWORD=${DEMO_PASS}|" ~/apps/mfms-config/staging-demo.env
+  sed -i "s|^DEMO_ACTIVATED_AT=.*|DEMO_ACTIVATED_AT=${NOW_WIB}|" ~/apps/mfms-config/staging-demo.env
+  echo "Staging demo password generated and written to ~/apps/mfms-config/staging-demo.env"
+fi
+
+# ------------------------------------------------------------------
+# STEP 4: Salin compose & router template ke ~/apps/mfms-staging
+# ------------------------------------------------------------------
+cp ~/builds/mfms-phase14b/docker/compose.staging.phase14.yml ~/apps/mfms-staging/compose.phase14.yml
+cp ~/builds/mfms-phase14b/docker/nginx-router.conf.template ~/apps/mfms-staging/nginx-router.conf.template
+
+# ------------------------------------------------------------------
+# STEP 5: Hentikan container staging lama secara terkontrol (TANPA menghapus image/volume)
+#         lalu aktifkan stack dual-runtime staging di 127.0.0.1:10000
+# ------------------------------------------------------------------
+cd ~/apps/mfms-staging
+docker compose -f compose.yaml stop 2>/dev/null || docker stop mfms-staging 2>/dev/null || true
+
+MFMS_IMAGE="mfms:phase14b-${PHASE14_SHA}" \
+MFMS_STAGING_ENV_FILE="$HOME/apps/mfms-config/staging.env" \
+MFMS_STAGING_DEMO_ENV_FILE="$HOME/apps/mfms-config/staging-demo.env" \
+docker compose -f compose.phase14.yml up -d
+
+# ------------------------------------------------------------------
+# STEP 6: Verifikasi staging
+# ------------------------------------------------------------------
+docker ps --filter "name=mfms-staging" --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
+curl -fsS http://127.0.0.1:10000/up && echo " (router /up OK)"
+docker exec mfms-staging-demo php artisan mfms:demo-status
+docker exec mfms-staging-demo php artisan schedule:list
+docker stats --no-stream mfms-staging-router mfms-staging-app mfms-staging-demo
 ```
 
-Isi `/etc/mfms/demo.env` dengan:
-- `APP_KEY=` hasil generate demo di atas (bukan key produksi)
-- `DEMO_PASSWORD=` hasil `mfms:demo-generate-password`
-- `DEMO_ACTIVATED_AT=` timestamp WIB saat aktivasi (contoh `2026-11-25T08:00:00+07:00`)
-- `DEMO_DURATION_DAYS=14`
-- `DEMO_ENABLED=true`
-
-Pastikan `/etc/mfms/prod.env` memiliki:
-- `MFMS_RUNTIME_MODE=production`
-- `SESSION_COOKIE=mfms_prod_session`
-- `CLOUDFLARE_ACCESS_ENFORCE=true`
-
-### Langkah 2: Build Image Tunggal & Jalankan Stack Dual-Runtime
+### Rollback Staging Instan (< 15 detik, kembali ke Phase 13)
 ```bash
-# 1. Build image tunggal mfms:phase14a
-docker compose -f docker/docker-compose.phase14a.yml build
-
-# 2. Hentikan container tunggal lama (bila sebelumnya berjalan sebagai mfms-prod standalone di port 10000)
-docker stop mfms-prod && docker rm mfms-prod
-
-# 3. Jalankan router + prod + demo bersama-sama
-MFMS_PROD_ENV_FILE=/etc/mfms/prod.env \
-MFMS_DEMO_ENV_FILE=/etc/mfms/demo.env \
-docker compose -f docker/docker-compose.phase14a.yml up -d
-```
-
-### Langkah 3: Verifikasi Pasca-Deploy
-```bash
-# Cek status kontainer & healthcheck
-docker compose -f docker/docker-compose.phase14a.yml ps
-
-# Cek status demo & masa berlaku (tanpa mencetak password)
-docker exec mfms-demo php artisan mfms:demo-status
-
-# Cek bahwa scheduler reset harian 03:00 WIB terdaftar
-docker exec mfms-demo php artisan schedule:list
-
-# Uji reset manual pertama (opsional)
-docker exec mfms-demo php artisan mfms:demo-reset --force
+cd ~/apps/mfms-staging
+docker compose -f compose.phase14.yml down
+docker compose -f compose.yaml up -d
+curl -fsS http://127.0.0.1:10000/up && echo " (Phase 13 staging restored)"
 ```
 
 ---
 
-## 5. Emergency Kill Switch & Prosedur Rollback
+## 3. Perintah Aktivasi & Rollback Produksi (HANYA Setelah Staging QA Lulus)
 
-### A. Matikan Demo Seketika (< 1 detik, tanpa downtime produksi)
+> **PERINGATAN:** Jalankan bagian ini HANYA setelah verifikasi staging penuh (admin OTP + demo isolation + browser QA) dinyatakan lulus. Jendela 14 hari dimulai tepat saat `DEMO_ACTIVATED_AT` diset di `production-demo.env`.
+
+### Aktivasi Produksi (`~/apps/mfms-production`, `127.0.0.1:10001`)
 ```bash
-docker exec mfms-demo php artisan mfms:demo-disable
+# 1. Cadangkan compose produksi Phase 13 (JANGAN hapus image Phase 13 maupun production.env)
+mkdir -p ~/apps/mfms-production/backups
+cp -a ~/apps/mfms-production/compose.yaml ~/apps/mfms-production/backups/compose.yaml.pre-phase14.$(date +%Y%m%d%H%M%S)
+
+# 2. Buat ~/apps/mfms-config/production-demo.env dengan APP_KEY & DEMO_PASSWORD baru
+cp ~/builds/mfms-phase14b/docker/env/demo.env.example ~/apps/mfms-config/production-demo.env
+chmod 600 ~/apps/mfms-config/production-demo.env
+PROD_DEMO_KEY=$(docker run --rm --entrypoint php mfms:phase14b /var/www/html/artisan key:generate --show)
+PROD_DEMO_PASS=$(docker run --rm --entrypoint php mfms:phase14b /var/www/html/artisan mfms:demo-generate-password)
+ACTIVATED_WIB=$(TZ=Asia/Jakarta date +%Y-%m-%dT%H:%M:%S+07:00)
+sed -i "s|^APP_KEY=.*|APP_KEY=${PROD_DEMO_KEY}|" ~/apps/mfms-config/production-demo.env
+sed -i "s|^APP_URL=.*|APP_URL=https://admin.mutiaraflorist.id|" ~/apps/mfms-config/production-demo.env
+sed -i "s|^DEMO_PASSWORD=.*|DEMO_PASSWORD=${PROD_DEMO_PASS}|" ~/apps/mfms-config/production-demo.env
+sed -i "s|^DEMO_ACTIVATED_AT=.*|DEMO_ACTIVATED_AT=${ACTIVATED_WIB}|" ~/apps/mfms-config/production-demo.env
+
+# 3. Pastikan CLOUDFLARE_ACCESS_AUD di ~/apps/mfms-config/production.env mencakup AUD /admin-entry
+#    (format: CLOUDFLARE_ACCESS_AUD=<AUD_LAMA>,<AUD_ADMIN_ENTRY>)
+
+# 4. Pasang compose & router produksi Phase 14B
+cp ~/builds/mfms-phase14b/docker/compose.production.phase14.yml ~/apps/mfms-production/compose.phase14.yml
+cp ~/builds/mfms-phase14b/docker/nginx-router.conf.template ~/apps/mfms-production/nginx-router.conf.template
+
+# 5. Alihkan port 127.0.0.1:10001 secara terkontrol (image Phase 13 tetap tersimpan utuh)
+cd ~/apps/mfms-production
+docker compose -f compose.yaml stop
+MFMS_IMAGE="mfms:phase14b" \
+MFMS_PROD_ENV_FILE="$HOME/apps/mfms-config/production.env" \
+MFMS_PROD_DEMO_ENV_FILE="$HOME/apps/mfms-config/production-demo.env" \
+docker compose -f compose.phase14.yml up -d
+
+# 6. Verifikasi sebelum mengubah Cloudflare Access
+curl -fsS http://127.0.0.1:10001/up && echo " (prod router /up OK)"
+docker exec mfms-production-demo php artisan mfms:demo-status
+
+# 7. Terakhir: aktifkan Cloudflare Access /admin-entry (Allow Admin OTP) + root Bypass + Cache Bypass
 ```
-Efek: seluruh sesi demo aktif langsung dicabut pada permintaan berikutnya, form login menolak akun demo, dan kartu kredensial demo disembunyikan. Produksi (`mfms-prod`) tetap berjalan normal 100%.
 
-Untuk mengaktifkan kembali:
+### Emergency Disable Produksi (< 1 detik, Zero Downtime Admin)
 ```bash
-docker exec mfms-demo php artisan mfms:demo-enable
+docker exec mfms-production-demo php artisan mfms:demo-disable
 ```
 
-### B. Rollback Penuh ke Arsitektur Produksi Tunggal (Setelah 14 Hari atau Darurat)
+### Rollback Produksi Penuh (Setelah 14 Hari atau Darurat)
 ```bash
-# 1. Hentikan seluruh stack dual-runtime
-docker compose -f docker/docker-compose.phase14a.yml down
-
-# 2. Hapus volume data demo lokal (opsional untuk pembersihan total)
-docker volume rm mfms-demo-data || true
-
-# 3. Jalankan kembali container produksi tunggal pada 127.0.0.1:10000
-docker run -d \
-  --name mfms-prod \
-  --restart unless-stopped \
-  --env-file /etc/mfms/prod.env \
-  -p 127.0.0.1:10000:10000 \
-  mfms:phase14a
-
-# 4. Pada Dashboard Cloudflare Zero Trust:
-#    - Hapus aturan Bypass root pada admin.mutiaraflorist.id
-#    - Aktifkan kembali kebijakan Allow (Email OTP Admin) untuk seluruh admin.mutiaraflorist.id/*
+# 1. Pada Cloudflare Zero Trust: hapus aturan Bypass root & aktifkan kembali Allow (Admin OTP) pada admin.mutiaraflorist.id/*
+# 2. Kembalikan stack produksi Phase 13 pada 127.0.0.1:10001
+cd ~/apps/mfms-production
+docker compose -f compose.phase14.yml down
+docker compose -f compose.yaml up -d
+curl -fsS http://127.0.0.1:10001/up && echo " (Phase 13 production restored)"
+# 3. (Opsional) Hapus volume data simulasi demo setelah periode evaluasi selesai:
+#    docker volume rm mfms-production_mfms-production-demo-data || docker volume rm mfms-production-demo-data
 ```
