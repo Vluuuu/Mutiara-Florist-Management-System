@@ -21,10 +21,12 @@ class LoginController extends Controller
     public function show(Request $request): View|Response
     {
         $demoAccess = $this->demo->loginViewPayload();
+        $demoNavigation = $this->demo->loginNavigationPayload();
 
         if ($request->query('fallback') === 'blade' || $request->routeIs('blade-login')) {
             return view('auth.login', [
                 'demoAccess' => $demoAccess,
+                'demoNavigation' => $demoNavigation,
             ]);
         }
 
@@ -32,6 +34,7 @@ class LoginController extends Controller
             'heading' => 'Masuk ke dashboard',
             'brand' => 'Mutiara Florist',
             'demoAccess' => $demoAccess,
+            'demoNavigation' => $demoNavigation,
         ]);
     }
 

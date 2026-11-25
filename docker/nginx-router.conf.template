@@ -7,34 +7,35 @@
 #   MFMS_DEMO_UPSTREAM    : e.g. mfms-staging-demo:10000 or mfms-production-demo:10000
 #   MFMS_SERVER_NAMES     : e.g. staging-admin.mutiaraflorist.id or admin.mutiaraflorist.id
 #
-# Security & Resilience Invariants:
-# 1. Uses Docker embedded DNS resolver (127.0.0.11) for dynamic upstream resolution
-#    so stopping/restarting one runtime container never crashes or blocks the router.
-# 2. Primary (admin/production) upstream is ONLY selected when a Cloudflare Access
-#    JWT is present via EITHER Cf-Access-Jwt-Assertion header OR CF_Authorization
-#    cookie AND mfms_runtime != demo.
-# 3. Any forged/expired CF_Authorization cookie or Cf-Access-Jwt-Assertion header
-#    is cryptographically rejected (403 fail-closed) by VerifyCloudflareAccessJwt
-#    on the primary runtime.
-# 4. Requests without any Cloudflare Access token NEVER reach the primary runtime.
-# 5. Cf-Access-Jwt-Assertion and X-MFMS-Edge-Secret are stripped before proxying
-#    to the demo runtime.
+# Security & Compatibility Invariants:
+# 1. Defaults ALL requests to the primary runtime unless an explicit demo routing
+#    cookie (mfms_runtime=demo) or /demo path is selected. Works identically with
+#    CLOUDFLARE_ACCESS_ENFORCE=true (staging) and CLOUDFLARE_ACCESS_ENFORCE=false
+#    (production) without requiring Cloudflare policy changes.
+# 2. mfms_runtime=demo is strictly a runtime selector, NEVER an auth token.
+#    Both runtimes enforce independent APP_KEYs, session cookies, databases, and
+#    server-side authentication.
+# 3. Preserves upstream X-Forwarded-Proto (https from Cloudflare Tunnel) so
+#    Laravel redirects, signed/secure cookies, and Inertia URLs stay HTTPS.
+# 4. Strips Cf-Access-Jwt-Assertion and X-MFMS-Edge-Secret before proxying to
+#    the demo runtime.
+# 5. Uses Docker embedded DNS resolver (127.0.0.11) so stopping/restarting one
+#    runtime container never breaks or stalls the other.
 # 6. Dynamic/authenticated/financial responses are NEVER cached by the router.
 # ==============================================================================
 
 limit_req_zone $binary_remote_addr zone=mfms_login:5m rate=10r/m;
 limit_req_zone $binary_remote_addr zone=mfms_general:10m rate=60r/m;
 
-map "$http_cf_access_jwt_assertion|$cookie_CF_Authorization" $has_cf_token {
-    "|"     0;
-    default 1;
+map $cookie_mfms_runtime $mfms_upstream {
+    "demo"  "${MFMS_DEMO_UPSTREAM}";
+    default "${MFMS_PRIMARY_UPSTREAM}";
 }
 
-map "${has_cf_token}:${cookie_mfms_runtime}" $mfms_upstream {
-    "1:demo"  "${MFMS_DEMO_UPSTREAM}";
-    "1:"      "${MFMS_PRIMARY_UPSTREAM}";
-    ~^1:      "${MFMS_PRIMARY_UPSTREAM}";
-    default   "${MFMS_DEMO_UPSTREAM}";
+# Preserve HTTPS scheme from Cloudflare Tunnel / upstream proxy; fallback to local $scheme
+map $http_x_forwarded_proto $forwarded_proto {
+    ""      $scheme;
+    default $http_x_forwarded_proto;
 }
 
 # Never forward Cloudflare Zero Trust assertion headers or edge secrets to demo runtime
@@ -73,12 +74,13 @@ server {
         proxy_http_version 1.1;
         proxy_set_header Connection "";
         proxy_set_header Host $http_host;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto $forwarded_proto;
+        proxy_set_header X-Forwarded-Host $http_host;
         proxy_set_header Cf-Access-Jwt-Assertion $forwarded_cf_jwt;
         proxy_set_header X-MFMS-Edge-Secret $forwarded_edge_secret;
     }
 
-    # Dedicated Cloudflare-Access-OTP-protected admin entry -> ALWAYS primary runtime
+    # Explicit return to primary admin runtime -> ALWAYS primary runtime (clears demo routing cookie)
     location = /admin-entry {
         set $primary_target "${MFMS_PRIMARY_UPSTREAM}";
         proxy_no_cache 1;
@@ -89,11 +91,11 @@ server {
         proxy_set_header Host $http_host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto $forwarded_proto;
         proxy_set_header X-Forwarded-Host $http_host;
     }
 
-    # Explicit switch into demo login (strips CF JWT & edge secret)
+    # Explicit entry into isolated demo runtime -> ALWAYS demo runtime (strips CF headers)
     location = /demo {
         set $demo_target "${MFMS_DEMO_UPSTREAM}";
         proxy_no_cache 1;
@@ -104,7 +106,7 @@ server {
         proxy_set_header Host $http_host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto $forwarded_proto;
         proxy_set_header X-Forwarded-Host $http_host;
         proxy_set_header Cf-Access-Jwt-Assertion "";
         proxy_set_header X-MFMS-Edge-Secret "";
@@ -123,7 +125,7 @@ server {
         proxy_set_header Host $http_host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto $forwarded_proto;
         proxy_set_header X-Forwarded-Host $http_host;
         proxy_set_header Cf-Access-Jwt-Assertion $forwarded_cf_jwt;
         proxy_set_header X-MFMS-Edge-Secret $forwarded_edge_secret;
@@ -142,7 +144,7 @@ server {
         proxy_set_header Host $http_host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto $forwarded_proto;
         proxy_set_header X-Forwarded-Host $http_host;
         proxy_set_header Cf-Access-Jwt-Assertion $forwarded_cf_jwt;
         proxy_set_header X-MFMS-Edge-Secret $forwarded_edge_secret;

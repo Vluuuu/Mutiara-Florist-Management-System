@@ -168,6 +168,55 @@ class DemoAccessManager
         ];
     }
 
+    /**
+     * Determines whether the primary runtime login page should display a compact
+     * link to enter the isolated demo runtime (/demo).
+     *
+     * Never exposes demo credentials on the primary runtime.
+     */
+    public function shouldShowDemoEntryLink(?Carbon $now = null): bool
+    {
+        if (! $this->isProductionRuntime()) {
+            return false;
+        }
+
+        if (! (bool) Config::get('demo.entry_link_enabled', false)) {
+            return false;
+        }
+
+        // If an expiration window is also configured on primary, hide the entry link once expired.
+        if ($this->expiresAt() !== null && $this->isExpired($now)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Navigation metadata for the login screen only.
+     *
+     * @return array{is_demo_runtime: bool, demo_entry_url?: string, admin_entry_url?: string, inactive_notice?: string|null}|null
+     */
+    public function loginNavigationPayload(?Carbon $now = null): ?array
+    {
+        if ($this->isDemoRuntime()) {
+            return [
+                'is_demo_runtime' => true,
+                'admin_entry_url' => '/admin-entry',
+                'inactive_notice' => $this->isActive($now) ? null : $this->inactiveReason($now),
+            ];
+        }
+
+        if ($this->shouldShowDemoEntryLink($now)) {
+            return [
+                'is_demo_runtime' => false,
+                'demo_entry_url' => '/demo',
+            ];
+        }
+
+        return null;
+    }
+
     public function inactiveReason(?Carbon $now = null): string
     {
         if (! $this->isEnabled()) {

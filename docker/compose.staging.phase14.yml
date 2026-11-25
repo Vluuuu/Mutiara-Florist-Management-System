@@ -52,6 +52,7 @@ services:
       PORT: "10000"
       MFMS_RUNTIME_MODE: "production"
       SESSION_COOKIE: "mfms_staging_admin_session"
+      DEMO_ENTRY_LINK_ENABLED: "true"
     networks:
       - mfms-staging-net
     mem_limit: 512m

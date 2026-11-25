@@ -72,6 +72,7 @@ return [
     */
     'routing_cookie_name' => env('DEMO_ROUTING_COOKIE', 'mfms_runtime'),
     'routing_cookie_value' => 'demo',
+    'entry_link_enabled' => filter_var(env('DEMO_ENTRY_LINK_ENABLED', false), FILTER_VALIDATE_BOOL),
 
     /*
     |--------------------------------------------------------------------------

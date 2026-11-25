@@ -51,6 +51,7 @@ services:
       PORT: "10000"
       MFMS_RUNTIME_MODE: "production"
       SESSION_COOKIE: "mfms_prod_session"
+      DEMO_ENTRY_LINK_ENABLED: "true"
     networks:
       - mfms-production-net
     mem_limit: 512m

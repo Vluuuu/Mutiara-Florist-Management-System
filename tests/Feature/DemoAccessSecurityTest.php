@@ -510,4 +510,97 @@ class DemoAccessSecurityTest extends TestCase
             @unlink($lockFile);
         }
     }
+
+    public function test_primary_login_shows_compact_demo_link_when_enabled_without_leaking_credentials(): void
+    {
+        Config::set('demo.runtime_mode', 'production');
+        Config::set('demo.entry_link_enabled', true);
+        Config::set('demo.password', 'NeverShowOnPrimary123!');
+
+        $this->get(route('login'))
+            ->assertOk()
+            ->assertDontSee('NeverShowOnPrimary123!')
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Auth/Login')
+                ->where('demoAccess', null)
+                ->where('demoNavigation.is_demo_runtime', false)
+                ->where('demoNavigation.demo_entry_url', '/demo')
+            );
+    }
+
+    public function test_demo_login_provides_return_to_admin_link_and_preserves_forwarded_https_redirects(): void
+    {
+        $password = 'Mutiara-Https-8k2Q4';
+        $this->enableDemoRuntime($password);
+
+        // Demo login exposes return-to-admin link alongside credentials card
+        $this->get(route('login'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Auth/Login')
+                ->where('demoAccess.available', true)
+                ->where('demoNavigation.is_demo_runtime', true)
+                ->where('demoNavigation.admin_entry_url', '/admin-entry')
+                ->where('demoNavigation.inactive_notice', null)
+            );
+
+        // Forwarded HTTPS scheme via reverse proxy / Cloudflare Tunnel stays HTTPS on redirect
+        $response = $this->withServerVariables([
+            'REMOTE_ADDR' => '127.0.0.1',
+            'HTTP_X_FORWARDED_PROTO' => 'https',
+            'HTTP_X_FORWARDED_HOST' => 'admin.mutiaraflorist.id',
+        ])->get('/demo');
+
+        $response->assertRedirect('https://admin.mutiaraflorist.id/login');
+        $response->assertPlainCookie('mfms_runtime', 'demo');
+
+        // When demo is disabled, return-to-admin link remains visible with inactive notice
+        Config::set('demo.enabled', false);
+        $this->get(route('login'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Auth/Login')
+                ->where('demoAccess', null)
+                ->where('demoNavigation.is_demo_runtime', true)
+                ->where('demoNavigation.admin_entry_url', '/admin-entry')
+                ->where('demoNavigation.inactive_notice', 'Akses demo sementara sedang dinonaktifkan.')
+            );
+    }
+
+    public function test_production_without_cloudflare_enforcement_still_blocks_anonymous_and_demo_access(): void
+    {
+        Config::set('demo.runtime_mode', 'production');
+        Config::set('services.cloudflare.access_enforce', false);
+        Config::set('demo.entry_link_enabled', true);
+
+        User::factory()->create([
+            'email' => 'demo@mutiaraflorist.id',
+            'password' => Hash::make('DemoAttemptPass123!'),
+        ]);
+
+        // Anonymous users cannot reach business endpoints
+        $this->get('/dashboard')->assertRedirect(route('login'));
+        $this->get('/ui-orders')->assertRedirect(route('login'));
+        $this->get('/ui-reports/export')->assertRedirect(route('login'));
+
+        // Public /login returns 200 with demo entry link and zero demo credentials
+        $this->get('/login')->assertOk();
+
+        // Demo account cannot authenticate against production even when CF enforcement is false
+        $this->post('/login', [
+            'email' => 'demo@mutiaraflorist.id',
+            'password' => 'DemoAttemptPass123!',
+        ])->assertSessionHasErrors('email');
+        $this->assertGuest();
+
+        // /admin-entry clears demo routing cookie and keeps HTTPS forwarded scheme
+        $resp = $this->withServerVariables([
+            'REMOTE_ADDR' => '127.0.0.1',
+            'HTTP_X_FORWARDED_PROTO' => 'https',
+            'HTTP_X_FORWARDED_HOST' => 'admin.mutiaraflorist.id',
+        ])->withCookie('mfms_runtime', 'demo')->get('/admin-entry');
+
+        $resp->assertRedirect('https://admin.mutiaraflorist.id/login');
+        $resp->assertCookieExpired('mfms_runtime');
+    }
 }

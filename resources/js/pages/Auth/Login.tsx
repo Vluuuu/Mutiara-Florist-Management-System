@@ -10,9 +10,17 @@ type DemoAccessProps = {
     reset_interval?: string;
 };
 
+type DemoNavigationProps = {
+    is_demo_runtime: boolean;
+    demo_entry_url?: string;
+    admin_entry_url?: string;
+    inactive_notice?: string | null;
+};
+
 type LoginProps = {
     errors?: Record<string, string>;
     demoAccess?: DemoAccessProps | null;
+    demoNavigation?: DemoNavigationProps | null;
 };
 
 const LEDGER_SCOPE = [
@@ -37,7 +45,7 @@ function legacyCopyText(text: string): boolean {
     }
 }
 
-export default function Login({ demoAccess }: LoginProps) {
+export default function Login({ demoAccess, demoNavigation }: LoginProps) {
     const [showPassword, setShowPassword] = useState(false);
     const [copiedField, setCopiedField] = useState<'email' | 'password' | null>(null);
     const [copyStatus, setCopyStatus] = useState('');
@@ -406,6 +414,51 @@ export default function Login({ demoAccess }: LoginProps) {
                                             {copyStatus}
                                         </span>
                                     </div>
+                                </div>
+                            </section>
+                        )}
+
+                        {demoNavigation?.is_demo_runtime && !showDemoCard && demoNavigation.inactive_notice && (
+                            <div
+                                role="status"
+                                className="mt-6 border-t border-[#DED6C8] pt-5"
+                            >
+                                <div className="rounded-[8px] border border-[#DED6C8] bg-[#EFE9DE] p-4 text-xs leading-relaxed text-[#545852]">
+                                    <p className="font-semibold text-[#1C211E]">Mode Demo Tidak Aktif</p>
+                                    <p className="mt-1">{demoNavigation.inactive_notice}</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {demoNavigation?.is_demo_runtime && (
+                            <div className="mt-4 text-center">
+                                <a
+                                    href={demoNavigation.admin_entry_url ?? '/admin-entry'}
+                                    className="inline-flex min-h-[44px] items-center justify-center rounded-[8px] px-3 text-sm font-semibold text-[#1D3B2A] underline-offset-4 hover:bg-[#EFE9DE] hover:underline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[#1D3B2A]"
+                                >
+                                    Kembali ke Login Admin
+                                </a>
+                            </div>
+                        )}
+
+                        {!demoNavigation?.is_demo_runtime && demoNavigation?.demo_entry_url && (
+                            <section
+                                aria-label="Akses Mode Demo Evaluasi"
+                                className="mt-6 border-t border-[#DED6C8] pt-5"
+                            >
+                                <div className="flex flex-wrap items-center justify-between gap-3 rounded-[8px] border border-[#DED6C8] bg-[#EFE9DE] px-4 py-3">
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-bold text-[#1C211E]">Mode Demo Evaluasi</p>
+                                        <p className="text-xs text-[#545852]">
+                                            Tinjau aplikasi menggunakan data simulasi terisolasi.
+                                        </p>
+                                    </div>
+                                    <a
+                                        href={demoNavigation.demo_entry_url}
+                                        className="inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-[6px] border border-[#7D776C] bg-[#FFFDF9] px-3.5 py-2 text-xs font-semibold text-[#1D3B2A] hover:bg-[#EBF3EE] focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[#1D3B2A]"
+                                    >
+                                        Buka Demo
+                                    </a>
                                 </div>
                             </section>
                         )}

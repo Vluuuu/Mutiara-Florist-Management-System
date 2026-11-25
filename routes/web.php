@@ -28,7 +28,8 @@ Route::get('/admin-entry', function (DemoAccessManager $demo) {
     return redirect()
         ->route(Auth::check() ? 'dashboard' : 'login')
         ->withCookie(Cookie::forget($demo->routingCookieName(), '/'))
-        ->withCookie(Cookie::forget('mfms_demo_session', '/'));
+        ->withCookie(Cookie::forget('mfms_demo_session', '/'))
+        ->withCookie(Cookie::forget('XSRF-TOKEN', '/'));
 })->name('admin-entry');
 
 Route::get('/demo', function (Request $request, DemoAccessManager $demo) {
@@ -50,7 +51,8 @@ Route::get('/demo', function (Request $request, DemoAccessManager $demo) {
 
     return redirect()
         ->route(Auth::check() ? 'dashboard' : 'login')
-        ->withCookie($cookie);
+        ->withCookie($cookie)
+        ->withCookie(Cookie::forget('XSRF-TOKEN', '/'));
 })->name('demo.entry');
 
 Route::middleware('guest')->group(function () {
