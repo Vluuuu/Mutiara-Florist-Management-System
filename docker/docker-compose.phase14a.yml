@@ -1,0 +1,96 @@
+# ==============================================================================
+# MFMS Phase 14A Dual-Runtime Docker Compose (Same-Domain Isolation)
+#
+# Reuses a single built Docker image (mfms:phase14a) across mfms-prod and
+# mfms-demo, fronted by a lightweight nginx router (mfms-router) on loopback
+# 127.0.0.1:10000 for existing cloudflared Tunnel compatibility.
+#
+# Usage (Staging / Ubuntu Host):
+#   docker compose -f docker/docker-compose.phase14a.yml build
+#   docker compose -f docker/docker-compose.phase14a.yml up -d
+# ==============================================================================
+
+services:
+  mfms-router:
+    image: nginx:1.27-alpine
+    container_name: mfms-router
+    restart: unless-stopped
+    depends_on:
+      - mfms-prod
+      - mfms-demo
+    ports:
+      - "127.0.0.1:10000:10000"
+    volumes:
+      - ./nginx-router.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - mfms-edge-net
+    mem_limit: 48m
+    cpus: 0.25
+    pids_limit: 32
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:10000/up"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  mfms-prod:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: mfms:phase14a
+    container_name: mfms-prod
+    restart: unless-stopped
+    env_file:
+      - ${MFMS_PROD_ENV_FILE:-/etc/mfms/prod.env}
+    environment:
+      PORT: "10000"
+      MFMS_RUNTIME_MODE: "production"
+      SESSION_COOKIE: "mfms_prod_session"
+    networks:
+      - mfms-edge-net
+    mem_limit: 512m
+    cpus: 1.00
+    pids_limit: 64
+    security_opt:
+      - no-new-privileges:true
+
+  mfms-demo:
+    image: mfms:phase14a
+    container_name: mfms-demo
+    restart: unless-stopped
+    entrypoint: ["/usr/local/bin/entrypoint-demo.sh"]
+    env_file:
+      - ${MFMS_DEMO_ENV_FILE:-/etc/mfms/demo.env}
+    environment:
+      PORT: "10000"
+      MFMS_RUNTIME_MODE: "demo"
+      DB_CONNECTION: "sqlite"
+      DB_DATABASE: "/var/lib/mfms-demo/demo.sqlite"
+      DEMO_SQLITE_PATH: "/var/lib/mfms-demo/demo.sqlite"
+      DEMO_KILL_SWITCH_FILE: "/var/lib/mfms-demo/demo.disabled"
+      DEMO_RESET_LOCK_FILE: "/var/lib/mfms-demo/reset.lock"
+      DEMO_RESETTING_FLAG_FILE: "/var/lib/mfms-demo/resetting.flag"
+      SESSION_DRIVER: "file"
+      SESSION_COOKIE: "mfms_demo_session"
+      CACHE_STORE: "file"
+      QUEUE_CONNECTION: "sync"
+      CLOUDFLARE_ACCESS_ENFORCE: "false"
+    volumes:
+      - mfms-demo-data:/var/lib/mfms-demo
+    networks:
+      - mfms-edge-net
+    mem_limit: 256m
+    cpus: 0.50
+    pids_limit: 48
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  mfms-edge-net:
+    driver: bridge
+
+volumes:
+  mfms-demo-data:
+    driver: local

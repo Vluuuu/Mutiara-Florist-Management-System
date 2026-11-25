@@ -99,6 +99,8 @@ class BackupService
      */
     public function createBackup(?string $encryptionKey = null, ?string $connection = null): array
     {
+        \App\Support\DemoRuntimeGuard::forbidInDemoRuntime('backup.create');
+
         $conn = DB::connection($connection);
         $key = $this->resolveEncryptionKey($encryptionKey);
 
@@ -286,6 +288,8 @@ class BackupService
      */
     public function restoreTest(string $encPath, ?string $encryptionKey = null, ?string $targetConnection = 'testing'): array
     {
+        \App\Support\DemoRuntimeGuard::forbidInDemoRuntime('backup.restore-test');
+
         // -------------------------------------------------------------
         // STRICT SAFETY CHECK: Restorasi DILARANG pada database operasional / non-testing
         // -------------------------------------------------------------

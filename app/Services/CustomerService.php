@@ -39,6 +39,13 @@ class CustomerService
      */
     public function create(array $data, User $actor): Customer
     {
+        \App\Support\DemoRuntimeGuard::enforceDemoQuota(
+            'customers',
+            (int) config('demo.max_customers', 250),
+            'name',
+            'pelanggan'
+        );
+
         return DB::transaction(function () use ($data, $actor): Customer {
             $customer = Customer::query()->create($data);
             $this->audit($actor, 'customer.created', $customer, ['fields' => ['name', 'phone', 'notes']]);

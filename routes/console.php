@@ -1,10 +1,22 @@
 <?php
 
 use App\Models\User;
+use App\Services\DemoResetService;
+use App\Support\DemoAccessManager;
+use App\Support\DemoRuntimeGuard;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('mfms:create-admin {--connection= : Nama koneksi database target} {--project-ref= : Target Supabase project ref}', function (): int {
+    try {
+        DemoRuntimeGuard::forbidInDemoRuntime('mfms:create-admin');
+    } catch (\Throwable $e) {
+        $this->error($e->getMessage());
+        return 1;
+    }
+
     $connName = (string) ($this->option('connection') ?: config('database.default'));
     $projectRef = $this->option('project-ref') ? (string) $this->option('project-ref') : null;
 
@@ -55,6 +67,13 @@ Artisan::command('mfms:create-admin {--connection= : Nama koneksi database targe
 })->purpose('Membuat satu akun admin pada database tertentu tanpa registrasi publik');
 
 Artisan::command('mfms:reset-password {--email= : Email admin yang akan direset password-nya}', function (): int {
+    try {
+        DemoRuntimeGuard::forbidInDemoRuntime('mfms:reset-password');
+    } catch (\Throwable $e) {
+        $this->error($e->getMessage());
+        return 1;
+    }
+
     $emailOpt = trim((string) ($this->option('email') ?: ''));
     $email = $emailOpt !== '' ? $emailOpt : trim((string) $this->ask('Email admin'));
 
@@ -90,6 +109,13 @@ Artisan::command('mfms:reset-password {--email= : Email admin yang akan direset 
 })->purpose('Mereset password akun admin lokal secara interaktif tanpa ekspos CLI');
 
 Artisan::command('mfms:backup {--key= : Kunci enkripsi khusus} {--ask-key : Minta kunci enkripsi secara interaktif agar tidak terekspos di CLI} {--connection= : Nama koneksi database} {--dir= : Direktori khusus penyimpanan backup}', function (\App\Services\BackupService $backupService): int {
+    try {
+        DemoRuntimeGuard::forbidInDemoRuntime('mfms:backup');
+    } catch (\Throwable $e) {
+        $this->error($e->getMessage());
+        return 1;
+    }
+
     $this->info('Memulai backup database terenkripsi (AES-256-GCM)...');
     try {
         if ($this->option('dir')) {
@@ -133,6 +159,13 @@ Artisan::command('mfms:backup {--key= : Kunci enkripsi khusus} {--ask-key : Mint
 })->purpose('Membuat backup database terenkripsi AES-256-GCM dengan verifikasi checksum SHA-256');
 
 Artisan::command('mfms:restore-test {backup_file? : Path atau nama file backup .enc} {--key= : Kunci enkripsi khusus} {--ask-key : Minta kunci enkripsi secara interaktif} {--connection=testing : Nama koneksi pengujian} {--dir= : Direktori khusus file backup}', function (\App\Services\BackupService $backupService): int {
+    try {
+        DemoRuntimeGuard::forbidInDemoRuntime('mfms:restore-test');
+    } catch (\Throwable $e) {
+        $this->error($e->getMessage());
+        return 1;
+    }
+
     $dir = (string) ($this->option('dir') ?: storage_path('app/backups'));
     $file = $this->argument('backup_file');
     if (! $file) {
@@ -277,6 +310,13 @@ Artisan::command('mfms:test-payment-worker {order_id} {amount} {idempotency_key}
 })->purpose('Worker khusus untuk pengujian konkurensi pembayaran independen (HANYA database testing)');
 
 Artisan::command('mfms:migrate-staging {--connection=pgsql_staging : Nama koneksi database staging} {--project-ref= : Target Supabase project ref yang diizinkan} {--force : Lewati konfirmasi interaktif}', function (): int {
+    try {
+        DemoRuntimeGuard::forbidInDemoRuntime('mfms:migrate-staging');
+    } catch (\Throwable $e) {
+        $this->error($e->getMessage());
+        return 1;
+    }
+
     $connName = (string) $this->option('connection');
     $projectRef = $this->option('project-ref') ? (string) $this->option('project-ref') : null;
 
@@ -324,6 +364,13 @@ Artisan::command('mfms:migrate-staging {--connection=pgsql_staging : Nama koneks
 })->purpose('Menjalankan migrasi satu kali ke database Supabase staging dari runner lokal dengan perlindungan ketat');
 
 Artisan::command('mfms:seed-staging {--connection=pgsql_staging : Nama koneksi database staging} {--project-ref= : Target Supabase project ref yang diizinkan}', function (): int {
+    try {
+        DemoRuntimeGuard::forbidInDemoRuntime('mfms:seed-staging');
+    } catch (\Throwable $e) {
+        $this->error($e->getMessage());
+        return 1;
+    }
+
     $connName = (string) $this->option('connection');
     $projectRef = $this->option('project-ref') ? (string) $this->option('project-ref') : null;
 
@@ -382,6 +429,13 @@ Artisan::command('mfms:seed-staging {--connection=pgsql_staging : Nama koneksi d
 })->purpose('Mengisi data sintetis (kategori & pelanggan dummy) ke database staging');
 
 Artisan::command('mfms:verify-staging {--connection=pgsql_staging : Nama koneksi database staging} {--project-ref= : Target Supabase project ref yang diizinkan}', function (): int {
+    try {
+        DemoRuntimeGuard::forbidInDemoRuntime('mfms:verify-staging');
+    } catch (\Throwable $e) {
+        $this->error($e->getMessage());
+        return 1;
+    }
+
     $connName = (string) $this->option('connection');
     $projectRef = $this->option('project-ref') ? (string) $this->option('project-ref') : null;
 
@@ -511,5 +565,122 @@ Artisan::command('mfms:verify-staging {--connection=pgsql_staging : Nama koneksi
         return 1;
     }
 })->purpose('Memverifikasi keberadaan seluruh tabel, kolom, relasi FK, dan data awal pada database staging');
+
+// ==============================================================================
+// Phase 14A: Temporary Demo Runtime Commands & 24-Hour Automated Reset Schedule
+// ==============================================================================
+
+Artisan::command('mfms:demo-reset {--path= : Path file SQLite demo target} {--keep-sessions : Pertahankan sesi file demo saat reset} {--force : Lewati konfirmasi interaktif}', function (DemoResetService $resetService, DemoAccessManager $demo): int {
+    if (! $demo->isDemoRuntime()) {
+        $this->error('DITOLAK: Perintah mfms:demo-reset hanya diizinkan pada runtime demo (MFMS_RUNTIME_MODE=demo).');
+
+        return 1;
+    }
+
+    $targetPath = $this->option('path') ? (string) $this->option('path') : null;
+    if (! $this->option('force') && ! $this->confirm('Reset seluruh data simulasi SQLite demo dan isi ulang dataset sintetis?')) {
+        $this->warn('Reset demo dibatalkan.');
+
+        return 1;
+    }
+
+    try {
+        $summary = $resetService->reset(
+            targetSqlitePath: $targetPath,
+            flushSessions: ! (bool) $this->option('keep-sessions')
+        );
+
+        $this->info('Reset dataset simulasi demo berhasil (atomic SQLite swap).');
+        $this->line('SQLite Path : '.$summary['sqlite_path']);
+        $this->line('Ukuran File : '.number_format($summary['size_bytes']).' bytes');
+        $this->line('Waktu Reset : '.$summary['reset_at']);
+        $this->line('Sesi Dihapus: '.$summary['sessions_flushed']);
+
+        $rows = [];
+        foreach ($summary['counts'] as $table => $count) {
+            $rows[] = [$table, $count];
+        }
+        $this->table(['Tabel', 'Baris Sintetis'], $rows);
+
+        return 0;
+    } catch (\Throwable $e) {
+        $this->error('Gagal menjalankan reset demo: '.$e->getMessage());
+
+        return 1;
+    }
+})->purpose('Membangun ulang dan menukar secara atomik database SQLite demo dengan dataset sintetis');
+
+Artisan::command('mfms:demo-disable', function (DemoAccessManager $demo): int {
+    $path = $demo->killSwitchPath();
+    $dir = dirname($path);
+    if (! is_dir($dir)) {
+        @mkdir($dir, 0775, true);
+    }
+
+    file_put_contents($path, now('Asia/Jakarta')->toIso8601String()." disabled\n");
+    $this->warn("Emergency kill switch AKTIF: {$path}");
+    $this->line('Seluruh sesi demo aktif dan upaya login demo akan ditolak seketika.');
+
+    return 0;
+})->purpose('Mengaktifkan emergency kill switch untuk menonaktifkan akses demo seketika tanpa restart container');
+
+Artisan::command('mfms:demo-enable', function (DemoAccessManager $demo): int {
+    $path = $demo->killSwitchPath();
+    if (is_file($path)) {
+        @unlink($path);
+        $this->info("Emergency kill switch dicabut: {$path}");
+    } else {
+        $this->info('Emergency kill switch tidak aktif.');
+    }
+
+    return 0;
+})->purpose('Mencabut emergency kill switch demo');
+
+Artisan::command('mfms:demo-status', function (DemoAccessManager $demo): int {
+    $expiresAt = $demo->expiresAt();
+    $activatedAt = $demo->activatedAt();
+    $sqlitePath = (string) config('database.connections.sqlite.database', '');
+    $sqliteExists = $sqlitePath !== '' && $sqlitePath !== ':memory:' && is_file($sqlitePath);
+
+    $this->table(['Properti', 'Status'], [
+        ['Runtime Mode', $demo->runtimeMode()],
+        ['DEMO_ENABLED', config('demo.enabled') ? 'true' : 'false'],
+        ['Emergency Kill Switch', $demo->isKillSwitchEngaged() ? 'ENGAGED (DISABLED)' : 'clear'],
+        ['Active Now', $demo->isActive() ? 'ACTIVE' : 'INACTIVE ('.$demo->inactiveReason().')'],
+        ['Demo Email', $demo->demoEmail()],
+        ['Password Configured', $demo->demoPassword() !== null ? 'yes (hidden)' : 'NO'],
+        ['Activated At (WIB)', $activatedAt ? $activatedAt->toIso8601String() : 'not configured'],
+        ['Expires At (WIB)', $expiresAt ? $expiresAt->toIso8601String() : 'not configured'],
+        ['Reset Schedule (WIB)', (string) config('demo.reset_time', '03:00').' daily'],
+        ['SQLite Path', $sqlitePath ?: '(none)'],
+        ['SQLite Size', $sqliteExists ? number_format((int) filesize($sqlitePath)).' bytes' : 'n/a'],
+    ]);
+
+    return 0;
+})->purpose('Menampilkan status siklus hidup dan isolasi runtime demo tanpa menampilkan password');
+
+Artisan::command('mfms:demo-generate-password', function (): int {
+    $alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+    $len = strlen($alphabet);
+    $segments = [];
+    for ($s = 0; $s < 3; $s++) {
+        $chunk = '';
+        for ($i = 0; $i < 5; $i++) {
+            $chunk .= $alphabet[random_int(0, $len - 1)];
+        }
+        $segments[] = $chunk;
+    }
+
+    $password = 'Mutiara-'.implode('-', $segments);
+    $this->line($password);
+
+    return 0;
+})->purpose('Menghasilkan password demo khusus yang kuat untuk dikonfigurasi pada DEMO_PASSWORD');
+
+Schedule::command('mfms:demo-reset --force')
+    ->dailyAt((string) config('demo.reset_time', '03:00'))
+    ->timezone('Asia/Jakarta')
+    ->when(fn (): bool => app(DemoAccessManager::class)->isDemoRuntime() && app(DemoAccessManager::class)->isActive())
+    ->withoutOverlapping();
 
 

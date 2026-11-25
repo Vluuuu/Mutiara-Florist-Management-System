@@ -1,10 +1,18 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Head, useForm } from '@inertiajs/react';
-import { Eye, EyeOff, Lock, LogIn, Mail } from 'lucide-react';
+import { Check, Copy, Eye, EyeOff, Lock, LogIn, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+
+type DemoAccessProps = {
+    available: boolean;
+    email?: string;
+    password?: string;
+    reset_interval?: string;
+};
 
 type LoginProps = {
     errors?: Record<string, string>;
+    demoAccess?: DemoAccessProps | null;
 };
 
 const LEDGER_SCOPE = [
@@ -13,8 +21,28 @@ const LEDGER_SCOPE = [
     { num: '03', text: 'Pembukuan pembayaran, piutang terbuka, dan pengeluaran dengan jejak audit' },
 ];
 
-export default function Login(_props: LoginProps) {
+function legacyCopyText(text: string): boolean {
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const field = document.createElement('textarea');
+    field.value = text;
+    field.setAttribute('readonly', '');
+    field.style.cssText = 'position:fixed;inset-block-start:0;opacity:0';
+    document.body.append(field);
+    field.select();
+    try {
+        return document.execCommand('copy');
+    } finally {
+        field.remove();
+        previousFocus?.focus({ preventScroll: true });
+    }
+}
+
+export default function Login({ demoAccess }: LoginProps) {
     const [showPassword, setShowPassword] = useState(false);
+    const [copiedField, setCopiedField] = useState<'email' | 'password' | null>(null);
+    const [copyStatus, setCopyStatus] = useState('');
+    const copyTimerRef = useRef<number | null>(null);
+    const lastAnnouncementRef = useRef('');
 
     const { data, setData, post, processing, errors } = useForm({
         email: '',
@@ -24,6 +52,117 @@ export default function Login(_props: LoginProps) {
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
         post('/login');
+    };
+
+    const showDemoCard = Boolean(demoAccess?.available && demoAccess.email && demoAccess.password);
+
+    useEffect(() => {
+        if (!showDemoCard) {
+            return;
+        }
+
+        const announce = (field: 'email' | 'password', ok: boolean) => {
+            if (copyTimerRef.current !== null) {
+                window.clearTimeout(copyTimerRef.current);
+            }
+
+            let message = ok
+                ? field === 'email'
+                    ? 'Email demo disalin'
+                    : 'Password demo disalin'
+                : 'Gagal menyalin ke clipboard';
+
+            if (message === lastAnnouncementRef.current) {
+                message += '\u00A0';
+            }
+            lastAnnouncementRef.current = message;
+
+            setCopiedField(ok ? field : null);
+            setCopyStatus('');
+            window.requestAnimationFrame(() => setCopyStatus(message));
+
+            copyTimerRef.current = window.setTimeout(() => {
+                setCopiedField(null);
+                setCopyStatus('');
+            }, 2200);
+        };
+
+        const runCopy = async (target: HTMLElement | null) => {
+            if (!target) {
+                return;
+            }
+            const field = target.id === 'demo-credential-email' ? 'email' : 'password';
+            const text = target.innerText.trim();
+            if (!text) {
+                return;
+            }
+
+            try {
+                if (navigator.clipboard?.writeText) {
+                    await navigator.clipboard.writeText(text);
+                } else if (!legacyCopyText(text)) {
+                    throw new Error('Copy failed');
+                }
+                announce(field, true);
+            } catch {
+                if (legacyCopyText(text)) {
+                    announce(field, true);
+                } else {
+                    announce(field, false);
+                }
+            }
+        };
+
+        const onCommand = (event: Event) => {
+            const cmdEvent = event as Event & { command?: string; target: EventTarget | null };
+            if (cmdEvent.command === '--copy' && cmdEvent.target instanceof HTMLElement) {
+                void runCopy(cmdEvent.target);
+            }
+        };
+
+        const onClickFallback = (event: MouseEvent) => {
+            if (event.defaultPrevented) {
+                return;
+            }
+            const el = event.target instanceof Element ? event.target.closest('button[command="--copy"]') : null;
+            if (!el) {
+                return;
+            }
+            const targetId = el.getAttribute('commandfor');
+            if (!targetId) {
+                return;
+            }
+            void runCopy(document.getElementById(targetId));
+        };
+
+        const supportsInvokerCommands = typeof window !== 'undefined' && 'CommandEvent' in window;
+
+        if (supportsInvokerCommands) {
+            document.addEventListener('command', onCommand, true);
+        } else {
+            document.addEventListener('click', onClickFallback);
+        }
+
+        return () => {
+            if (supportsInvokerCommands) {
+                document.removeEventListener('command', onCommand, true);
+            } else {
+                document.removeEventListener('click', onClickFallback);
+            }
+            if (copyTimerRef.current !== null) {
+                window.clearTimeout(copyTimerRef.current);
+            }
+        };
+    }, [showDemoCard]);
+
+    const handleAutofillDemo = () => {
+        if (!demoAccess?.email || !demoAccess?.password) {
+            return;
+        }
+        setData({
+            email: demoAccess.email,
+            password: demoAccess.password,
+        });
     };
 
     return (
@@ -173,6 +312,103 @@ export default function Login(_props: LoginProps) {
                                 </Button>
                             </div>
                         </form>
+
+                        {showDemoCard && demoAccess && (
+                            <section
+                                aria-labelledby="demo-credentials-heading"
+                                className="mt-6 border-t border-[#DED6C8] pt-5"
+                            >
+                                <div className="rounded-[8px] border border-[#DED6C8] bg-[#EFE9DE] p-4">
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                        <h2
+                                            id="demo-credentials-heading"
+                                            className="text-sm font-bold text-[#1C211E]"
+                                        >
+                                            Akun Demo Evaluasi
+                                        </h2>
+                                        <button
+                                            type="button"
+                                            onClick={handleAutofillDemo}
+                                            className="inline-flex min-h-[44px] items-center rounded-[6px] border border-[#7D776C] bg-[#FFFDF9] px-3.5 py-2 text-xs font-semibold text-[#1D3B2A] hover:bg-[#EBF3EE] focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[#1D3B2A]"
+                                        >
+                                            Isi ke Form
+                                        </button>
+                                    </div>
+
+                                    <p className="mt-1 text-xs leading-relaxed text-[#545852]">
+                                        Gunakan kredensial simulasi berikut untuk meninjau fitur tanpa menyentuh data toko.
+                                    </p>
+
+                                    <dl className="mt-3 space-y-2">
+                                        <div className="flex items-center justify-between gap-2 rounded-[6px] border border-[#DED6C8] bg-[#FFFDF9] pl-3 pr-1 py-1">
+                                            <div className="min-w-0">
+                                                <dt className="text-[11px] font-semibold text-[#545852]">Email</dt>
+                                                <dd
+                                                    id="demo-credential-email"
+                                                    className="truncate font-[var(--font-mono)] text-xs font-medium text-[#1C211E]"
+                                                >
+                                                    {demoAccess.email}
+                                                </dd>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                {...({
+                                                    command: '--copy',
+                                                    commandfor: 'demo-credential-email',
+                                                } as Record<string, string>)}
+                                                aria-label="Salin email demo"
+                                                className="inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-[6px] text-[#1D3B2A] hover:bg-[#EFE9DE] focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[#1D3B2A]"
+                                            >
+                                                {copiedField === 'email' ? (
+                                                    <Check className="size-4" aria-hidden="true" />
+                                                ) : (
+                                                    <Copy className="size-4" aria-hidden="true" />
+                                                )}
+                                            </button>
+                                        </div>
+
+                                        <div className="flex items-center justify-between gap-2 rounded-[6px] border border-[#DED6C8] bg-[#FFFDF9] pl-3 pr-1 py-1">
+                                            <div className="min-w-0">
+                                                <dt className="text-[11px] font-semibold text-[#545852]">Password</dt>
+                                                <dd
+                                                    id="demo-credential-password"
+                                                    className="truncate font-[var(--font-mono)] text-xs font-medium text-[#1C211E]"
+                                                >
+                                                    {demoAccess.password}
+                                                </dd>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                {...({
+                                                    command: '--copy',
+                                                    commandfor: 'demo-credential-password',
+                                                } as Record<string, string>)}
+                                                aria-label="Salin password demo"
+                                                className="inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-[6px] text-[#1D3B2A] hover:bg-[#EFE9DE] focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[#1D3B2A]"
+                                            >
+                                                {copiedField === 'password' ? (
+                                                    <Check className="size-4" aria-hidden="true" />
+                                                ) : (
+                                                    <Copy className="size-4" aria-hidden="true" />
+                                                )}
+                                            </button>
+                                        </div>
+                                    </dl>
+
+                                    <div className="mt-2.5 flex items-center justify-between gap-2 text-xs text-[#545852]">
+                                        <span>Data simulasi direset otomatis setiap {demoAccess.reset_interval ?? '24 jam'}.</span>
+                                        <span
+                                            role="status"
+                                            className={`shrink-0 font-semibold text-[#164B2A] transition-opacity ${
+                                                copyStatus ? 'opacity-100' : 'opacity-0'
+                                            }`}
+                                        >
+                                            {copyStatus}
+                                        </span>
+                                    </div>
+                                </div>
+                            </section>
+                        )}
                     </div>
                 </div>
             </main>

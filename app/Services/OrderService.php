@@ -124,6 +124,13 @@ class OrderService
 
     public function create(array $data, int $actorId): Order
     {
+        \App\Support\DemoRuntimeGuard::enforceDemoQuota(
+            'orders',
+            (int) config('demo.max_orders', 250),
+            'customer_id',
+            'pesanan'
+        );
+
         return DB::transaction(function () use ($data, $actorId): Order {
             $this->ensureActiveCustomer((int) $data['customer_id']);
 

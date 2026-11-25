@@ -35,8 +35,13 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->trustHosts(at: array_values(array_unique(array_filter($trustedHosts))), subdomains: false);
 
+        $middleware->encryptCookies(except: [
+            'mfms_runtime',
+        ]);
+
         $middleware->web(append: [
             \App\Http\Middleware\VerifyCloudflareAccessJwt::class,
+            \App\Http\Middleware\EnforceDemoAccessLifecycle::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -34,6 +34,7 @@ RUN apk add --no-cache \
     supervisor \
     curl \
     postgresql-dev \
+    sqlite-libs \
     libzip-dev \
     icu-dev \
     libpng-dev \
@@ -47,15 +48,18 @@ RUN docker-php-ext-install -j$(nproc) \
     bcmath \
     intl \
     opcache \
-    mbstring
+    mbstring && \
+    php -m | grep -q pdo_sqlite
 
-# Configure PHP runtime & FPM pool tuned for 512 MB memory limit
+# Configure PHP runtime & FPM pool tuned for 512 MB memory limit (prod) and 256 MB (demo)
 COPY docker/php.ini /usr/local/etc/php/conf.d/mfms.ini
 COPY docker/fpm-pool.conf /usr/local/etc/php-fpm.d/zz-mfms.conf
+COPY docker/fpm-pool-demo.conf /etc/mfms/fpm-pool-demo.conf
 COPY docker/nginx.conf /etc/nginx/http.d/default.conf
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
+COPY docker/entrypoint-demo.sh /usr/local/bin/entrypoint-demo.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/entrypoint-demo.sh
 
 WORKDIR /var/www/html
 

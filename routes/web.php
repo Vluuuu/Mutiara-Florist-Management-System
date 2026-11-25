@@ -15,17 +15,48 @@ use App\Http\Controllers\UiOrderController;
 use App\Http\Controllers\UiPaymentController;
 use App\Http\Controllers\UiReportController;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Support\DemoAccessManager;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', fn () => redirect()->route(Auth::check() ? 'dashboard' : 'login'));
 
+Route::get('/admin-entry', function (DemoAccessManager $demo) {
+    return redirect()
+        ->route(Auth::check() ? 'dashboard' : 'login')
+        ->withCookie(Cookie::forget($demo->routingCookieName(), '/'));
+})->name('admin-entry');
+
+Route::get('/demo', function (Request $request, DemoAccessManager $demo) {
+    if (! $demo->isDemoRuntime()) {
+        abort(404);
+    }
+
+    $cookie = Cookie::make(
+        name: $demo->routingCookieName(),
+        value: $demo->routingCookieValue(),
+        minutes: (int) config('session.lifetime', 120),
+        path: '/',
+        domain: config('session.domain'),
+        secure: (bool) config('session.secure', $request->isSecure()),
+        httpOnly: true,
+        raw: false,
+        sameSite: (string) config('session.same_site', 'lax')
+    );
+
+    return redirect()
+        ->route(Auth::check() ? 'dashboard' : 'login')
+        ->withCookie($cookie);
+})->name('demo.entry');
+
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'show'])->middleware(HandleInertiaRequests::class)->name('login');
     Route::get('/ui-login', [LoginController::class, 'show'])->middleware(HandleInertiaRequests::class)->name('ui-login');
     Route::get('/blade-login', [LoginController::class, 'showBlade'])->name('blade-login');
-    Route::post('/login', [LoginController::class, 'store'])->middleware('throttle:6,1')->name('login.store');
+    Route::post('/login', [LoginController::class, 'store'])->middleware('throttle:login')->name('login.store');
 });
 
 Route::middleware('auth')->group(function () {
@@ -117,7 +148,7 @@ Route::middleware('auth')->group(function () {
     // Phase 4: Financial and Operational Reports & Excel Export
     Route::prefix('ui-reports')->name('ui-reports.')->middleware(HandleInertiaRequests::class)->group(function () {
         Route::get('/', [UiReportController::class, 'index'])->name('index');
-        Route::get('/export', [UiReportController::class, 'export'])->name('export');
+        Route::get('/export', [UiReportController::class, 'export'])->middleware('throttle:demo-export')->name('export');
     });
 
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');

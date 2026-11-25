@@ -12,6 +12,13 @@ class ExpenseService
 {
     public function record(array $data, int $actorId): Expense
     {
+        \App\Support\DemoRuntimeGuard::enforceDemoQuota(
+            'expenses',
+            (int) config('demo.max_expenses', 500),
+            'description',
+            'pengeluaran'
+        );
+
         try {
             return DB::transaction(function () use ($data, $actorId): Expense {
                 $existing = Expense::query()->where('idempotency_key', $data['idempotency_key'])->first();
