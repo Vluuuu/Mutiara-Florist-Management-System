@@ -341,7 +341,12 @@ export function NavigationErrorBanner({
                             variant="primary"
                             onClick={() => {
                                 if (typeof window !== 'undefined') {
-                                    window.location.assign('/login');
+                                    const target =
+                                        error.url &&
+                                        (error.url.startsWith('/login') || error.url.startsWith('/demo'))
+                                            ? error.url
+                                            : '/login';
+                                    window.location.assign(target);
                                 }
                             }}
                         >

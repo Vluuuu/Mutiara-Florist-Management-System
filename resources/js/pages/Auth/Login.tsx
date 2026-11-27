@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, usePage } from '@inertiajs/react';
 import { Check, Copy, Eye, EyeOff, Lock, LogIn, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import type { AppPageProps } from '@/types';
 
 type DemoAccessProps = {
     available: boolean;
@@ -21,6 +22,7 @@ type LoginProps = {
     errors?: Record<string, string>;
     demoAccess?: DemoAccessProps | null;
     demoNavigation?: DemoNavigationProps | null;
+    sessionNotice?: string | null;
 };
 
 const LEDGER_SCOPE = [
@@ -45,7 +47,8 @@ function legacyCopyText(text: string): boolean {
     }
 }
 
-export default function Login({ demoAccess, demoNavigation }: LoginProps) {
+export default function Login({ demoAccess, demoNavigation, sessionNotice }: LoginProps) {
+    const { flash } = usePage<AppPageProps>().props;
     const [showPassword, setShowPassword] = useState(false);
     const [copiedField, setCopiedField] = useState<'email' | 'password' | null>(null);
     const [copyStatus, setCopyStatus] = useState('');
@@ -56,6 +59,21 @@ export default function Login({ demoAccess, demoNavigation }: LoginProps) {
         email: '',
         password: '',
     });
+
+    const activeSessionNotice = sessionNotice ?? flash?.error ?? null;
+
+    useEffect(() => {
+        if (typeof window === 'undefined') {
+            return;
+        }
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('session_expired')) {
+            params.delete('session_expired');
+            const nextQuery = params.toString();
+            const cleanUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ''}${window.location.hash}`;
+            window.history.replaceState(window.history.state, '', cleanUrl);
+        }
+    }, []);
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
@@ -226,12 +244,12 @@ export default function Login({ demoAccess, demoNavigation }: LoginProps) {
                             Masukkan akun operator toko untuk melanjutkan.
                         </p>
 
-                        {errors.email && (
+                        {(errors.email || activeSessionNotice) && (
                             <div
                                 role="alert"
                                 className="mt-5 rounded-[8px] border border-[#E2B3AA] bg-[#FCECE9] p-3.5 text-sm font-medium text-[#8A2619]"
                             >
-                                {errors.email}
+                                {errors.email ?? activeSessionNotice}
                             </div>
                         )}
 

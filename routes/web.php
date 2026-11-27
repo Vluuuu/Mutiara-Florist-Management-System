@@ -18,18 +18,20 @@ use App\Http\Middleware\HandleInertiaRequests;
 use App\Support\DemoAccessManager;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', fn () => redirect()->route(Auth::check() ? 'dashboard' : 'login'));
 
-Route::get('/admin-entry', function (DemoAccessManager $demo) {
-    return redirect()
-        ->route(Auth::check() ? 'dashboard' : 'login')
-        ->withCookie(Cookie::forget($demo->routingCookieName(), '/'))
-        ->withCookie(Cookie::forget('mfms_demo_session', '/'))
-        ->withCookie(Cookie::forget('XSRF-TOKEN', '/'));
+Route::get('/admin-entry', function (Request $request, DemoAccessManager $demo) {
+    $target = Auth::check()
+        ? route('dashboard')
+        : route('login', $request->boolean('session_expired') ? ['session_expired' => 1] : []);
+
+    return redirect($target)
+        ->withCookie($demo->forgetRoutingCookie($request))
+        ->withCookie($demo->forgetCookie($request, 'mfms_demo_session', httpOnly: true))
+        ->withCookie($demo->forgetCookie($request, $demo->demoXsrfCookieName(), httpOnly: false));
 })->name('admin-entry');
 
 Route::get('/demo', function (Request $request, DemoAccessManager $demo) {
@@ -37,22 +39,12 @@ Route::get('/demo', function (Request $request, DemoAccessManager $demo) {
         abort(404);
     }
 
-    $cookie = Cookie::make(
-        name: $demo->routingCookieName(),
-        value: $demo->routingCookieValue(),
-        minutes: (int) config('session.lifetime', 120),
-        path: '/',
-        domain: config('session.domain'),
-        secure: (bool) config('session.secure', $request->isSecure()),
-        httpOnly: true,
-        raw: false,
-        sameSite: (string) config('session.same_site', 'lax')
-    );
+    $target = Auth::check()
+        ? route('dashboard')
+        : route('login', $request->boolean('session_expired') ? ['session_expired' => 1] : []);
 
-    return redirect()
-        ->route(Auth::check() ? 'dashboard' : 'login')
-        ->withCookie($cookie)
-        ->withCookie(Cookie::forget('XSRF-TOKEN', '/'));
+    return redirect($target)
+        ->withCookie($demo->makeRoutingCookie($request));
 })->name('demo.entry');
 
 Route::middleware('guest')->group(function () {

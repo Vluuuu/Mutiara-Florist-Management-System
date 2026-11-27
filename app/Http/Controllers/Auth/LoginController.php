@@ -7,10 +7,10 @@ use App\Support\DemoAccessManager;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cookie;
 use Illuminate\View\View;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class LoginController extends Controller
 {
@@ -22,11 +22,15 @@ class LoginController extends Controller
     {
         $demoAccess = $this->demo->loginViewPayload();
         $demoNavigation = $this->demo->loginNavigationPayload();
+        $sessionNotice = $request->boolean('session_expired')
+            ? $this->demo->sessionExpiredMessage()
+            : $request->session()->get('session_expired_notice');
 
         if ($request->query('fallback') === 'blade' || $request->routeIs('blade-login')) {
             return view('auth.login', [
                 'demoAccess' => $demoAccess,
                 'demoNavigation' => $demoNavigation,
+                'sessionNotice' => $sessionNotice,
             ]);
         }
 
@@ -35,13 +39,17 @@ class LoginController extends Controller
             'brand' => 'Mutiara Florist',
             'demoAccess' => $demoAccess,
             'demoNavigation' => $demoNavigation,
+            'sessionNotice' => $sessionNotice,
         ]);
     }
 
-    public function showBlade(): View
+    public function showBlade(Request $request): View
     {
         return view('auth.login', [
             'demoAccess' => $this->demo->loginViewPayload(),
+            'sessionNotice' => $request->boolean('session_expired')
+                ? $this->demo->sessionExpiredMessage()
+                : $request->session()->get('session_expired_notice'),
         ]);
     }
 
@@ -86,8 +94,9 @@ class LoginController extends Controller
 
         return redirect()
             ->intended($target)
-            ->withCookie(Cookie::forget($this->demo->routingCookieName(), '/'))
-            ->withCookie(Cookie::forget('mfms_demo_session', '/'));
+            ->withCookie($this->demo->forgetRoutingCookie($request))
+            ->withCookie($this->demo->forgetCookie($request, 'mfms_demo_session', httpOnly: true))
+            ->withCookie($this->demo->forgetCookie($request, $this->demo->demoXsrfCookieName(), httpOnly: false));
     }
 
     private function authenticateDemoRuntime(Request $request, array $credentials): RedirectResponse
@@ -125,34 +134,43 @@ class LoginController extends Controller
             ? route('ui-dashboard', absolute: false)
             : route('dashboard', absolute: false);
 
-        $isSecure = (bool) config('session.secure', $request->isSecure());
-        $lifetime = (int) config('session.lifetime', 120);
-        $routingCookie = Cookie::make(
-            name: $this->demo->routingCookieName(),
-            value: $this->demo->routingCookieValue(),
-            minutes: $lifetime,
-            path: '/',
-            domain: config('session.domain'),
-            secure: $isSecure,
-            httpOnly: true,
-            raw: false,
-            sameSite: (string) config('session.same_site', 'lax')
-        );
-
         return redirect()
             ->intended($target)
-            ->withCookie($routingCookie);
+            ->withCookie($this->demo->makeRoutingCookie($request));
     }
 
-    public function destroy(Request $request): RedirectResponse
+    public function destroy(Request $request): SymfonyResponse
     {
+        $isDemoRuntime = $this->demo->isDemoRuntime();
+
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()
+        $expiredRoutingCookie = $this->demo->forgetRoutingCookie($request);
+
+        // When leaving the isolated demo runtime via Inertia, force a full-page
+        // navigation so the browser cleanly boots the primary runtime's CSRF context.
+        if ($isDemoRuntime && $request->header('X-Inertia')) {
+            $response = Inertia::location(route('login'));
+            $response->headers->setCookie($expiredRoutingCookie);
+            $response->headers->setCookie(
+                $this->demo->forgetCookie($request, $this->demo->xsrfCookieName(), httpOnly: false)
+            );
+
+            return $response;
+        }
+
+        $redirect = redirect()
             ->route('login')
-            ->withCookie(Cookie::forget($this->demo->routingCookieName(), '/'))
-            ->withCookie(Cookie::forget('XSRF-TOKEN', '/'));
+            ->withCookie($expiredRoutingCookie);
+
+        if ($isDemoRuntime) {
+            $redirect->withCookie(
+                $this->demo->forgetCookie($request, $this->demo->xsrfCookieName(), httpOnly: false)
+            );
+        }
+
+        return $redirect;
     }
 }

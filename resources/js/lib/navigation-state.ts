@@ -1,5 +1,10 @@
 import { useEffect, useId, useSyncExternalStore } from 'react';
 import { router } from '@inertiajs/react';
+import {
+    getTabRuntimeContext,
+    resolveSessionRecoveryUrl,
+    SESSION_EXPIRED_MESSAGE,
+} from '@/lib/runtime-csrf';
 
 export type NavigationErrorInfo = {
     status?: number;
@@ -294,7 +299,7 @@ function buildHttpErrorInfo(status: number | undefined, url: string, component?:
         return {
             status,
             title: 'Sesi Anda telah berakhir',
-            message: 'Silakan masuk kembali agar transaksi dan data keuangan tetap aman.',
+            message: SESSION_EXPIRED_MESSAGE,
             url,
             component,
             isAuthError: true,
@@ -558,9 +563,58 @@ export function initNavigationLifecycle() {
 
     router.on('httpException', (event) => {
         const detail = event.detail as {
-            response?: { status?: number };
+            response?: {
+                status?: number;
+                headers?: Record<string, string>;
+                data?: unknown;
+            };
         };
         const status = detail.response?.status;
+        const headers = detail.response?.headers ?? {};
+        const isRuntimeMismatch =
+            status === 409 && headers['x-mfms-runtime-mismatch'] === '1';
+
+        // Gracefully recover expired sessions (419) without ever replaying failed POSTs.
+        if (status === 419) {
+            event.preventDefault();
+            clearAllDirtyForms();
+            router.flushAll();
+            const recoveryUrl = resolveSessionRecoveryUrl(
+                detail.response?.data,
+                getTabRuntimeContext().mode,
+            );
+            window.location.assign(recoveryUrl);
+            return;
+        }
+
+        // Reject stale cross-runtime tabs cleanly without replaying the failed mutation.
+        if (isRuntimeMismatch) {
+            event.preventDefault();
+            clearAllDirtyForms();
+            router.flushAll();
+            const recoveryUrl = resolveSessionRecoveryUrl(
+                detail.response?.data,
+                getTabRuntimeContext().mode,
+            );
+            const currentPath = window.location.pathname;
+            if (currentPath === '/login' || currentPath === '/ui-login') {
+                window.location.assign(recoveryUrl);
+                return;
+            }
+
+            const fgId = activeForegroundVisitId;
+            completeVisitById(fgId, true, {
+                navigationError: {
+                    status: 409,
+                    title: 'Mode aplikasi pada tab ini telah berubah',
+                    message: SESSION_EXPIRED_MESSAGE,
+                    url: recoveryUrl,
+                    component: null,
+                    isAuthError: true,
+                },
+            });
+            return;
+        }
 
         const fg = activeForegroundVisitId ? trackedVisits.get(activeForegroundVisitId) : undefined;
         if (fg) {

@@ -72,6 +72,13 @@ return [
     */
     'routing_cookie_name' => env('DEMO_ROUTING_COOKIE', 'mfms_runtime'),
     'routing_cookie_value' => 'demo',
+    // 0 = auto-derive sliding TTL (>= session.lifetime + 15m, or 0 if expire_on_close)
+    'routing_cookie_lifetime' => (int) env('DEMO_ROUTING_COOKIE_LIFETIME', 0),
+    'prod_xsrf_cookie_name' => env('PROD_XSRF_COOKIE', 'MFMS-PROD-XSRF-TOKEN'),
+    'demo_xsrf_cookie_name' => env('DEMO_XSRF_COOKIE', 'MFMS-DEMO-XSRF-TOKEN'),
+    'prod_xsrf_header_name' => 'X-MFMS-PROD-XSRF-TOKEN',
+    'demo_xsrf_header_name' => 'X-MFMS-DEMO-XSRF-TOKEN',
+    'runtime_header_name' => 'X-MFMS-Runtime',
     'entry_link_enabled' => filter_var(env('DEMO_ENTRY_LINK_ENABLED', false), FILTER_VALIDATE_BOOL),
 
     /*

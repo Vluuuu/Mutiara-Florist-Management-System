@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\DemoAccessManager;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -13,6 +14,7 @@ class HandleInertiaRequests extends Middleware
     {
         return array_merge(parent::share($request), [
             'csrf_token' => fn () => csrf_token(),
+            'runtime' => fn () => app(DemoAccessManager::class)->frontendRuntimePayload(),
             'auth' => [
                 'user' => fn () => $request->user()?->only(['id', 'name']),
             ],

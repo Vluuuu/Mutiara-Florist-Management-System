@@ -3,7 +3,11 @@
 namespace App\Support;
 
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Cookie;
+use Symfony\Component\HttpFoundation\Cookie as SymfonyCookie;
+use Symfony\Component\HttpFoundation\Response;
 
 class DemoAccessManager
 {
@@ -271,5 +275,157 @@ class DemoAccessManager
     public function routingCookieValue(): string
     {
         return (string) Config::get('demo.routing_cookie_value', 'demo');
+    }
+
+    public function xsrfCookieName(): string
+    {
+        return $this->isDemoRuntime()
+            ? (string) Config::get('demo.demo_xsrf_cookie_name', 'MFMS-DEMO-XSRF-TOKEN')
+            : (string) Config::get('demo.prod_xsrf_cookie_name', 'MFMS-PROD-XSRF-TOKEN');
+    }
+
+    public function xsrfHeaderName(): string
+    {
+        return $this->isDemoRuntime()
+            ? (string) Config::get('demo.demo_xsrf_header_name', 'X-MFMS-DEMO-XSRF-TOKEN')
+            : (string) Config::get('demo.prod_xsrf_header_name', 'X-MFMS-PROD-XSRF-TOKEN');
+    }
+
+    public function demoXsrfCookieName(): string
+    {
+        return (string) Config::get('demo.demo_xsrf_cookie_name', 'MFMS-DEMO-XSRF-TOKEN');
+    }
+
+    public function runtimeHeaderName(): string
+    {
+        return (string) Config::get('demo.runtime_header_name', 'X-MFMS-Runtime');
+    }
+
+    public function sessionExpiredMessage(): string
+    {
+        return 'Sesi telah berakhir. Silakan masuk kembali.';
+    }
+
+    public function cookiePath(): string
+    {
+        $path = Config::get('session.path', '/');
+
+        return is_string($path) && $path !== '' ? $path : '/';
+    }
+
+    public function cookieDomain(): ?string
+    {
+        $domain = Config::get('session.domain');
+
+        return is_string($domain) && trim($domain) !== '' ? $domain : null;
+    }
+
+    public function cookieSecureFlag(Request $request): bool
+    {
+        $configured = Config::get('session.secure');
+
+        return is_bool($configured) ? $configured : $request->isSecure();
+    }
+
+    public function cookieSameSite(): string
+    {
+        $sameSite = Config::get('session.same_site', 'lax');
+
+        return is_string($sameSite) && $sameSite !== '' ? $sameSite : 'lax';
+    }
+
+    /**
+     * Sliding lifetime for the runtime selector cookie (mfms_runtime=demo).
+     * Always meets or exceeds session.lifetime (+15m safety margin against clock skew)
+     * and is refreshed on every active demo request so it never expires while a valid
+     * demo session remains active.
+     */
+    public function routingCookieLifetimeMinutes(): int
+    {
+        if ((bool) Config::get('session.expire_on_close', false)) {
+            return 0;
+        }
+
+        $sessionLifetime = max(1, (int) Config::get('session.lifetime', 120));
+        $configured = (int) Config::get('demo.routing_cookie_lifetime', 0);
+
+        return $configured > 0
+            ? max($configured, $sessionLifetime)
+            : $sessionLifetime + 15;
+    }
+
+    public function makeRoutingCookie(Request $request): SymfonyCookie
+    {
+        return Cookie::make(
+            name: $this->routingCookieName(),
+            value: $this->routingCookieValue(),
+            minutes: $this->routingCookieLifetimeMinutes(),
+            path: $this->cookiePath(),
+            domain: $this->cookieDomain(),
+            secure: $this->cookieSecureFlag($request),
+            httpOnly: true,
+            raw: false,
+            sameSite: $this->cookieSameSite(),
+        );
+    }
+
+    public function forgetRoutingCookie(Request $request): SymfonyCookie
+    {
+        return $this->forgetCookie($request, $this->routingCookieName(), httpOnly: true);
+    }
+
+    public function forgetCookie(Request $request, string $name, bool $httpOnly = true): SymfonyCookie
+    {
+        return new SymfonyCookie(
+            name: $name,
+            value: null,
+            expire: 1,
+            path: $this->cookiePath(),
+            domain: $this->cookieDomain(),
+            secure: $this->cookieSecureFlag($request),
+            httpOnly: $httpOnly,
+            raw: false,
+            sameSite: $this->cookieSameSite(),
+        );
+    }
+
+    public function hasExpiringCookie(Response $response, string $name): bool
+    {
+        $now = time();
+
+        foreach ($response->headers->getCookies() as $cookie) {
+            if ($cookie->getName() === $name && $cookie->getExpiresTime() > 0 && $cookie->getExpiresTime() <= $now) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function hasCookie(Response $response, string $name): bool
+    {
+        foreach ($response->headers->getCookies() as $cookie) {
+            if ($cookie->getName() === $name) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Runtime metadata shared with the browser tab so Inertia 3 binds
+     * CSRF cookies/headers and cross-runtime assertions strictly to this runtime.
+     *
+     * @return array{mode: 'production'|'demo', xsrf_cookie: string, xsrf_header: string, runtime_header: string}
+     */
+    public function frontendRuntimePayload(): array
+    {
+        return [
+            'mode' => $this->isDemoRuntime() ? 'demo' : 'production',
+            'xsrf_cookie' => $this->xsrfCookieName(),
+            'xsrf_header' => $this->xsrfHeaderName(),
+            'runtime_header' => $this->runtimeHeaderName(),
+        ];
     }
 }

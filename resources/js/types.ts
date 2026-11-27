@@ -129,12 +129,20 @@ export type FlashMessages = {
     error?: string | null;
 };
 
+export type RuntimeContext = {
+    mode: 'production' | 'demo';
+    xsrf_cookie: string;
+    xsrf_header: string;
+    runtime_header: string;
+};
+
 export type AppPageProps = PageProps & {
     auth: { user: { id: number; name: string } | null };
     flash?: FlashMessages;
     nav: DashboardNav;
     errors?: Record<string, string>;
     csrf_token?: string;
+    runtime?: RuntimeContext;
 };
 
 export type CustomerItem = {

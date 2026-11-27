@@ -18,6 +18,7 @@ import { Modal } from '@/components/ui/modal';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { invalidateNavigationCache, useUnsavedChangesGuard } from '@/lib/navigation-state';
 import { formatRupiah, getWibTodayIso } from '@/lib/format';
+import { getRuntimeRequestHeaders, SESSION_EXPIRED_MESSAGE } from '@/lib/runtime-csrf';
 import { cn } from '@/lib/utils';
 import type {
     AppPageProps,
@@ -429,6 +430,7 @@ export function OrderForm({
                     Accept: 'application/json',
                     'Content-Type': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
+                    ...getRuntimeRequestHeaders(),
                     ...(token ? { 'X-CSRF-TOKEN': token } : {}),
                 },
                 body: JSON.stringify({
@@ -443,6 +445,13 @@ export function OrderForm({
                 message?: string;
                 errors?: Record<string, string[]>;
             };
+
+            if (response.status === 419 || response.status === 409) {
+                setQuickErrors({
+                    form: body.message ?? SESSION_EXPIRED_MESSAGE,
+                });
+                return;
+            }
 
             if (response.status === 422 && body.errors) {
                 const flat: Record<string, string> = {};

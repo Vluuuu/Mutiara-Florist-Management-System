@@ -16,8 +16,14 @@
         </div>
         <section class="rounded-2xl border border-stone-200 bg-white p-7 shadow-sm">
             <h2 class="mb-6 text-lg font-semibold">Masuk ke dashboard</h2>
+            @if (! empty($sessionNotice))
+                <div role="alert" class="mb-5 rounded-lg border border-red-200 bg-red-50 px-3.5 py-3 text-sm font-medium text-red-800">
+                    {{ $sessionNotice }}
+                </div>
+            @endif
             <form method="POST" action="{{ route('login.store') }}" class="space-y-5">
                 @csrf
+                <input type="hidden" name="_mfms_runtime" value="{{ app(\App\Support\DemoAccessManager::class)->runtimeMode() }}">
                 <div>
                     <label for="email" class="mb-2 block text-sm font-medium">Email admin</label>
                     <input id="email" name="email" type="email" value="{{ old('email') }}" required autofocus autocomplete="username" class="w-full rounded-lg border border-stone-300 bg-white px-3.5 py-3 text-sm outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/10" placeholder="admin@example.com">

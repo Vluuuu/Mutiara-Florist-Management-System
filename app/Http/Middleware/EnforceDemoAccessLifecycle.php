@@ -7,7 +7,6 @@ use App\Support\DemoRuntimeGuard;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -120,13 +119,15 @@ class EnforceDemoAccessLifecycle
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();
 
-                $expiredRoutingCookie = Cookie::forget($this->demo->routingCookieName(), '/');
+                $expiredRoutingCookie = $this->demo->forgetRoutingCookie($request);
+                $expiredXsrfCookie = $this->demo->forgetCookie($request, $this->demo->xsrfCookieName(), httpOnly: false);
 
                 if ($request->expectsJson() && ! $request->header('X-Inertia')) {
                     return $this->applyNoStoreCacheHeaders(
                         response()
                             ->json(['message' => $reason], 403)
                             ->withCookie($expiredRoutingCookie)
+                            ->withCookie($expiredXsrfCookie)
                     );
                 }
 
@@ -135,11 +136,26 @@ class EnforceDemoAccessLifecycle
                         ->route('login')
                         ->withErrors(['email' => $reason])
                         ->withCookie($expiredRoutingCookie)
+                        ->withCookie($expiredXsrfCookie)
                 );
             }
         }
 
         $response = $next($request);
+
+        // Slide the runtime selector cookie on active demo responses so it never
+        // expires unexpectedly while a valid demo session remains active.
+        $routingCookieName = $this->demo->routingCookieName();
+        $shouldRefreshRoutingCookie = ! $this->demo->hasExpiringCookie($response, $routingCookieName)
+            && (
+                (Auth::check() && $this->demo->isActive())
+                || $request->is('demo')
+                || $request->cookie($routingCookieName) === $this->demo->routingCookieValue()
+            );
+
+        if ($shouldRefreshRoutingCookie) {
+            $response->headers->setCookie($this->demo->makeRoutingCookie($request));
+        }
 
         // Prevent search engines from indexing demo pages
         $response->headers->set('X-Robots-Tag', 'noindex, nofollow');
